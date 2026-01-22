@@ -42,6 +42,7 @@ const apiFetch = async (path: string, options: RequestInit = {}) => {
 
 const clampScore = (value: number) => Math.min(10, Math.max(0, value))
 const roundScore = (value: number) => Math.round(value * 10) / 10
+const snapScoreToGrid = (value: number) => clampScore(Math.round(value))
 const formatScore = (value: number) =>
   Number.isInteger(value) ? value.toString() : value.toFixed(1)
 const formatTitle = (value: string) => {
@@ -95,7 +96,7 @@ function App() {
   const [good, setGood] = useState(7)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [deckSort, setDeckSort] = useState<'recent' | 'name' | 'count'>(
+  const [deckSort, setDeckSort] = useState<'manual' | 'recent' | 'name' | 'count'>(
     'recent',
   )
   const [movieSort, setMovieSort] = useState<'title' | 'fun' | 'good'>('title')
@@ -104,6 +105,8 @@ function App() {
     key: string
     ids: string[]
   } | null>(null)
+  const [draggingDeckId, setDraggingDeckId] = useState<string | null>(null)
+  const [deckDragOverId, setDeckDragOverId] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement | null>(null)
   const moviesRef = useRef<Movie[]>([])
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null)
@@ -189,6 +192,8 @@ function App() {
   const sortedDecks = useMemo(() => {
     const nextDecks = [...decks]
     switch (deckSort) {
+      case 'manual':
+        return nextDecks
       case 'name':
         return nextDecks.sort((a, b) => a.name.localeCompare(b.name))
       case 'count':
@@ -203,6 +208,31 @@ function App() {
         )
     }
   }, [decks, deckSort])
+
+  const ensureManualDeckOrder = useCallback(() => {
+    if (deckSort === 'manual') {
+      return
+    }
+    setDecks(sortedDecks)
+    setDeckSort('manual')
+  }, [deckSort, sortedDecks])
+
+  const moveDeck = useCallback(
+    (draggedId: string, targetId: string) => {
+      setDecks((current) => {
+        const fromIndex = current.findIndex((deck) => deck.id === draggedId)
+        const toIndex = current.findIndex((deck) => deck.id === targetId)
+        if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+          return current
+        }
+        const next = [...current]
+        const [moved] = next.splice(fromIndex, 1)
+        next.splice(toIndex, 0, moved)
+        return next
+      })
+    },
+    [setDecks],
+  )
 
   const sortedMovies = useMemo(() => {
     const nextMovies = [...deckMovies]
@@ -270,7 +300,7 @@ function App() {
     try {
       const data = await apiFetch('/api/decks', {
         method: 'POST',
-        body: JSON.stringify({ name: trimmedName }),
+        body: JSON.stringify({ name: formatTitle(trimmedName) }),
       })
       if (data?.deck) {
         setDecks((current) => [data.deck, ...current])
@@ -293,14 +323,15 @@ function App() {
     setLoading(true)
     setError(null)
     try {
+      const formattedName = formatTitle(nextName)
       const data = await apiFetch(`/api/decks/${deck.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ name: nextName }),
+        body: JSON.stringify({ name: formattedName }),
       })
       setDecks((current) =>
         current.map((item) =>
           item.id === deck.id
-            ? { ...item, name: data.deck?.name ?? nextName }
+            ? { ...item, name: data.deck?.name ?? formattedName }
             : item,
         ),
       )
@@ -539,7 +570,14 @@ function App() {
       })
 
       if (!nearest) {
-        return null
+        // Fallback: snap to integer grid on release.
+        const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width)
+        const clampedY = Math.min(Math.max(clientY - rect.top, 0), rect.height)
+
+        // Swapped axes: Good is X-axis, Fun is Y-axis
+        const good = snapScoreToGrid((clampedX / rect.width) * 10)
+        const fun = snapScoreToGrid((1 - clampedY / rect.height) * 10)
+        return { fun, good }
       }
 
       const resolvedNearest = nearest as { fun: number; good: number }
@@ -565,8 +603,8 @@ function App() {
       const clampedY = Math.min(Math.max(clientY - rect.top, 0), rect.height)
 
       // Swapped axes: Good is X-axis, Fun is Y-axis
-      const nextGood = clampScore((clampedX / rect.width) * 10)
-      const nextFun = clampScore((1 - clampedY / rect.height) * 10)
+      const nextGood = snapScoreToGrid((clampedX / rect.width) * 10)
+      const nextFun = snapScoreToGrid((1 - clampedY / rect.height) * 10)
       applyMovieScores(dragging.ids, nextFun, nextGood)
     },
     [applyMovieScores],
@@ -652,6 +690,20 @@ function App() {
       updateMoviePosition(drag, event.clientX, event.clientY)
     }
 
+  const handleMovieListPointerDown =
+    (id: string) => (event: React.PointerEvent<HTMLLIElement>) => {
+      // Allow clicking buttons (delete) without starting a drag.
+      const target = event.target as HTMLElement | null
+      if (target?.closest('button')) {
+        return
+      }
+
+      event.preventDefault()
+      const drag = { type: 'single' as const, key: id, ids: [id] }
+      setDraggingGroup(drag)
+      lastPointerRef.current = { x: event.clientX, y: event.clientY }
+    }
+
   useEffect(() => {
     if (!draggingGroup) {
       return
@@ -731,10 +783,11 @@ function App() {
                   value={deckSort}
                   onChange={(event) =>
                     setDeckSort(
-                      event.target.value as 'recent' | 'name' | 'count',
+                      event.target.value as 'manual' | 'recent' | 'name' | 'count',
                     )
                   }
                 >
+                  <option value="manual">Manual</option>
                   <option value="recent">Most recent</option>
                   <option value="name">Name</option>
                   <option value="count">Movie count</option>
@@ -745,7 +798,47 @@ function App() {
               {sortedDecks.map((deck) => (
                 <li
                   key={deck.id}
-                  className={deck.id === selectedDeckId ? 'active' : ''}
+                  className={[
+                    deck.id === selectedDeckId ? 'active' : '',
+                    deckDragOverId === deck.id ? 'drag-over' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  draggable
+                  onDragStart={(event) => {
+                    ensureManualDeckOrder()
+                    setDraggingDeckId(deck.id)
+                    event.dataTransfer.effectAllowed = 'move'
+                    event.dataTransfer.setData('text/plain', deck.id)
+                  }}
+                  onDragEnd={() => {
+                    setDraggingDeckId(null)
+                    setDeckDragOverId(null)
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault()
+                    if (draggingDeckId) {
+                      setDeckDragOverId(deck.id)
+                      event.dataTransfer.dropEffect = 'move'
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    const draggedId =
+                      draggingDeckId ?? event.dataTransfer.getData('text/plain')
+                    if (!draggedId || draggedId === deck.id) {
+                      return
+                    }
+                    moveDeck(draggedId, deck.id)
+                    setDraggingDeckId(null)
+                    setDeckDragOverId(null)
+                  }}
+                  onClick={() => {
+                    if (draggingDeckId) {
+                      return
+                    }
+                    setSelectedDeckId(deck.id)
+                  }}
                 >
                   <button
                     type="button"
@@ -758,13 +851,22 @@ function App() {
                     </span>
                   </button>
                   <div className="deck-actions">
-                    <button type="button" onClick={() => handleRenameDeck(deck)}>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        handleRenameDeck(deck)
+                      }}
+                    >
                       Rename
                     </button>
                     <button
                       type="button"
                       className="deck-action-delete"
-                      onClick={() => handleDeleteDeck(deck)}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        handleDeleteDeck(deck)
+                      }}
                     >
                       Delete
                     </button>
@@ -837,7 +939,10 @@ function App() {
                 </div>
                 <ul>
                   {sortedMovies.map((movie) => (
-                    <li key={movie.id}>
+                    <li
+                      key={movie.id}
+                      onPointerDown={handleMovieListPointerDown(movie.id)}
+                    >
                       <div className="movie-list-title">
                         <strong>{movie.title}</strong>
                         <button
