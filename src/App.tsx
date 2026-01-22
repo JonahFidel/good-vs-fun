@@ -528,9 +528,9 @@ function App() {
       const threshold = 18
 
       groups.forEach((group) => {
-        const x = rect.left + (clampScore(group.fun) / 10) * rect.width
-        const y =
-          rect.top + (1 - clampScore(group.good) / 10) * rect.height
+        // Swapped axes: Good is X-axis, Fun is Y-axis
+        const x = rect.left + (clampScore(group.good) / 10) * rect.width
+        const y = rect.top + (1 - clampScore(group.fun) / 10) * rect.height
         const distance = Math.hypot(clientX - x, clientY - y)
         if (distance <= threshold && distance < nearestDistance) {
           nearest = { fun: group.fun, good: group.good }
@@ -564,8 +564,9 @@ function App() {
       const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width)
       const clampedY = Math.min(Math.max(clientY - rect.top, 0), rect.height)
 
-      const nextFun = clampScore((clampedX / rect.width) * 10)
-      const nextGood = clampScore((1 - clampedY / rect.height) * 10)
+      // Swapped axes: Good is X-axis, Fun is Y-axis
+      const nextGood = clampScore((clampedX / rect.width) * 10)
+      const nextFun = clampScore((1 - clampedY / rect.height) * 10)
       applyMovieScores(dragging.ids, nextFun, nextGood)
     },
     [applyMovieScores],
@@ -697,9 +698,9 @@ function App() {
       <header className="header">
         <div>
           <p className="eyebrow">Good Fun Movie</p>
-          <h1>Rank movies by fun and good</h1>
+          <h1>Rank movies by good and fun</h1>
           <p className="subhead">
-            Plot movies on a 0–10 grid to compare how fun vs. how good they are.
+            Plot movies on a 0–10 grid to compare how good vs. how fun they are.
           </p>
         </div>
       </header>
@@ -866,16 +867,17 @@ function App() {
 
         <section className="grid-panel">
           <div className="grid-header">
-            <h2>{selectedDeck ? `${selectedDeck.name}` : 'Fun vs. Good'}</h2>
+            <h2>{selectedDeck ? `${selectedDeck.name}` : 'Good vs. Fun'}</h2>
             <p>Higher is better. Everything stays in the positive quadrant.</p>
           </div>
           <div className="grid-wrapper">
-            <div className="grid-axis grid-axis-y">Good (0 → 10)</div>
-            <div className="grid-axis grid-axis-x">Fun (0 → 10)</div>
+            <div className="grid-axis grid-axis-y">Fun (0 → 10)</div>
+            <div className="grid-axis grid-axis-x">Good (0 → 10)</div>
             <div className="grid" ref={gridRef}>
               {groupedMovies.map((group) => {
-                const left = (clampScore(group.fun) / 10) * 100
-                const top = 100 - (clampScore(group.good) / 10) * 100
+                // Swapped axes: Good is X-axis, Fun is Y-axis
+                const left = (clampScore(group.good) / 10) * 100
+                const top = 100 - (clampScore(group.fun) / 10) * 100
                 const key = `${group.fun}-${group.good}`
                 const isDragging =
                   draggingGroup?.type === 'group' && draggingGroup.key === key
