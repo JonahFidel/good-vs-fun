@@ -72,7 +72,9 @@
   border-radius: 10px;
   border: 1px solid #d1d5db;
   background: #f9fafb;
+  color: #111827;
   font-size: 1rem;
+  color-scheme: light;
 }
 
 .movie-form button {
@@ -245,8 +247,12 @@
   color: #9ca3af;
   font-size: 0.85rem;
   line-height: 1;
-  padding: 0;
+  padding-left: .2em;
+  padding-right: 0px;
   cursor: pointer;
+  align-self: center;
+  vertical-align: middle;
+  transform: translateY(0px);
 }
 
 .movie-delete:hover {
