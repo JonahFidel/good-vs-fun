@@ -409,6 +409,15 @@
   position: static;
 }
 
+.movie-label-title {
+  cursor: grab;
+  display: inline-block;
+}
+
+.movie-label-title:active {
+  cursor: grabbing;
+}
+
 .movie-delete {
   border: none;
   background: transparent;

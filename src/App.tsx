@@ -100,11 +100,13 @@ function App() {
   )
   const [movieSort, setMovieSort] = useState<'title' | 'fun' | 'good'>('title')
   const [draggingGroup, setDraggingGroup] = useState<{
+    type: 'group' | 'single'
     key: string
     ids: string[]
   } | null>(null)
   const gridRef = useRef<HTMLDivElement | null>(null)
   const moviesRef = useRef<Movie[]>([])
+  const lastPointerRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     moviesRef.current = deckMovies
@@ -377,36 +379,200 @@ function App() {
     }
   }
 
-  const updateMoviePosition = useCallback((ids: string[], clientX: number, clientY: number) => {
-    const grid = gridRef.current
-
-    if (!grid) {
-      return
-    }
-
-    const rect = grid.getBoundingClientRect()
-    const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width)
-    const clampedY = Math.min(Math.max(clientY - rect.top, 0), rect.height)
-
-    const nextFun = clampScore((clampedX / rect.width) * 10)
-    const nextGood = clampScore((1 - clampedY / rect.height) * 10)
-
+  const applyMovieScores = useCallback((ids: string[], fun: number, good: number) => {
+    const nextFun = roundScore(clampScore(fun))
+    const nextGood = roundScore(clampScore(good))
     const idSet = new Set(ids)
+
     setDeckMovies((current) =>
       current.map((movie) =>
         idSet.has(movie.id)
           ? {
               ...movie,
-              fun: roundScore(nextFun),
-              good: roundScore(nextGood),
+              fun: nextFun,
+              good: nextGood,
             }
           : movie,
       ),
     )
   }, [])
 
+  const findSnapTarget = useCallback(
+    (
+      dragging: { type: 'group' | 'single'; key: string; ids: string[] },
+      clientX: number,
+      clientY: number,
+    ): { fun: number; good: number } | null => {
+      const grid = gridRef.current
+      if (!grid) {
+        return null
+      }
+
+      const rect = grid.getBoundingClientRect()
+      const excludeSet = new Set(dragging.ids)
+      const groups = new Map<
+        string,
+        { fun: number; good: number; ids: string[] }
+      >()
+
+      moviesRef.current.forEach((movie) => {
+        if (excludeSet.has(movie.id)) {
+          return
+        }
+        const funScore = roundScore(clampScore(movie.fun))
+        const goodScore = roundScore(clampScore(movie.good))
+        const key = `${funScore}-${goodScore}`
+        const existing = groups.get(key)
+        if (existing) {
+          existing.ids.push(movie.id)
+        } else {
+          groups.set(key, { fun: funScore, good: goodScore, ids: [movie.id] })
+        }
+      })
+
+      const intersectionArea = (a: DOMRect, b: DOMRect) => {
+        const x1 = Math.max(a.left, b.left)
+        const y1 = Math.max(a.top, b.top)
+        const x2 = Math.min(a.right, b.right)
+        const y2 = Math.min(a.bottom, b.bottom)
+        const width = Math.max(0, x2 - x1)
+        const height = Math.max(0, y2 - y1)
+        return width * height
+      }
+
+      const overlapRatio = (a: DOMRect, b: DOMRect) => {
+        const areaA = a.width * a.height
+        const areaB = b.width * b.height
+        if (areaA === 0 || areaB === 0) {
+          return 0
+        }
+        return intersectionArea(a, b) / Math.min(areaA, areaB)
+      }
+
+      const overlapThreshold = 0.8
+
+      const draggedRects: DOMRect[] = []
+      if (dragging.type === 'single') {
+        const draggedTitle = grid.querySelector(
+          `[data-movie-id="${CSS.escape(dragging.key)}"]`,
+        ) as HTMLElement | null
+        if (draggedTitle) {
+          draggedRects.push(draggedTitle.getBoundingClientRect())
+          const parentPoint = draggedTitle.closest('.movie-point') as HTMLElement | null
+          if (parentPoint) {
+            draggedRects.push(parentPoint.getBoundingClientRect())
+          }
+        }
+      } else {
+        const draggedPoint = grid.querySelector(
+          `.movie-point[data-group-key="${CSS.escape(dragging.key)}"]`,
+        ) as HTMLElement | null
+        if (draggedPoint) {
+          draggedRects.push(draggedPoint.getBoundingClientRect())
+          const label = draggedPoint.querySelector('.movie-label') as HTMLElement | null
+          if (label) {
+            draggedRects.push(label.getBoundingClientRect())
+          }
+        }
+      }
+
+      let best: { fun: number; good: number; ratio: number } | null = null
+
+      groups.forEach((group, key) => {
+        const groupEl = grid.querySelector(
+          `.movie-point[data-group-key="${CSS.escape(key)}"]`,
+        ) as HTMLElement | null
+
+        if (!groupEl) {
+          return
+        }
+
+        if (draggedRects.length === 0) {
+          return
+        }
+
+        const dotRect = groupEl.getBoundingClientRect()
+        const labelEls = groupEl.querySelectorAll(
+          '[data-movie-id]',
+        ) as NodeListOf<HTMLElement>
+
+        draggedRects.forEach((draggedRect) => {
+          const dotRatio = overlapRatio(draggedRect, dotRect)
+          if (dotRatio >= overlapThreshold && (!best || dotRatio > best.ratio)) {
+            best = { fun: group.fun, good: group.good, ratio: dotRatio }
+          }
+
+          labelEls.forEach((labelEl) => {
+            const labelRatio = overlapRatio(
+              draggedRect,
+              labelEl.getBoundingClientRect(),
+            )
+            if (
+              labelRatio >= overlapThreshold &&
+              (!best || labelRatio > best.ratio)
+            ) {
+              best = { fun: group.fun, good: group.good, ratio: labelRatio }
+            }
+          })
+        })
+      })
+
+      if (best) {
+        const resolvedBest = best as { fun: number; good: number; ratio: number }
+        return { fun: resolvedBest.fun, good: resolvedBest.good }
+      }
+
+      // Fallback: distance-based snap
+      let nearest: { fun: number; good: number } | null = null
+      let nearestDistance = Number.POSITIVE_INFINITY
+      const threshold = 18
+
+      groups.forEach((group) => {
+        const x = rect.left + (clampScore(group.fun) / 10) * rect.width
+        const y =
+          rect.top + (1 - clampScore(group.good) / 10) * rect.height
+        const distance = Math.hypot(clientX - x, clientY - y)
+        if (distance <= threshold && distance < nearestDistance) {
+          nearest = { fun: group.fun, good: group.good }
+          nearestDistance = distance
+        }
+      })
+
+      if (!nearest) {
+        return null
+      }
+
+      const resolvedNearest = nearest as { fun: number; good: number }
+      return { fun: resolvedNearest.fun, good: resolvedNearest.good }
+    },
+    [],
+  )
+
+  const updateMoviePosition = useCallback(
+    (
+      dragging: { type: 'group' | 'single'; key: string; ids: string[] },
+      clientX: number,
+      clientY: number,
+    ) => {
+      const grid = gridRef.current
+
+      if (!grid) {
+        return
+      }
+
+      const rect = grid.getBoundingClientRect()
+      const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width)
+      const clampedY = Math.min(Math.max(clientY - rect.top, 0), rect.height)
+
+      const nextFun = clampScore((clampedX / rect.width) * 10)
+      const nextGood = clampScore((1 - clampedY / rect.height) * 10)
+      applyMovieScores(dragging.ids, nextFun, nextGood)
+    },
+    [applyMovieScores],
+  )
+
   const persistMoviePositions = useCallback(
-    async (ids: string[]) => {
+    async (ids: string[], override?: { fun: number; good: number }) => {
       if (!selectedDeckId) {
         return
       }
@@ -420,8 +586,8 @@ function App() {
             apiFetch(`/api/decks/${selectedDeckId}/movies/${movie.id}`, {
               method: 'PUT',
               body: JSON.stringify({
-                fun: movie.fun,
-                good: movie.good,
+                fun: override?.fun ?? movie.fun,
+                good: override?.good ?? movie.good,
                 title: movie.title,
               }),
             }),
@@ -464,9 +630,25 @@ function App() {
   const handlePointerDown =
     (key: string, ids: string[]) =>
     (event: React.PointerEvent<HTMLDivElement>) => {
+      // Only start group-drag when grabbing the dot itself (not its labels)
+      if (event.target !== event.currentTarget) {
+        return
+      }
       event.preventDefault()
-      setDraggingGroup({ key, ids })
-      updateMoviePosition(ids, event.clientX, event.clientY)
+      const drag = { type: 'group' as const, key, ids }
+      setDraggingGroup(drag)
+      lastPointerRef.current = { x: event.clientX, y: event.clientY }
+      updateMoviePosition(drag, event.clientX, event.clientY)
+    }
+
+  const handleLabelPointerDown =
+    (id: string) => (event: React.PointerEvent<HTMLSpanElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+      const drag = { type: 'single' as const, key: id, ids: [id] }
+      setDraggingGroup(drag)
+      lastPointerRef.current = { x: event.clientX, y: event.clientY }
+      updateMoviePosition(drag, event.clientX, event.clientY)
     }
 
   useEffect(() => {
@@ -475,11 +657,21 @@ function App() {
     }
 
     const handlePointerMove = (event: PointerEvent) => {
-      updateMoviePosition(draggingGroup.ids, event.clientX, event.clientY)
+      lastPointerRef.current = { x: event.clientX, y: event.clientY }
+      updateMoviePosition(draggingGroup, event.clientX, event.clientY)
     }
 
     const handlePointerUp = () => {
-      persistMoviePositions(draggingGroup.ids)
+      const last = lastPointerRef.current
+      const snapTarget =
+        last ? findSnapTarget(draggingGroup, last.x, last.y) : null
+
+      if (snapTarget) {
+        applyMovieScores(draggingGroup.ids, snapTarget.fun, snapTarget.good)
+        persistMoviePositions(draggingGroup.ids, snapTarget)
+      } else {
+        persistMoviePositions(draggingGroup.ids)
+      }
       setDraggingGroup(null)
     }
 
@@ -492,7 +684,13 @@ function App() {
       window.removeEventListener('pointerup', handlePointerUp)
       window.removeEventListener('pointercancel', handlePointerUp)
     }
-  }, [draggingGroup, persistMoviePositions, updateMoviePosition])
+  }, [
+    applyMovieScores,
+    draggingGroup,
+    findSnapTarget,
+    persistMoviePositions,
+    updateMoviePosition,
+  ])
 
   return (
     <div className="app">
@@ -679,7 +877,8 @@ function App() {
                 const left = (clampScore(group.fun) / 10) * 100
                 const top = 100 - (clampScore(group.good) / 10) * 100
                 const key = `${group.fun}-${group.good}`
-                const isDragging = draggingGroup?.key === key
+                const isDragging =
+                  draggingGroup?.type === 'group' && draggingGroup.key === key
 
                 return (
                   <div
@@ -687,11 +886,26 @@ function App() {
                     className={`movie-point${isDragging ? ' dragging' : ''}`}
                     style={{ left: `${left}%`, top: `${top}%` }}
                     onPointerDown={handlePointerDown(key, group.ids)}
+                    data-group-key={key}
                   >
-                    <span className="movie-label">
+                    <span
+                      className="movie-label"
+                      onPointerDown={(event) => {
+                        event.stopPropagation()
+                      }}
+                    >
                       {group.items.map((item) => (
-                        <span key={item.id} className="movie-label-line">
-                          {item.title}
+                        <span
+                          key={item.id}
+                          className="movie-label-line"
+                        >
+                          <span
+                            className="movie-label-title"
+                            data-movie-id={item.id}
+                            onPointerDownCapture={handleLabelPointerDown(item.id)}
+                          >
+                            {item.title}
+                          </span>
                           <button
                             type="button"
                             className="movie-delete"
