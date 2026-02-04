@@ -1,4 +1,7 @@
-const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+const apiBaseRaw = import.meta.env.VITE_API_BASE_URL || ''
+const apiBase = apiBaseRaw.endsWith('/')
+  ? apiBaseRaw.slice(0, Math.max(0, apiBaseRaw.length - 1))
+  : apiBaseRaw
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const response = await fetch(`${apiBase}${path}`, {
