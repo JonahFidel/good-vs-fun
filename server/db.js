@@ -6,11 +6,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const remoteUrl = process.env.TURSO_DATABASE_URL
 const authToken = process.env.TURSO_AUTH_TOKEN
+const isVercel = Boolean(process.env.VERCEL)
 
 const localDbPath = path.join(__dirname, 'local.db')
 const localUrl = `file:${localDbPath}`
 
 const localClient = createClient({ url: localUrl })
+if (isVercel && !remoteUrl) {
+  throw new Error('TURSO_DATABASE_URL is required in production (Vercel).')
+}
 const remoteClient = remoteUrl
   ? createClient({
       url: remoteUrl,
@@ -28,7 +32,12 @@ export const db = {
     try {
       return await activeClient.execute(input)
     } catch (error) {
-      if (!hasFallenBack && remoteClient && activeClient === remoteClient) {
+      if (
+        !isVercel &&
+        !hasFallenBack &&
+        remoteClient &&
+        activeClient === remoteClient
+      ) {
         // eslint-disable-next-line no-console
         console.warn(
           'Remote DB request failed; falling back to local SQLite.',
