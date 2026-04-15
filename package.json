@@ -12,6 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.60.1",
+    "@clerk/express": "^1.7.70",
     "@libsql/client": "^0.15.15",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",

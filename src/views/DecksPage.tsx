@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { apiFetch } from '../lib/api'
+import { useApiFetch } from '../lib/api'
 import { formatTitle } from '../lib/format'
 import type { Deck } from '../lib/types'
 
 export function DecksPage() {
+  const apiFetch = useApiFetch()
   const [decks, setDecks] = useState<Deck[]>([])
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null)
   const [deckName, setDeckName] = useState('')
@@ -31,7 +32,7 @@ export function DecksPage() {
     } finally {
       setLoading(false)
     }
-  }, [selectedDeckId])
+  }, [selectedDeckId, apiFetch])
 
   useEffect(() => {
     loadDecks()

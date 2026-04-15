@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { apiFetch } from '../lib/api'
+import { useApiFetch } from '../lib/api'
 import { formatScore, formatTitle, snapScoreToStep } from '../lib/format'
 import type { Movie } from '../lib/types'
 
@@ -13,6 +13,7 @@ type DragState = {
 
 export function DeckPage() {
   const { deckId } = useParams()
+  const apiFetch = useApiFetch()
   const resolvedDeckId = typeof deckId === 'string' ? deckId : null
 
   const [deckName, setDeckName] = useState<string>('')
@@ -72,7 +73,7 @@ export function DeckPage() {
     return () => {
       isActive = false
     }
-  }, [resolvedDeckId])
+  }, [resolvedDeckId, apiFetch])
 
   const sortedMovies = useMemo(() => {
     const nextMovies = [...deckMovies]
@@ -172,7 +173,7 @@ export function DeckPage() {
         setError('Failed to save movie positions.')
       }
     },
-    [resolvedDeckId],
+    [resolvedDeckId, apiFetch],
   )
 
   const removeMovie = async (id: string) => {

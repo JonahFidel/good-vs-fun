@@ -5,6 +5,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
+import { clerkMiddleware, getAuth } from '@clerk/express'
 import { db, dbInfo } from './db.js'
 
 export const app = express()
@@ -12,6 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 app.use(cors())
 app.use(express.json())
+app.use(clerkMiddleware())
 
 const nowIso = () => new Date().toISOString()
 
@@ -77,19 +79,33 @@ const initSchema = async () => {
   for (const statement of statements) {
     await db.execute(statement)
   }
+
+  // Migration: add owner_id to existing decks tables (idempotent)
+  const tableInfo = await db.execute({
+    sql: "PRAGMA table_info(decks)",
+  })
+  const hasOwnerId = tableInfo.rows.some(
+    (row) => String(row.name || "").toLowerCase() === "owner_id",
+  )
+  if (!hasOwnerId) {
+    await db.execute({
+      sql: `ALTER TABLE decks ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'legacy'`,
+    })
+  }
 }
 
-const ensureDeckExists = async (deckId) => {
+const ensureDeckExists = async (deckId, ownerId) => {
   const result = await db.execute({
-    sql: 'SELECT id FROM decks WHERE id = ?',
-    args: [deckId],
+    sql: 'SELECT id FROM decks WHERE id = ? AND owner_id = ?',
+    args: [deckId, ownerId],
   })
   return result.rows.length > 0
 }
 
 const normalizeDeckNames = async () => {
   const result = await db.execute({
-    sql: 'SELECT id, name FROM decks',
+    sql: 'SELECT id, name FROM decks WHERE owner_id != ?',
+    args: ['legacy'],
   })
 
   for (const row of result.rows) {
@@ -104,6 +120,15 @@ const normalizeDeckNames = async () => {
       args: [nextName, row.id],
     })
   }
+}
+
+const requireAuth = (req, res, next) => {
+  const auth = getAuth(req)
+  if (!auth?.userId) {
+    return respondError(res, 401, 'Unauthorized.')
+  }
+  req.userId = auth.userId
+  next()
 }
 
 app.get('/api/health', (_req, res) => {
@@ -129,7 +154,8 @@ app.post('/api/admin/init', asyncHandler(async (_req, res) => {
   return res.json({ status: 'initialized' })
 }))
 
-app.get('/api/decks', asyncHandler(async (_req, res) => {
+app.get('/api/decks', requireAuth, asyncHandler(async (req, res) => {
+  const ownerId = req.userId
   const result = await db.execute({
     sql: `
       SELECT
@@ -140,9 +166,11 @@ app.get('/api/decks', asyncHandler(async (_req, res) => {
         COUNT(dm.movie_id) AS movie_count
       FROM decks d
       LEFT JOIN deck_movies dm ON dm.deck_id = d.id
+      WHERE d.owner_id = ?
       GROUP BY d.id
       ORDER BY d.created_at DESC
     `,
+    args: [ownerId],
   })
 
   res.json({
@@ -156,7 +184,8 @@ app.get('/api/decks', asyncHandler(async (_req, res) => {
   })
 }))
 
-app.post('/api/decks', asyncHandler(async (req, res) => {
+app.post('/api/decks', requireAuth, asyncHandler(async (req, res) => {
+  const ownerId = req.userId
   const name = formatTitle(
     typeof req.body?.name === 'string' ? req.body.name.trim() : '',
   )
@@ -168,8 +197,8 @@ app.post('/api/decks', asyncHandler(async (req, res) => {
   const timestamp = nowIso()
 
   await db.execute({
-    sql: 'INSERT INTO decks (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)',
-    args: [id, name, timestamp, timestamp],
+    sql: 'INSERT INTO decks (id, owner_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+    args: [id, ownerId, name, timestamp, timestamp],
   })
 
   res.status(201).json({
@@ -177,11 +206,12 @@ app.post('/api/decks', asyncHandler(async (req, res) => {
   })
 }))
 
-app.get('/api/decks/:deckId', asyncHandler(async (req, res) => {
+app.get('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
+  const ownerId = req.userId
   const deckResult = await db.execute({
-    sql: 'SELECT id, name, created_at, updated_at FROM decks WHERE id = ?',
-    args: [deckId],
+    sql: 'SELECT id, name, created_at, updated_at FROM decks WHERE id = ? AND owner_id = ?',
+    args: [deckId, ownerId],
   })
 
   const deckRow = deckResult.rows[0]
@@ -222,8 +252,9 @@ app.get('/api/decks/:deckId', asyncHandler(async (req, res) => {
   })
 }))
 
-app.put('/api/decks/:deckId', asyncHandler(async (req, res) => {
+app.put('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
+  const ownerId = req.userId
   const name = formatTitle(
     typeof req.body?.name === 'string' ? req.body.name.trim() : '',
   )
@@ -232,7 +263,7 @@ app.put('/api/decks/:deckId', asyncHandler(async (req, res) => {
     return respondError(res, 400, 'Deck name is required.')
   }
 
-  if (!(await ensureDeckExists(deckId))) {
+  if (!(await ensureDeckExists(deckId, ownerId))) {
     return respondError(res, 404, 'Deck not found.')
   }
 
@@ -245,9 +276,10 @@ app.put('/api/decks/:deckId', asyncHandler(async (req, res) => {
   res.json({ deck: { id: deckId, name, updatedAt: timestamp } })
 }))
 
-app.delete('/api/decks/:deckId', asyncHandler(async (req, res) => {
+app.delete('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
-  if (!(await ensureDeckExists(deckId))) {
+  const ownerId = req.userId
+  if (!(await ensureDeckExists(deckId, ownerId))) {
     return respondError(res, 404, 'Deck not found.')
   }
 
@@ -266,8 +298,9 @@ app.delete('/api/decks/:deckId', asyncHandler(async (req, res) => {
   res.status(204).send()
 }))
 
-app.post('/api/decks/:deckId/movies', asyncHandler(async (req, res) => {
+app.post('/api/decks/:deckId/movies', requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
+  const ownerId = req.userId
   const title = typeof req.body?.title === 'string' ? req.body.title.trim() : ''
   const fun = Number(req.body?.fun)
   const good = Number(req.body?.good)
@@ -278,7 +311,7 @@ app.post('/api/decks/:deckId/movies', asyncHandler(async (req, res) => {
   if (Number.isNaN(fun) || Number.isNaN(good)) {
     return respondError(res, 400, 'Movie fun/good scores are required.')
   }
-  if (!(await ensureDeckExists(deckId))) {
+  if (!(await ensureDeckExists(deckId, ownerId))) {
     return respondError(res, 404, 'Deck not found.')
   }
 
@@ -302,8 +335,9 @@ app.post('/api/decks/:deckId/movies', asyncHandler(async (req, res) => {
   })
 }))
 
-app.put('/api/decks/:deckId/movies/:movieId', asyncHandler(async (req, res) => {
+app.put('/api/decks/:deckId/movies/:movieId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId, movieId } = req.params
+  const ownerId = req.userId
   const title = typeof req.body?.title === 'string' ? req.body.title.trim() : null
   const fun = Number(req.body?.fun)
   const good = Number(req.body?.good)
@@ -311,7 +345,7 @@ app.put('/api/decks/:deckId/movies/:movieId', asyncHandler(async (req, res) => {
   if (Number.isNaN(fun) || Number.isNaN(good)) {
     return respondError(res, 400, 'Movie fun/good scores are required.')
   }
-  if (!(await ensureDeckExists(deckId))) {
+  if (!(await ensureDeckExists(deckId, ownerId))) {
     return respondError(res, 404, 'Deck not found.')
   }
 
@@ -330,8 +364,12 @@ app.put('/api/decks/:deckId/movies/:movieId', asyncHandler(async (req, res) => {
   res.json({ movie: { id: movieId, title, fun, good } })
 }))
 
-app.delete('/api/decks/:deckId/movies/:movieId', asyncHandler(async (req, res) => {
+app.delete('/api/decks/:deckId/movies/:movieId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId, movieId } = req.params
+  const ownerId = req.userId
+  if (!(await ensureDeckExists(deckId, ownerId))) {
+    return respondError(res, 404, 'Deck not found.')
+  }
   await db.execute({
     sql: 'DELETE FROM deck_movies WHERE deck_id = ? AND movie_id = ?',
     args: [deckId, movieId],

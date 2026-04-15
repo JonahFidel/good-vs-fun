@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS decks (
   id TEXT PRIMARY KEY,
+  owner_id TEXT NOT NULL,
   name TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL

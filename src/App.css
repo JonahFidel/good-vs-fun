@@ -51,6 +51,20 @@
   color: #ffffff;
 }
 
+.nav-link-primary {
+  border-color: #111827;
+  background: #111827;
+  color: #ffffff;
+}
+
+.sign-in-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+}
+
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.2em;
