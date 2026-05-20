@@ -11,7 +11,9 @@ const isVercel = Boolean(process.env.VERCEL)
 const localDbPath = path.join(__dirname, 'local.db')
 const localUrl = `file:${localDbPath}`
 
-const localClient = createClient({ url: localUrl })
+// Vercel's serverless filesystem is read-only except /tmp — never open local.db here.
+const localClient = !isVercel ? createClient({ url: localUrl }) : null
+
 if (isVercel && !remoteUrl) {
   throw new Error('TURSO_DATABASE_URL is required in production (Vercel).')
 }
@@ -22,8 +24,14 @@ const remoteClient = remoteUrl
     })
   : null
 
+if (!remoteClient && !localClient) {
+  throw new Error(
+    'No database configured: set TURSO_DATABASE_URL or run outside Vercel for local SQLite.',
+  )
+}
+
 let activeClient = remoteClient ?? localClient
-let hasFallenBack = activeClient === localClient
+let hasFallenBack = Boolean(localClient) && activeClient === localClient
 
 const getMode = () => (activeClient === localClient ? 'local' : 'remote')
 
@@ -33,6 +41,7 @@ export const db = {
       return await activeClient.execute(input)
     } catch (error) {
       if (
+        localClient &&
         !isVercel &&
         !hasFallenBack &&
         remoteClient &&
