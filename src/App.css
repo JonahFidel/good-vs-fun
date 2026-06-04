@@ -454,6 +454,117 @@
   line-height: 1;
 }
 
+.grid-tick {
+  position: absolute;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #9ca3af;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.grid-tick-x {
+  bottom: 12px;
+  transform: translateX(-50%);
+}
+
+.grid-tick-y {
+  left: 12px;
+  transform: translateY(-50%);
+}
+
+.grid-tick-x::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  width: 2px;
+  height: 6px;
+  transform: translateX(-50%);
+  background: #9ca3af;
+}
+
+.grid-tick-y::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -9px;
+  width: 6px;
+  height: 2px;
+  transform: translateY(-50%);
+  background: #9ca3af;
+}
+
+.grid-subtick {
+  position: absolute;
+  pointer-events: none;
+  background: #cbd5e1;
+  z-index: 0;
+}
+
+.grid-subtick-x {
+  bottom: 3px;
+  width: 1px;
+  height: 3px;
+  transform: translateX(-50%);
+}
+
+.grid-subtick-y {
+  left: 3px;
+  width: 3px;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.grid-subtick-x.grid-subtick-mid {
+  height: 5px;
+}
+
+.grid-subtick-y.grid-subtick-mid {
+  width: 5px;
+}
+
+/* Top axis (mirrors bottom / Good) */
+.grid-tick-x-top {
+  bottom: auto;
+  top: 12px;
+}
+
+.grid-tick-x-top::before {
+  bottom: auto;
+  top: -9px;
+}
+
+.grid-subtick-x-top {
+  bottom: auto;
+  top: 3px;
+}
+
+/* Right axis (mirrors left / Fun) */
+.grid-tick-y-right {
+  left: auto;
+  right: 12px;
+}
+
+.grid-tick-y-right::before {
+  left: auto;
+  right: -9px;
+}
+
+.grid-subtick-y-right {
+  left: auto;
+  right: 3px;
+}
+
+/* Keep the "10" labels from sitting on top of the edge gridlines */
+.grid-tick-end-x {
+  transform: translateX(calc(-100% - 3px));
+}
+
+.grid-tick-end-y {
+  transform: translateY(3px);
+}
+
 .grid-axis-y {
   grid-column: 1;
   grid-row: 1;
