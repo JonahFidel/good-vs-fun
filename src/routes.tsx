@@ -2,6 +2,7 @@ import { SignIn, SignUp, useAuth } from '@clerk/clerk-react'
 import { Navigate, Route, Routes, generatePath, useParams } from 'react-router-dom'
 import { DecksPage } from './views/DecksPage'
 import { DeckPage } from './views/DeckPage'
+import { ComparePage } from './views/ComparePage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded } = useAuth()
@@ -49,6 +50,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <DecksPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/compare"
+        element={
+          <ProtectedRoute>
+            <ComparePage />
           </ProtectedRoute>
         }
       />

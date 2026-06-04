@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useApiFetch } from '../lib/api'
 import { formatScore, formatTitle, snapScoreToStep } from '../lib/format'
 import type { Movie } from '../lib/types'
+import { GridAxes } from '../components/GridAxes'
 
 type DragState = {
   type: 'group' | 'single'
@@ -614,101 +615,7 @@ export function DeckPage() {
           <div className="grid-axis grid-axis-y">Fun (0 → 10)</div>
           <div className="grid-axis grid-axis-x">Good (0 → 10)</div>
           <div className="grid" ref={gridRef}>
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-              <span
-                key={`tick-x-${value}`}
-                className={`grid-tick grid-tick-x${
-                  value === 10 ? ' grid-tick-end-x' : ''
-                }`}
-                style={{ left: `${value * 10}%` }}
-                aria-hidden="true"
-              >
-                {value}
-              </span>
-            ))}
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-              <span
-                key={`tick-y-${value}`}
-                className={`grid-tick grid-tick-y${
-                  value === 10 ? ' grid-tick-end-y' : ''
-                }`}
-                style={{ top: `${100 - value * 10}%` }}
-                aria-hidden="true"
-              >
-                {value}
-              </span>
-            ))}
-            {Array.from({ length: 99 }, (_, index) => (index + 1) / 10)
-              .filter((value) => Math.round(value * 10) % 10 !== 0)
-              .map((value) => (
-                <span
-                  key={`subtick-x-${value}`}
-                  className={`grid-subtick grid-subtick-x${
-                    Math.round(value * 10) % 5 === 0 ? ' grid-subtick-mid' : ''
-                  }`}
-                  style={{ left: `${value * 10}%` }}
-                  aria-hidden="true"
-                />
-              ))}
-            {Array.from({ length: 99 }, (_, index) => (index + 1) / 10)
-              .filter((value) => Math.round(value * 10) % 10 !== 0)
-              .map((value) => (
-                <span
-                  key={`subtick-y-${value}`}
-                  className={`grid-subtick grid-subtick-y${
-                    Math.round(value * 10) % 5 === 0 ? ' grid-subtick-mid' : ''
-                  }`}
-                  style={{ top: `${100 - value * 10}%` }}
-                  aria-hidden="true"
-                />
-              ))}
-            {/* Top axis stops at 9: the corner (10,10) is labeled by the right axis */}
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
-              <span
-                key={`tick-x-top-${value}`}
-                className="grid-tick grid-tick-x grid-tick-x-top"
-                style={{ left: `${value * 10}%` }}
-                aria-hidden="true"
-              >
-                {value}
-              </span>
-            ))}
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-              <span
-                key={`tick-y-right-${value}`}
-                className={`grid-tick grid-tick-y grid-tick-y-right${
-                  value === 10 ? ' grid-tick-end-y' : ''
-                }`}
-                style={{ top: `${100 - value * 10}%` }}
-                aria-hidden="true"
-              >
-                {value}
-              </span>
-            ))}
-            {Array.from({ length: 99 }, (_, index) => (index + 1) / 10)
-              .filter((value) => Math.round(value * 10) % 10 !== 0)
-              .map((value) => (
-                <span
-                  key={`subtick-x-top-${value}`}
-                  className={`grid-subtick grid-subtick-x grid-subtick-x-top${
-                    Math.round(value * 10) % 5 === 0 ? ' grid-subtick-mid' : ''
-                  }`}
-                  style={{ left: `${value * 10}%` }}
-                  aria-hidden="true"
-                />
-              ))}
-            {Array.from({ length: 99 }, (_, index) => (index + 1) / 10)
-              .filter((value) => Math.round(value * 10) % 10 !== 0)
-              .map((value) => (
-                <span
-                  key={`subtick-y-right-${value}`}
-                  className={`grid-subtick grid-subtick-y grid-subtick-y-right${
-                    Math.round(value * 10) % 5 === 0 ? ' grid-subtick-mid' : ''
-                  }`}
-                  style={{ top: `${100 - value * 10}%` }}
-                  aria-hidden="true"
-                />
-              ))}
+            <GridAxes />
             {groupedMovies.map((group) => {
               const left = (Math.min(10, Math.max(0, group.good)) / 10) * 100
               const top = 100 - (Math.min(10, Math.max(0, group.fun)) / 10) * 100
@@ -740,6 +647,9 @@ export function DeckPage() {
                         </span>
                       </span>
                     ))}
+                  </span>
+                  <span className="movie-point-score" aria-hidden="true">
+                    Good {formatScore(group.good)} · Fun {formatScore(group.fun)}
                   </span>
                 </div>
               )

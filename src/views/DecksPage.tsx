@@ -168,7 +168,9 @@ export function DecksPage() {
       <div className="deck-controls">
         <div>
           <h2>Decks</h2>
-          <p className="subhead">Create and manage your decks.</p>
+          <p className="subhead">
+            Create and manage your decks. <Link to="/compare">Compare two decks →</Link>
+          </p>
         </div>
 
         <form className="deck-form" onSubmit={handleCreateDeck}>

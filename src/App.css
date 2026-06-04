@@ -620,6 +620,31 @@
   z-index: 2;
 }
 
+/* Numeric score tooltip shown on hover (above the dot) */
+.movie-point .movie-point-score {
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(15, 23, 42, 0.92);
+  color: #ffffff;
+  padding: 0.15rem 0.45rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 3;
+}
+
+.movie-point:hover .movie-point-score,
+.movie-point.dragging .movie-point-score {
+  opacity: 1;
+}
+
 .movie-label {
   display: flex;
   flex-direction: column;
@@ -663,6 +688,89 @@
 /* Hide delete (×) buttons in the grid labels, keep them in the list */
 .movie-point .movie-delete {
   display: none;
+}
+
+/* Compare two decks */
+.compare-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.compare-controls .field {
+  flex: 1 1 200px;
+}
+
+.compare-swatch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.compare-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.compare-swatch-a {
+  background: #3b82f6;
+}
+
+.compare-swatch-b {
+  background: #ef4444;
+}
+
+.compare-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.compare-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.compare-point {
+  cursor: default;
+}
+
+.compare-point-a::after {
+  background: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
+}
+
+.compare-point-b::after {
+  background: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25);
+}
+
+.compare-point-a > span {
+  background: rgba(59, 130, 246, 0.92);
+}
+
+.compare-point-b > span {
+  background: rgba(239, 68, 68, 0.92);
+}
+
+.compare-point-a .movie-point-score {
+  background: rgba(59, 130, 246, 0.95);
+}
+
+.compare-point-b .movie-point-score {
+  background: rgba(239, 68, 68, 0.95);
+}
+
+/* Offset deck B labels to the right so the two decks' labels don't overlap */
+.compare-point-b > span {
+  left: auto;
+  right: 0;
+  transform: translate(calc(100% + 12px), -50%);
 }
 
 @media (max-width: 900px) {

@@ -12,6 +12,14 @@ export function NavBar() {
         >
           Decks
         </NavLink>
+        {isSignedIn && (
+          <NavLink
+            to="/compare"
+            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+          >
+            Compare
+          </NavLink>
+        )}
         {isSignedIn ? (
           <UserButton afterSignOutUrl="/" />
         ) : (
