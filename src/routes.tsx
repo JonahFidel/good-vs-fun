@@ -1,18 +1,20 @@
 import { SignIn, SignUp, useAuth } from '@clerk/clerk-react'
-import { Navigate, Route, Routes, generatePath, useParams } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes, generatePath, useParams } from 'react-router-dom'
+import { useIsHydrated } from './hooks/useIsHydrated'
 import { DecksPage } from './views/DecksPage'
 import { DeckPage } from './views/DeckPage'
-import { ComparePage } from './views/ComparePage'
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedLayout() {
+  const hydrated = useIsHydrated()
   const { isSignedIn, isLoaded } = useAuth()
-  if (!isLoaded) {
-    return <p className="status-line">Loading…</p>
+
+  if (!hydrated || !isLoaded) {
+    return <p className="status-line app-loading">Loading…</p>
   }
   if (!isSignedIn) {
     return <Navigate to="/sign-in" replace />
   }
-  return <>{children}</>
+  return <Outlet />
 }
 
 export function AppRoutes() {
@@ -45,41 +47,11 @@ export function AppRoutes() {
           </div>
         }
       />
-      <Route
-        path="/decks"
-        element={
-          <ProtectedRoute>
-            <DecksPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/compare"
-        element={
-          <ProtectedRoute>
-            <ComparePage />
-          </ProtectedRoute>
-        }
-      />
-      {/* canonical deck-movies route */}
-      <Route
-        path="/deck/:deckId/movies"
-        element={
-          <ProtectedRoute>
-            <DeckPage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* backwards compat redirects */}
-      <Route
-        path="/decks/:deckId"
-        element={
-          <ProtectedRoute>
-            <LegacyDeckRedirect />
-          </ProtectedRoute>
-        }
-      />
+      <Route element={<ProtectedLayout />}>
+        <Route path="/decks" element={<DecksPage />} />
+        <Route path="/deck/:deckId/movies" element={<DeckPage />} />
+        <Route path="/decks/:deckId" element={<LegacyDeckRedirect />} />
+      </Route>
       <Route path="*" element={<Navigate to="/decks" replace />} />
     </Routes>
   )
@@ -93,4 +65,3 @@ function LegacyDeckRedirect() {
   const id = typeof deckId === 'string' ? deckId : ''
   return <Navigate to={generatePath('/deck/:deckId/movies', { deckId: id })} replace />
 }
-

@@ -169,7 +169,7 @@ export function DecksPage() {
         <div>
           <h2>Decks</h2>
           <p className="subhead">
-            Create and manage your decks. <Link to="/compare">Compare two decks →</Link>
+            Create and manage your decks. Open a deck to compare it with another as a read-only ghost overlay.
           </p>
         </div>
 

@@ -1,8 +1,15 @@
+// The grid element is a –2..12 canvas (14 units). All ticks for values 1–10 are
+// positioned at ((value + 2) / 14) * 100% so they land inside the .grid::before
+// scoring region. The canvas shows 2 units of empty space on every side.
+
 const MAJOR_TICKS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 const MINOR_TICKS = Array.from({ length: 99 }, (_, index) => (index + 1) / 10).filter(
   (value) => Math.round(value * 10) % 10 !== 0,
 )
+
+const pct = (value: number) => `${((value + 2) / 14) * 100}%`
+const pctInv = (value: number) => `${100 - ((value + 2) / 14) * 100}%`
 
 /**
  * Renders the numeric labels and ruler tick marks around all four edges of the
@@ -16,7 +23,7 @@ export function GridAxes() {
         <span
           key={`tick-x-${value}`}
           className={`grid-tick grid-tick-x${value === 10 ? ' grid-tick-end-x' : ''}`}
-          style={{ left: `${value * 10}%` }}
+          style={{ left: pct(value) }}
           aria-hidden="true"
         >
           {value}
@@ -26,7 +33,7 @@ export function GridAxes() {
         <span
           key={`tick-y-${value}`}
           className={`grid-tick grid-tick-y${value === 10 ? ' grid-tick-end-y' : ''}`}
-          style={{ top: `${100 - value * 10}%` }}
+          style={{ top: pctInv(value) }}
           aria-hidden="true"
         >
           {value}
@@ -38,7 +45,7 @@ export function GridAxes() {
           className={`grid-subtick grid-subtick-x${
             Math.round(value * 10) % 5 === 0 ? ' grid-subtick-mid' : ''
           }`}
-          style={{ left: `${value * 10}%` }}
+          style={{ left: pct(value) }}
           aria-hidden="true"
         />
       ))}
@@ -48,16 +55,16 @@ export function GridAxes() {
           className={`grid-subtick grid-subtick-y${
             Math.round(value * 10) % 5 === 0 ? ' grid-subtick-mid' : ''
           }`}
-          style={{ top: `${100 - value * 10}%` }}
+          style={{ top: pctInv(value) }}
           aria-hidden="true"
         />
       ))}
-      {/* Top axis stops at 9: the corner (10,10) is labeled by the right axis */}
+      {/* Top axis — stops at 9; value-10 corner is covered by the right axis */}
       {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
         <span
           key={`tick-x-top-${value}`}
           className="grid-tick grid-tick-x grid-tick-x-top"
-          style={{ left: `${value * 10}%` }}
+          style={{ left: pct(value) }}
           aria-hidden="true"
         >
           {value}
@@ -69,7 +76,7 @@ export function GridAxes() {
           className={`grid-tick grid-tick-y grid-tick-y-right${
             value === 10 ? ' grid-tick-end-y' : ''
           }`}
-          style={{ top: `${100 - value * 10}%` }}
+          style={{ top: pctInv(value) }}
           aria-hidden="true"
         >
           {value}
@@ -81,7 +88,7 @@ export function GridAxes() {
           className={`grid-subtick grid-subtick-x grid-subtick-x-top${
             Math.round(value * 10) % 5 === 0 ? ' grid-subtick-mid' : ''
           }`}
-          style={{ left: `${value * 10}%` }}
+          style={{ left: pct(value) }}
           aria-hidden="true"
         />
       ))}
@@ -91,7 +98,7 @@ export function GridAxes() {
           className={`grid-subtick grid-subtick-y grid-subtick-y-right${
             Math.round(value * 10) % 5 === 0 ? ' grid-subtick-mid' : ''
           }`}
-          style={{ top: `${100 - value * 10}%` }}
+          style={{ top: pctInv(value) }}
           aria-hidden="true"
         />
       ))}

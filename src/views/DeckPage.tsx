@@ -1,9 +1,64 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApiFetch } from '../lib/api'
 import { formatScore, formatTitle, snapScoreToStep } from '../lib/format'
-import type { Movie } from '../lib/types'
+import type { Deck, Movie } from '../lib/types'
 import { GridAxes } from '../components/GridAxes'
+import { PlotGridZoom } from '../components/PlotGridZoom'
+
+// ── Ghost-deck helpers ────────────────────────────────────────────────────────
+
+type PositionGroup = {
+  key: string
+  fun: number
+  good: number
+  titles: string[]
+}
+
+function groupByPosition(movies: Movie[]): PositionGroup[] {
+  const groups = new Map<string, PositionGroup>()
+  movies.forEach((m) => {
+    const fun = snapScoreToStep(m.fun)
+    const good = snapScoreToStep(m.good)
+    const key = `${fun.toFixed(2)}-${good.toFixed(2)}`
+    const existing = groups.get(key)
+    if (existing) {
+      existing.titles.push(m.title)
+    } else {
+      groups.set(key, { key, fun, good, titles: [m.title] })
+    }
+  })
+  return Array.from(groups.values()).map((g) => ({
+    ...g,
+    titles: g.titles.sort((a, b) => a.localeCompare(b)),
+  }))
+}
+
+function GhostPoints({ groups }: { groups: PositionGroup[] }) {
+  return (
+    <>
+      {groups.map((group) => {
+        const left = ((Math.min(10, Math.max(0, group.good)) + 2) / 14) * 100
+        const top = 100 - ((Math.min(10, Math.max(0, group.fun)) + 2) / 14) * 100
+        return (
+          <div
+            key={`ghost-${group.key}`}
+            className="movie-point ghost-point"
+            style={{ left: `${left}%`, top: `${top}%` }}
+          >
+            <span className="movie-label">
+              {group.titles.map((title) => (
+                <span key={title} className="movie-label-line">
+                  <span className="movie-label-title">{title}</span>
+                </span>
+              ))}
+            </span>
+          </div>
+        )
+      })}
+    </>
+  )
+}
 
 type DragState = {
   type: 'group' | 'single'
@@ -15,7 +70,10 @@ type DragState = {
 export function DeckPage() {
   const { deckId } = useParams()
   const apiFetch = useApiFetch()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const resolvedDeckId = typeof deckId === 'string' ? deckId : null
+  const ghostDeckId = searchParams.get('ghost') ?? ''
 
   const [deckName, setDeckName] = useState<string>('')
   const [deckMovies, setDeckMovies] = useState<Movie[]>([])
@@ -25,6 +83,11 @@ export function DeckPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [movieSort, setMovieSort] = useState<'title' | 'fun' | 'good'>('title')
+
+  // Ghost deck state
+  const [allDecks, setAllDecks] = useState<Deck[]>([])
+  const [ghostMovies, setGhostMovies] = useState<Movie[]>([])
+  const [ghostDeckName, setGhostDeckName] = useState('')
 
   const [draggingGroup, setDraggingGroup] = useState<DragState | null>(null)
   const [pendingMovieDrag, setPendingMovieDrag] = useState<{
@@ -75,6 +138,59 @@ export function DeckPage() {
       isActive = false
     }
   }, [resolvedDeckId, apiFetch])
+
+  // Load all decks for the ghost selector
+  useEffect(() => {
+    let isActive = true
+    apiFetch('/api/decks')
+      .then((data) => {
+        if (isActive) setAllDecks((data?.decks ?? []) as Deck[])
+      })
+      .catch(() => {})
+    return () => {
+      isActive = false
+    }
+  }, [apiFetch])
+
+  // Load ghost deck movies whenever the ghost ID changes
+  useEffect(() => {
+    if (!ghostDeckId) {
+      setGhostMovies([])
+      setGhostDeckName('')
+      return
+    }
+    let isActive = true
+    apiFetch(`/api/decks/${ghostDeckId}`)
+      .then((data) => {
+        if (isActive) {
+          setGhostMovies((data?.movies ?? []) as Movie[])
+          setGhostDeckName(String(data?.deck?.name ?? ''))
+        }
+      })
+      .catch(() => {})
+    return () => {
+      isActive = false
+    }
+  }, [ghostDeckId, apiFetch])
+
+  const ghostGroups = useMemo(() => groupByPosition(ghostMovies), [ghostMovies])
+  const otherDecks = useMemo(
+    () => allDecks.filter((d) => d.id !== resolvedDeckId),
+    [allDecks, resolvedDeckId],
+  )
+
+  function handleSetGhostDeck(id: string) {
+    if (id) {
+      setSearchParams({ ghost: id }, { replace: true })
+    } else {
+      setSearchParams({}, { replace: true })
+    }
+  }
+
+  function handleSwapDecks() {
+    if (!resolvedDeckId || !ghostDeckId) return
+    navigate(`/deck/${ghostDeckId}/movies?ghost=${resolvedDeckId}`)
+  }
 
   const sortedMovies = useMemo(() => {
     const nextMovies = [...deckMovies]
@@ -309,8 +425,8 @@ export function DeckPage() {
       // Otherwise, snap to the step grid where you released (inside the grid).
       const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width)
       const clampedY = Math.min(Math.max(clientY - rect.top, 0), rect.height)
-      const good = snapScoreToStep((clampedX / rect.width) * 10)
-      const fun = snapScoreToStep((1 - clampedY / rect.height) * 10)
+      const good = snapScoreToStep((clampedX / rect.width) * 14 - 2)
+      const fun = snapScoreToStep((1 - clampedY / rect.height) * 14 - 2)
       return { fun, good }
     },
     [],
@@ -338,8 +454,8 @@ export function DeckPage() {
 
       const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width)
       const clampedY = Math.min(Math.max(clientY - rect.top, 0), rect.height)
-      const nextGood = snapScoreToStep((clampedX / rect.width) * 10)
-      const nextFun = snapScoreToStep((1 - clampedY / rect.height) * 10)
+      const nextGood = snapScoreToStep((clampedX / rect.width) * 14 - 2)
+      const nextFun = snapScoreToStep((1 - clampedY / rect.height) * 14 - 2)
       applyMovieScores(dragging.ids, nextFun, nextGood)
     },
     [applyMovieScores],
@@ -587,7 +703,7 @@ export function DeckPage() {
             {sortedMovies.map((movie) => (
               <li key={movie.id} onPointerDown={handleMovieListPointerDown(movie.id)}>
                 <div className="movie-list-title">
-                  <strong>{movie.title}</strong>
+                  <strong title={movie.title}>{movie.title}</strong>
                   <button
                     type="button"
                     className="movie-delete"
@@ -597,8 +713,8 @@ export function DeckPage() {
                     ×
                   </button>
                 </div>
-                <span>
-                  Fun {formatScore(movie.fun)}/10, Good {formatScore(movie.good)}/10
+                <span className="movie-list-scores">
+                  F {formatScore(movie.fun)} · G {formatScore(movie.good)}
                 </span>
               </li>
             ))}
@@ -608,17 +724,63 @@ export function DeckPage() {
 
       <section className="grid-panel">
         <div className="grid-header">
-          <h2>{deckName ? `${deckName}` : 'Good vs. Fun'}</h2>
-          <p>Higher is better. Everything stays in the positive quadrant.</p>
+          <div className="grid-header-main">
+            <div>
+              <h2>{deckName ? `${deckName}` : 'Good vs. Fun'}</h2>
+              <p>Higher is better. Everything stays in the positive quadrant.</p>
+            </div>
+            {otherDecks.length > 0 && (
+              <div className="ghost-compare-section ghost-compare-section--inline">
+                <label className="ghost-compare-label" htmlFor="ghost-deck-select">
+                  Compare with
+                </label>
+                <div className="ghost-compare-row">
+                  <select
+                    id="ghost-deck-select"
+                    value={ghostDeckId}
+                    onChange={(e) => handleSetGhostDeck(e.target.value)}
+                  >
+                    <option value="">None</option>
+                    {otherDecks.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                  {ghostDeckId && (
+                    <button type="button" className="btn-swap" onClick={handleSwapDecks}>
+                      ⇄ Swap primary
+                    </button>
+                  )}
+                </div>
+                <p className="ghost-compare-hint">
+                  Ghost deck is view-only on the grid — edit the primary deck, then swap if needed.
+                </p>
+              </div>
+            )}
+          </div>
+          {ghostDeckId && (
+            <div className="ghost-legend">
+              <span className="ghost-legend-item">
+                <span className="ghost-swatch ghost-swatch-primary" />
+                {deckName} (primary, editable)
+              </span>
+              <span className="ghost-legend-item">
+                <span className="ghost-swatch ghost-swatch-ghost" />
+                {ghostDeckName || '…'} (ghost, read-only)
+              </span>
+            </div>
+          )}
         </div>
         <div className="grid-wrapper">
-          <div className="grid-axis grid-axis-y">Fun (0 → 10)</div>
-          <div className="grid-axis grid-axis-x">Good (0 → 10)</div>
-          <div className="grid" ref={gridRef}>
+          <div className="grid-axis grid-axis-y">Fun</div>
+          <div className="grid-axis grid-axis-x">Good</div>
+          <PlotGridZoom ref={gridRef}>
             <GridAxes />
+            {ghostDeckId && <GhostPoints groups={ghostGroups} />}
             {groupedMovies.map((group) => {
-              const left = (Math.min(10, Math.max(0, group.good)) / 10) * 100
-              const top = 100 - (Math.min(10, Math.max(0, group.fun)) / 10) * 100
+              const left = ((Math.min(10, Math.max(0, group.good)) + 2) / 14) * 100
+              const top = 100 - ((Math.min(10, Math.max(0, group.fun)) + 2) / 14) * 100
               const key = group.key
               const isDragging = draggingGroup?.type === 'group' && draggingGroup.key === key
 
@@ -654,7 +816,7 @@ export function DeckPage() {
                 </div>
               )
             })}
-          </div>
+          </PlotGridZoom>
         </div>
       </section>
     </>
