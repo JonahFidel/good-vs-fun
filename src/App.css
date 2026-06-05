@@ -1024,6 +1024,36 @@
   border-color: #9ca3af;
 }
 
+.grid-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.btn-undo {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+}
+
+.btn-undo:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btn-undo:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* Legend in grid header */
 .ghost-legend {
   display: flex;

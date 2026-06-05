@@ -68,6 +68,12 @@ type DragState = {
   origin: 'grid' | 'list'
 }
 
+type MoviePosition = {
+  id: string
+  fun: number
+  good: number
+}
+
 export function DeckPage() {
   const { deckId } = useParams()
   const apiFetch = useApiFetch()
@@ -92,6 +98,8 @@ export function DeckPage() {
   const [ghostDeckName, setGhostDeckName] = useState('')
 
   const [draggingGroup, setDraggingGroup] = useState<DragState | null>(null)
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
   const [pendingMovieDrag, setPendingMovieDrag] = useState<{
     id: string
     x: number
@@ -103,6 +111,10 @@ export function DeckPage() {
   const moviesRef = useRef<Movie[]>([])
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null)
   const lastInGridPointerRef = useRef<{ x: number; y: number } | null>(null)
+  const dragStartSnapshotRef = useRef<MoviePosition[] | null>(null)
+  const lastMoveRef = useRef<{ before: MoviePosition[]; after: MoviePosition[] } | null>(
+    null,
+  )
 
   useEffect(() => {
     moviesRef.current = deckMovies
@@ -141,6 +153,13 @@ export function DeckPage() {
       isActive = false
     }
   }, [resolvedDeckId, apiFetch])
+
+  useEffect(() => {
+    dragStartSnapshotRef.current = null
+    lastMoveRef.current = null
+    setCanUndo(false)
+    setCanRedo(false)
+  }, [resolvedDeckId])
 
   // Load all decks for the ghost selector
   useEffect(() => {
@@ -249,13 +268,20 @@ export function DeckPage() {
     }))
   }, [deckMovies])
 
+  const captureDragSnapshot = useCallback((ids: string[]) => {
+    const idSet = new Set(ids)
+    dragStartSnapshotRef.current = moviesRef.current
+      .filter((movie) => idSet.has(movie.id))
+      .map((movie) => ({ id: movie.id, fun: movie.fun, good: movie.good }))
+  }, [])
+
   const applyMovieScores = useCallback((ids: string[], fun: number, good: number) => {
     const nextFun = snapScoreToStep(fun)
     const nextGood = snapScoreToStep(good)
     const idSet = new Set(ids)
 
-    setDeckMovies((current) =>
-      current.map((movie) =>
+    setDeckMovies((current) => {
+      const next = current.map((movie) =>
         idSet.has(movie.id)
           ? {
               ...movie,
@@ -263,9 +289,110 @@ export function DeckPage() {
               good: nextGood,
             }
           : movie,
-      ),
-    )
+      )
+      moviesRef.current = next
+      return next
+    })
   }, [])
+
+  const recordUndoIfChanged = useCallback(() => {
+    const before = dragStartSnapshotRef.current
+    dragStartSnapshotRef.current = null
+    if (!before || before.length === 0) {
+      return
+    }
+
+    const changed = before.some((entry) => {
+      const movie = moviesRef.current.find((item) => item.id === entry.id)
+      if (!movie) {
+        return false
+      }
+      return (
+        snapScoreToStep(movie.fun) !== snapScoreToStep(entry.fun) ||
+        snapScoreToStep(movie.good) !== snapScoreToStep(entry.good)
+      )
+    })
+
+    if (!changed) {
+      return
+    }
+
+    const after = before.map((entry) => {
+      const movie = moviesRef.current.find((item) => item.id === entry.id)
+      return movie
+        ? { id: movie.id, fun: movie.fun, good: movie.good }
+        : entry
+    })
+
+    lastMoveRef.current = { before, after }
+    setCanUndo(true)
+    setCanRedo(false)
+  }, [])
+
+  const applyPositions = useCallback(
+    async (positions: MoviePosition[], errorMessage: string) => {
+      if (!resolvedDeckId || isExampleDeck) {
+        return false
+      }
+
+      setError(null)
+      setDeckMovies((current) => {
+        const next = current.map((movie) => {
+          const update = positions.find((item) => item.id === movie.id)
+          return update ? { ...movie, fun: update.fun, good: update.good } : movie
+        })
+        moviesRef.current = next
+        return next
+      })
+
+      try {
+        await Promise.all(
+          positions.map((movie) => {
+            const current = moviesRef.current.find((item) => item.id === movie.id)
+            return apiFetch(`/api/decks/${resolvedDeckId}/movies/${movie.id}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                fun: movie.fun,
+                good: movie.good,
+                title: current?.title ?? '',
+              }),
+            })
+          }),
+        )
+        return true
+      } catch {
+        setError(errorMessage)
+        return false
+      }
+    },
+    [apiFetch, isExampleDeck, resolvedDeckId],
+  )
+
+  const handleUndo = useCallback(async () => {
+    const entry = lastMoveRef.current
+    if (!entry || !canUndo) {
+      return
+    }
+
+    const ok = await applyPositions(entry.before, 'Failed to undo move.')
+    if (ok) {
+      setCanUndo(false)
+      setCanRedo(true)
+    }
+  }, [applyPositions, canUndo])
+
+  const handleRedo = useCallback(async () => {
+    const entry = lastMoveRef.current
+    if (!entry || !canRedo) {
+      return
+    }
+
+    const ok = await applyPositions(entry.after, 'Failed to redo move.')
+    if (ok) {
+      setCanUndo(true)
+      setCanRedo(false)
+    }
+  }, [applyPositions, canRedo])
 
   const persistMoviePositions = useCallback(
     async (ids: string[], override?: { fun: number; good: number }) => {
@@ -470,6 +597,7 @@ export function DeckPage() {
         return
       }
       event.preventDefault()
+      captureDragSnapshot(ids)
       const drag: DragState = { type: 'group', key, ids, origin: 'grid' }
       setDraggingGroup(drag)
       lastPointerRef.current = { x: event.clientX, y: event.clientY }
@@ -480,6 +608,7 @@ export function DeckPage() {
     (id: string) => (event: React.PointerEvent<HTMLSpanElement>) => {
       event.preventDefault()
       event.stopPropagation()
+      captureDragSnapshot([id])
       const drag: DragState = { type: 'single', key: id, ids: [id], origin: 'grid' }
       setDraggingGroup(drag)
       lastPointerRef.current = { x: event.clientX, y: event.clientY }
@@ -524,6 +653,7 @@ export function DeckPage() {
         ids: [pendingMovieDrag.id],
         origin: 'list',
       }
+      captureDragSnapshot(drag.ids)
       setPendingMovieDrag(null)
       setDraggingGroup(drag)
       lastPointerRef.current = { x: event.clientX, y: event.clientY }
@@ -541,7 +671,7 @@ export function DeckPage() {
       window.removeEventListener('pointerup', handlePointerUp)
       window.removeEventListener('pointercancel', handlePointerUp)
     }
-  }, [pendingMovieDrag, updateMoviePosition])
+  }, [captureDragSnapshot, pendingMovieDrag, updateMoviePosition])
 
   useEffect(() => {
     if (!draggingGroup) {
@@ -577,6 +707,7 @@ export function DeckPage() {
 
       // If you dragged from the list but never entered the grid: no change.
       if (draggingGroup.origin === 'list' && !last) {
+        dragStartSnapshotRef.current = null
         setDraggingGroup(null)
         return
       }
@@ -588,6 +719,7 @@ export function DeckPage() {
       } else {
         persistMoviePositions(draggingGroup.ids)
       }
+      recordUndoIfChanged()
       setDraggingGroup(null)
       lastInGridPointerRef.current = null
     }
@@ -601,7 +733,53 @@ export function DeckPage() {
       window.removeEventListener('pointerup', handlePointerUp)
       window.removeEventListener('pointercancel', handlePointerUp)
     }
-  }, [applyMovieScores, draggingGroup, findSnapTarget, persistMoviePositions, updateMoviePosition])
+  }, [
+    applyMovieScores,
+    draggingGroup,
+    findSnapTarget,
+    persistMoviePositions,
+    recordUndoIfChanged,
+    updateMoviePosition,
+  ])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z') {
+        return
+      }
+      const target = event.target
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT')
+      ) {
+        return
+      }
+      if (isExampleDeck) {
+        return
+      }
+
+      if (event.shiftKey) {
+        if (!canRedo) {
+          return
+        }
+        event.preventDefault()
+        void handleRedo()
+        return
+      }
+
+      if (!canUndo) {
+        return
+      }
+      event.preventDefault()
+      void handleUndo()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [canRedo, canUndo, handleRedo, handleUndo, isExampleDeck])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -635,6 +813,28 @@ export function DeckPage() {
   return (
     <div className="deck-page-layout">
       <section className="grid-panel">
+        {!isExampleDeck && (
+          <div className="grid-toolbar">
+            <button
+              type="button"
+              className="btn-undo"
+              onClick={() => void handleUndo()}
+              disabled={!canUndo}
+              title="Undo last move (⌘Z)"
+            >
+              ↩ Undo
+            </button>
+            <button
+              type="button"
+              className="btn-undo"
+              onClick={() => void handleRedo()}
+              disabled={!canRedo}
+              title="Redo last move (⌘⇧Z)"
+            >
+              ↪ Redo
+            </button>
+          </div>
+        )}
         <div className="grid-wrapper">
           <div className="grid-axis grid-axis-y">Fun</div>
           <div className="grid-axis grid-axis-x">Good</div>
