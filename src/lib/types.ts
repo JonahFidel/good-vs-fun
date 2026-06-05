@@ -4,6 +4,7 @@ export type Deck = {
   createdAt: string
   updatedAt: string
   movieCount?: number
+  isExample?: boolean
 }
 
 export type Movie = {

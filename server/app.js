@@ -7,6 +7,13 @@ import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { clerkMiddleware, getAuth } from '@clerk/express'
 import { db, dbInfo } from './db.js'
+import { EXAMPLE_DECKS } from './exampleDecks.js'
+
+const exampleDeckById = new Map(EXAMPLE_DECKS.map((deck) => [deck.id, deck]))
+
+const getExampleDeck = (deckId) => exampleDeckById.get(deckId) ?? null
+
+const isExampleDeckId = (deckId) => exampleDeckById.has(deckId)
 
 export const app = express()
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -173,15 +180,25 @@ app.get('/api/decks', requireAuth, asyncHandler(async (req, res) => {
     args: [ownerId],
   })
 
-  res.json({
-    decks: result.rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      movieCount: Number(row.movie_count ?? 0),
-    })),
-  })
+  const userDecks = result.rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    movieCount: Number(row.movie_count ?? 0),
+    isExample: false,
+  }))
+
+  const exampleDecks = EXAMPLE_DECKS.map((deck) => ({
+    id: deck.id,
+    name: deck.name,
+    createdAt: deck.createdAt,
+    updatedAt: deck.updatedAt,
+    movieCount: deck.movies.length,
+    isExample: true,
+  }))
+
+  res.json({ decks: [...exampleDecks, ...userDecks] })
 }))
 
 app.post('/api/decks', requireAuth, asyncHandler(async (req, res) => {
@@ -208,6 +225,20 @@ app.post('/api/decks', requireAuth, asyncHandler(async (req, res) => {
 
 app.get('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
+  const exampleDeck = getExampleDeck(deckId)
+  if (exampleDeck) {
+    return res.json({
+      deck: {
+        id: exampleDeck.id,
+        name: exampleDeck.name,
+        createdAt: exampleDeck.createdAt,
+        updatedAt: exampleDeck.updatedAt,
+        isExample: true,
+      },
+      movies: exampleDeck.movies,
+    })
+  }
+
   const ownerId = req.userId
   const deckResult = await db.execute({
     sql: 'SELECT id, name, created_at, updated_at FROM decks WHERE id = ? AND owner_id = ?',
@@ -254,6 +285,9 @@ app.get('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
 
 app.put('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
+  if (isExampleDeckId(deckId)) {
+    return respondError(res, 403, 'Example decks cannot be edited.')
+  }
   const ownerId = req.userId
   const name = formatTitle(
     typeof req.body?.name === 'string' ? req.body.name.trim() : '',
@@ -278,6 +312,9 @@ app.put('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
 
 app.delete('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
+  if (isExampleDeckId(deckId)) {
+    return respondError(res, 403, 'Example decks cannot be deleted.')
+  }
   const ownerId = req.userId
   if (!(await ensureDeckExists(deckId, ownerId))) {
     return respondError(res, 404, 'Deck not found.')
@@ -300,6 +337,9 @@ app.delete('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
 
 app.post('/api/decks/:deckId/movies', requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
+  if (isExampleDeckId(deckId)) {
+    return respondError(res, 403, 'Example decks cannot be edited.')
+  }
   const ownerId = req.userId
   const title = typeof req.body?.title === 'string' ? req.body.title.trim() : ''
   const fun = Number(req.body?.fun)
@@ -337,6 +377,9 @@ app.post('/api/decks/:deckId/movies', requireAuth, asyncHandler(async (req, res)
 
 app.put('/api/decks/:deckId/movies/:movieId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId, movieId } = req.params
+  if (isExampleDeckId(deckId)) {
+    return respondError(res, 403, 'Example decks cannot be edited.')
+  }
   const ownerId = req.userId
   const title = typeof req.body?.title === 'string' ? req.body.title.trim() : null
   const fun = Number(req.body?.fun)
@@ -366,6 +409,9 @@ app.put('/api/decks/:deckId/movies/:movieId', requireAuth, asyncHandler(async (r
 
 app.delete('/api/decks/:deckId/movies/:movieId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId, movieId } = req.params
+  if (isExampleDeckId(deckId)) {
+    return respondError(res, 403, 'Example decks cannot be edited.')
+  }
   const ownerId = req.userId
   if (!(await ensureDeckExists(deckId, ownerId))) {
     return respondError(res, 404, 'Deck not found.')

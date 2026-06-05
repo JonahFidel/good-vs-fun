@@ -76,6 +76,7 @@ export function DeckPage() {
   const ghostDeckId = searchParams.get('ghost') ?? ''
 
   const [deckName, setDeckName] = useState<string>('')
+  const [isExampleDeck, setIsExampleDeck] = useState(false)
   const [deckMovies, setDeckMovies] = useState<Movie[]>([])
   const [title, setTitle] = useState('')
   const [fun, setFun] = useState(7)
@@ -121,6 +122,7 @@ export function DeckPage() {
           return
         }
         setDeckName(String(data?.deck?.name ?? ''))
+        setIsExampleDeck(Boolean(data?.deck?.isExample))
         setDeckMovies((data?.movies ?? []) as Movie[])
       })
       .catch(() => {
@@ -266,7 +268,7 @@ export function DeckPage() {
 
   const persistMoviePositions = useCallback(
     async (ids: string[], override?: { fun: number; good: number }) => {
-      if (!resolvedDeckId) {
+      if (!resolvedDeckId || isExampleDeck) {
         return
       }
 
@@ -290,11 +292,11 @@ export function DeckPage() {
         setError('Failed to save movie positions.')
       }
     },
-    [resolvedDeckId, apiFetch],
+    [resolvedDeckId, apiFetch, isExampleDeck],
   )
 
   const removeMovie = async (id: string) => {
-    if (!resolvedDeckId) {
+    if (!resolvedDeckId || isExampleDeck) {
       return
     }
 
@@ -603,7 +605,7 @@ export function DeckPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmedTitle = title.trim()
-    if (!trimmedTitle || !resolvedDeckId) {
+    if (!trimmedTitle || !resolvedDeckId || isExampleDeck) {
       return
     }
 
@@ -634,8 +636,11 @@ export function DeckPage() {
       <div className="panel">
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
-            <p className="eyebrow">Deck</p>
-            <h2 style={{ margin: 0 }}>{deckName || 'Loading…'}</h2>
+            <p className="eyebrow">{isExampleDeck ? 'Example deck' : 'Deck'}</p>
+            <h2 style={{ margin: 0 }}>
+              {deckName || 'Loading…'}
+              {isExampleDeck && <span className="deck-example-badge">Example</span>}
+            </h2>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             <Link to="/decks">← Back to decks</Link>
@@ -645,42 +650,46 @@ export function DeckPage() {
         {error && <p className="error-banner">{error}</p>}
         {loading && <p className="status-line">Syncing changes…</p>}
 
-        <h2>Add a movie</h2>
-        <form className="movie-form" onSubmit={handleSubmit}>
-          <label className="field">
-            <span>Movie title</span>
-            <input
-              type="text"
-              placeholder="e.g. Jurassic Park"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              required
-            />
-          </label>
-          <label className="field">
-            <span>Fun (0–10)</span>
-            <input
-              type="number"
-              min={0}
-              max={10}
-              step={0.01}
-              value={fun}
-              onChange={(event) => setFun(Number(event.target.value))}
-            />
-          </label>
-          <label className="field">
-            <span>Good (0–10)</span>
-            <input
-              type="number"
-              min={0}
-              max={10}
-              step={0.01}
-              value={good}
-              onChange={(event) => setGood(Number(event.target.value))}
-            />
-          </label>
-          <button type="submit">Add movie</button>
-        </form>
+        {!isExampleDeck && (
+          <>
+            <h2>Add a movie</h2>
+            <form className="movie-form" onSubmit={handleSubmit}>
+              <label className="field">
+                <span>Movie title</span>
+                <input
+                  type="text"
+                  placeholder="e.g. Jurassic Park"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>Fun (0–10)</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={10}
+                  step={0.01}
+                  value={fun}
+                  onChange={(event) => setFun(Number(event.target.value))}
+                />
+              </label>
+              <label className="field">
+                <span>Good (0–10)</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={10}
+                  step={0.01}
+                  value={good}
+                  onChange={(event) => setGood(Number(event.target.value))}
+                />
+              </label>
+              <button type="submit">Add movie</button>
+            </form>
+          </>
+        )}
 
         <div className="movie-list">
           <div className="movie-list-header">
@@ -701,17 +710,24 @@ export function DeckPage() {
           </div>
           <ul>
             {sortedMovies.map((movie) => (
-              <li key={movie.id} onPointerDown={handleMovieListPointerDown(movie.id)}>
+              <li
+                key={movie.id}
+                onPointerDown={
+                  isExampleDeck ? undefined : handleMovieListPointerDown(movie.id)
+                }
+              >
                 <div className="movie-list-title">
                   <strong title={movie.title}>{movie.title}</strong>
-                  <button
-                    type="button"
-                    className="movie-delete"
-                    aria-label={`Remove ${movie.title}`}
-                    onClick={() => removeMovie(movie.id)}
-                  >
-                    ×
-                  </button>
+                  {!isExampleDeck && (
+                    <button
+                      type="button"
+                      className="movie-delete"
+                      aria-label={`Remove ${movie.title}`}
+                      onClick={() => removeMovie(movie.id)}
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
                 <span className="movie-list-scores">
                   F {formatScore(movie.fun)} · G {formatScore(movie.good)}
@@ -763,7 +779,7 @@ export function DeckPage() {
             <div className="ghost-legend">
               <span className="ghost-legend-item">
                 <span className="ghost-swatch ghost-swatch-primary" />
-                {deckName} (primary, editable)
+                {deckName} (primary{isExampleDeck ? ', read-only' : ', editable'})
               </span>
               <span className="ghost-legend-item">
                 <span className="ghost-swatch ghost-swatch-ghost" />
@@ -789,7 +805,9 @@ export function DeckPage() {
                   key={key}
                   className={`movie-point${isDragging ? ' dragging' : ''}`}
                   style={{ left: `${left}%`, top: `${top}%` }}
-                  onPointerDown={handlePointerDown(key, group.ids)}
+                  onPointerDown={
+                    isExampleDeck ? undefined : handlePointerDown(key, group.ids)
+                  }
                   data-group-key={key}
                 >
                   <span
@@ -803,7 +821,9 @@ export function DeckPage() {
                         <span
                           className="movie-label-title"
                           data-movie-id={item.id}
-                          onPointerDownCapture={handleLabelPointerDown(item.id)}
+                          onPointerDownCapture={
+                            isExampleDeck ? undefined : handleLabelPointerDown(item.id)
+                          }
                         >
                           {item.title}
                         </span>

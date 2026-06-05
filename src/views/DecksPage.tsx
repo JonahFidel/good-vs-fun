@@ -169,7 +169,7 @@ export function DecksPage() {
         <div>
           <h2>Decks</h2>
           <p className="subhead">
-            Create and manage your decks. Open a deck to compare it with another as a read-only ghost overlay.
+            Create and manage your decks, or explore the example 2025 and 2026 decks. Open a deck to compare it with another as a read-only ghost overlay.
           </p>
         </div>
 
@@ -213,8 +213,11 @@ export function DecksPage() {
               ]
                 .filter(Boolean)
                 .join(' ')}
-              draggable
+              draggable={!deck.isExample}
               onDragStart={(event) => {
+                if (deck.isExample) {
+                  return
+                }
                 ensureManualDeckOrder()
                 setDraggingDeckId(deck.id)
                 event.dataTransfer.effectAllowed = 'move'
@@ -244,23 +247,28 @@ export function DecksPage() {
               }}
             >
               <Link className="deck-select" to={`/deck/${deck.id}/movies`}>
-                <span>{deck.name}</span>
+                <span>
+                  {deck.name}
+                  {deck.isExample && <span className="deck-example-badge">Example</span>}
+                </span>
                 <span className="deck-meta">
                   {(deck.movieCount ?? 0).toString()} films
                 </span>
               </Link>
-              <div className="deck-actions">
-                <button type="button" onClick={() => handleRenameDeck(deck)}>
-                  Rename
-                </button>
-                <button
-                  type="button"
-                  className="deck-action-delete"
-                  onClick={() => handleDeleteDeck(deck)}
-                >
-                  Delete
-                </button>
-              </div>
+              {!deck.isExample && (
+                <div className="deck-actions">
+                  <button type="button" onClick={() => handleRenameDeck(deck)}>
+                    Rename
+                  </button>
+                  <button
+                    type="button"
+                    className="deck-action-delete"
+                    onClick={() => handleDeleteDeck(deck)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
