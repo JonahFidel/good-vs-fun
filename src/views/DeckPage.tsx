@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApiFetch } from '../lib/api'
 import { formatScore, formatTitle, snapScoreToStep } from '../lib/format'
+import { pointerRatioToScore, scoreToPlotPercent } from '../lib/gridCanvas'
 import type { Deck, Movie } from '../lib/types'
 import { GridAxes } from '../components/GridAxes'
 import { PlotGridZoom } from '../components/PlotGridZoom'
@@ -38,8 +39,8 @@ function GhostPoints({ groups }: { groups: PositionGroup[] }) {
   return (
     <>
       {groups.map((group) => {
-        const left = ((Math.min(10, Math.max(0, group.good)) + 2) / 14) * 100
-        const top = 100 - ((Math.min(10, Math.max(0, group.fun)) + 2) / 14) * 100
+        const left = scoreToPlotPercent(group.good, 'x')
+        const top = scoreToPlotPercent(group.fun, 'y')
         return (
           <div
             key={`ghost-${group.key}`}
@@ -427,8 +428,8 @@ export function DeckPage() {
       // Otherwise, snap to the step grid where you released (inside the grid).
       const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width)
       const clampedY = Math.min(Math.max(clientY - rect.top, 0), rect.height)
-      const good = snapScoreToStep((clampedX / rect.width) * 14 - 2)
-      const fun = snapScoreToStep((1 - clampedY / rect.height) * 14 - 2)
+      const good = snapScoreToStep(pointerRatioToScore(clampedX / rect.width))
+      const fun = snapScoreToStep(pointerRatioToScore(1 - clampedY / rect.height))
       return { fun, good }
     },
     [],
@@ -456,8 +457,8 @@ export function DeckPage() {
 
       const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width)
       const clampedY = Math.min(Math.max(clientY - rect.top, 0), rect.height)
-      const nextGood = snapScoreToStep((clampedX / rect.width) * 14 - 2)
-      const nextFun = snapScoreToStep((1 - clampedY / rect.height) * 14 - 2)
+      const nextGood = snapScoreToStep(pointerRatioToScore(clampedX / rect.width))
+      const nextFun = snapScoreToStep(pointerRatioToScore(1 - clampedY / rect.height))
       applyMovieScores(dragging.ids, nextFun, nextGood)
     },
     [applyMovieScores],
@@ -632,8 +633,112 @@ export function DeckPage() {
   }
 
   return (
-    <>
-      <div className="panel">
+    <div className="deck-page-layout">
+      <section className="grid-panel">
+        <div className="grid-wrapper">
+          <div className="grid-axis grid-axis-y">Fun</div>
+          <div className="grid-axis grid-axis-x">Good</div>
+          <PlotGridZoom ref={gridRef}>
+            <GridAxes />
+            {ghostDeckId && <GhostPoints groups={ghostGroups} />}
+            {groupedMovies.map((group) => {
+              const left = scoreToPlotPercent(group.good, 'x')
+              const top = scoreToPlotPercent(group.fun, 'y')
+              const key = group.key
+              const isDragging = draggingGroup?.type === 'group' && draggingGroup.key === key
+
+              return (
+                <div
+                  key={key}
+                  className={`movie-point${isDragging ? ' dragging' : ''}`}
+                  style={{ left: `${left}%`, top: `${top}%` }}
+                  onPointerDown={
+                    isExampleDeck ? undefined : handlePointerDown(key, group.ids)
+                  }
+                  data-group-key={key}
+                >
+                  <span
+                    className="movie-label"
+                    onPointerDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                  >
+                    {group.items.map((item) => (
+                      <span key={item.id} className="movie-label-line">
+                        <span
+                          className="movie-label-title"
+                          data-movie-id={item.id}
+                          onPointerDownCapture={
+                            isExampleDeck ? undefined : handleLabelPointerDown(item.id)
+                          }
+                        >
+                          {item.title}
+                        </span>
+                      </span>
+                    ))}
+                  </span>
+                  <span className="movie-point-score" aria-hidden="true">
+                    Good {formatScore(group.good)} · Fun {formatScore(group.fun)}
+                  </span>
+                </div>
+              )
+            })}
+          </PlotGridZoom>
+        </div>
+      </section>
+
+      <div className="deck-rail">
+        <div className="grid-header">
+          <div className="grid-header-main">
+            <div>
+              <h2>{deckName ? `${deckName}` : 'Good vs. Fun'}</h2>
+              <p>Higher is better. Everything stays in the positive quadrant.</p>
+            </div>
+            {otherDecks.length > 0 && (
+              <div className="ghost-compare-section ghost-compare-section--inline">
+                <label className="ghost-compare-label" htmlFor="ghost-deck-select">
+                  Compare with
+                </label>
+                <div className="ghost-compare-row">
+                  <select
+                    id="ghost-deck-select"
+                    value={ghostDeckId}
+                    onChange={(e) => handleSetGhostDeck(e.target.value)}
+                  >
+                    <option value="">None</option>
+                    {otherDecks.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                  {ghostDeckId && (
+                    <button type="button" className="btn-swap" onClick={handleSwapDecks}>
+                      ⇄ Swap primary
+                    </button>
+                  )}
+                </div>
+                <p className="ghost-compare-hint">
+                  Ghost deck is view-only on the grid — edit the primary deck, then swap if needed.
+                </p>
+              </div>
+            )}
+          </div>
+          {ghostDeckId && (
+            <div className="ghost-legend">
+              <span className="ghost-legend-item">
+                <span className="ghost-swatch ghost-swatch-primary" />
+                {deckName} (primary{isExampleDeck ? ', read-only' : ', editable'})
+              </span>
+              <span className="ghost-legend-item">
+                <span className="ghost-swatch ghost-swatch-ghost" />
+                {ghostDeckName || '…'} (ghost, read-only)
+              </span>
+            </div>
+          )}
+        </div>
+
+        <aside className="panel deck-sidebar">
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
             <p className="eyebrow">{isExampleDeck ? 'Example deck' : 'Deck'}</p>
@@ -736,110 +841,9 @@ export function DeckPage() {
             ))}
           </ul>
         </div>
+        </aside>
       </div>
-
-      <section className="grid-panel">
-        <div className="grid-header">
-          <div className="grid-header-main">
-            <div>
-              <h2>{deckName ? `${deckName}` : 'Good vs. Fun'}</h2>
-              <p>Higher is better. Everything stays in the positive quadrant.</p>
-            </div>
-            {otherDecks.length > 0 && (
-              <div className="ghost-compare-section ghost-compare-section--inline">
-                <label className="ghost-compare-label" htmlFor="ghost-deck-select">
-                  Compare with
-                </label>
-                <div className="ghost-compare-row">
-                  <select
-                    id="ghost-deck-select"
-                    value={ghostDeckId}
-                    onChange={(e) => handleSetGhostDeck(e.target.value)}
-                  >
-                    <option value="">None</option>
-                    {otherDecks.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
-                  {ghostDeckId && (
-                    <button type="button" className="btn-swap" onClick={handleSwapDecks}>
-                      ⇄ Swap primary
-                    </button>
-                  )}
-                </div>
-                <p className="ghost-compare-hint">
-                  Ghost deck is view-only on the grid — edit the primary deck, then swap if needed.
-                </p>
-              </div>
-            )}
-          </div>
-          {ghostDeckId && (
-            <div className="ghost-legend">
-              <span className="ghost-legend-item">
-                <span className="ghost-swatch ghost-swatch-primary" />
-                {deckName} (primary{isExampleDeck ? ', read-only' : ', editable'})
-              </span>
-              <span className="ghost-legend-item">
-                <span className="ghost-swatch ghost-swatch-ghost" />
-                {ghostDeckName || '…'} (ghost, read-only)
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="grid-wrapper">
-          <div className="grid-axis grid-axis-y">Fun</div>
-          <div className="grid-axis grid-axis-x">Good</div>
-          <PlotGridZoom ref={gridRef}>
-            <GridAxes />
-            {ghostDeckId && <GhostPoints groups={ghostGroups} />}
-            {groupedMovies.map((group) => {
-              const left = ((Math.min(10, Math.max(0, group.good)) + 2) / 14) * 100
-              const top = 100 - ((Math.min(10, Math.max(0, group.fun)) + 2) / 14) * 100
-              const key = group.key
-              const isDragging = draggingGroup?.type === 'group' && draggingGroup.key === key
-
-              return (
-                <div
-                  key={key}
-                  className={`movie-point${isDragging ? ' dragging' : ''}`}
-                  style={{ left: `${left}%`, top: `${top}%` }}
-                  onPointerDown={
-                    isExampleDeck ? undefined : handlePointerDown(key, group.ids)
-                  }
-                  data-group-key={key}
-                >
-                  <span
-                    className="movie-label"
-                    onPointerDown={(event) => {
-                      event.stopPropagation()
-                    }}
-                  >
-                    {group.items.map((item) => (
-                      <span key={item.id} className="movie-label-line">
-                        <span
-                          className="movie-label-title"
-                          data-movie-id={item.id}
-                          onPointerDownCapture={
-                            isExampleDeck ? undefined : handleLabelPointerDown(item.id)
-                          }
-                        >
-                          {item.title}
-                        </span>
-                      </span>
-                    ))}
-                  </span>
-                  <span className="movie-point-score" aria-hidden="true">
-                    Good {formatScore(group.good)} · Fun {formatScore(group.fun)}
-                  </span>
-                </div>
-              )
-            })}
-          </PlotGridZoom>
-        </div>
-      </section>
-    </>
+    </div>
   )
 }
 

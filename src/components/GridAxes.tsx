@@ -1,6 +1,6 @@
-// The grid element is a –2..12 canvas (14 units). All ticks for values 1–10 are
-// positioned at ((value + 2) / 14) * 100% so they land inside the .grid::before
-// scoring region. The canvas shows 2 units of empty space on every side.
+import { GRID_CANVAS, GRID_MARGIN } from '../lib/gridCanvas'
+
+// Canvas spans –margin..(scoreMax + margin). Ticks use the same math as .grid::before.
 
 const MAJOR_TICKS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
@@ -8,8 +8,8 @@ const MINOR_TICKS = Array.from({ length: 99 }, (_, index) => (index + 1) / 10).f
   (value) => Math.round(value * 10) % 10 !== 0,
 )
 
-const pct = (value: number) => `${((value + 2) / 14) * 100}%`
-const pctInv = (value: number) => `${100 - ((value + 2) / 14) * 100}%`
+const pct = (value: number) => `${((value + GRID_MARGIN) / GRID_CANVAS) * 100}%`
+const pctInv = (value: number) => `${100 - ((value + GRID_MARGIN) / GRID_CANVAS) * 100}%`
 
 /**
  * Renders the numeric labels and ruler tick marks around all four edges of the

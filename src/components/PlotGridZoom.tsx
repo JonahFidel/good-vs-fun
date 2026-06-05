@@ -19,8 +19,7 @@ type PanStart = {
   ty: number
 }
 
-// The grid element is natively a 0–12 canvas; gridlines and tick marks are
-// drawn only within the 0–10 scoring region (see .grid::before in CSS).
+// The grid canvas and scoring region are sized via CSS vars (see .grid::before).
 const INITIAL_SCALE = 1
 const MIN_SCALE = 0.3
 const MAX_SCALE = 8
