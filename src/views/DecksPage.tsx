@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApiFetch } from '../lib/api'
 import { formatTitle } from '../lib/format'
+import { alertExampleDeckReadOnly } from '../lib/exampleDeck'
 import type { Deck } from '../lib/types'
 
 export function DecksPage() {
@@ -210,12 +211,15 @@ export function DecksPage() {
               className={[
                 deck.id === selectedDeckId ? 'active' : '',
                 deckDragOverId === deck.id ? 'drag-over' : '',
+                deck.isExample ? 'deck-list-item--example' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
-              draggable={!deck.isExample}
+              draggable
               onDragStart={(event) => {
                 if (deck.isExample) {
+                  event.preventDefault()
+                  alertExampleDeckReadOnly()
                   return
                 }
                 ensureManualDeckOrder()

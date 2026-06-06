@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApiFetch } from '../lib/api'
 import { formatScore, formatTitle, snapScoreToStep } from '../lib/format'
+import { alertExampleDeckReadOnly } from '../lib/exampleDeck'
 import { pointerRatioToScore, scoreToPlotPercent } from '../lib/gridCanvas'
 import type { Deck, Movie } from '../lib/types'
 import { GridAxes } from '../components/GridAxes'
@@ -425,6 +426,9 @@ export function DeckPage() {
 
   const removeMovie = async (id: string) => {
     if (!resolvedDeckId || isExampleDeck) {
+      if (isExampleDeck) {
+        alertExampleDeckReadOnly()
+      }
       return
     }
 
@@ -591,8 +595,30 @@ export function DeckPage() {
     [applyMovieScores],
   )
 
+  const blockExampleEdit = useCallback(
+    (event?: React.SyntheticEvent) => {
+      if (!isExampleDeck) {
+        return false
+      }
+      event?.preventDefault()
+      event?.stopPropagation()
+      alertExampleDeckReadOnly()
+      return true
+    },
+    [isExampleDeck],
+  )
+
+  const handleExampleMovieDelete = (event: React.MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    alertExampleDeckReadOnly()
+  }
+
   const handlePointerDown =
     (key: string, ids: string[]) => (event: React.PointerEvent<HTMLDivElement>) => {
+      if (blockExampleEdit(event)) {
+        return
+      }
       if (event.target !== event.currentTarget) {
         return
       }
@@ -606,6 +632,9 @@ export function DeckPage() {
 
   const handleLabelPointerDown =
     (id: string) => (event: React.PointerEvent<HTMLSpanElement>) => {
+      if (blockExampleEdit(event)) {
+        return
+      }
       event.preventDefault()
       event.stopPropagation()
       captureDragSnapshot([id])
@@ -617,6 +646,9 @@ export function DeckPage() {
 
   const handleMovieListPointerDown =
     (id: string) => (event: React.PointerEvent<HTMLLIElement>) => {
+      if (blockExampleEdit(event)) {
+        return
+      }
       const target = event.target as HTMLElement | null
       if (target?.closest('button')) {
         return
@@ -811,7 +843,11 @@ export function DeckPage() {
   }
 
   return (
-    <div className="deck-page-layout">
+    <div
+      className={['deck-page-layout', isExampleDeck ? 'deck-page-layout--example' : '']
+        .filter(Boolean)
+        .join(' ')}
+    >
       <section className="grid-panel">
         {!isExampleDeck && (
           <div className="grid-toolbar">
@@ -852,9 +888,7 @@ export function DeckPage() {
                   key={key}
                   className={`movie-point${isDragging ? ' dragging' : ''}`}
                   style={{ left: `${left}%`, top: `${top}%` }}
-                  onPointerDown={
-                    isExampleDeck ? undefined : handlePointerDown(key, group.ids)
-                  }
+                  onPointerDown={handlePointerDown(key, group.ids)}
                   data-group-key={key}
                 >
                   <span
@@ -868,9 +902,7 @@ export function DeckPage() {
                         <span
                           className="movie-label-title"
                           data-movie-id={item.id}
-                          onPointerDownCapture={
-                            isExampleDeck ? undefined : handleLabelPointerDown(item.id)
-                          }
+                          onPointerDownCapture={handleLabelPointerDown(item.id)}
                         >
                           {item.title}
                         </span>
@@ -1017,13 +1049,20 @@ export function DeckPage() {
             {sortedMovies.map((movie) => (
               <li
                 key={movie.id}
-                onPointerDown={
-                  isExampleDeck ? undefined : handleMovieListPointerDown(movie.id)
-                }
+                onPointerDown={handleMovieListPointerDown(movie.id)}
               >
                 <div className="movie-list-title">
                   <strong title={movie.title}>{movie.title}</strong>
-                  {!isExampleDeck && (
+                  {isExampleDeck ? (
+                    <button
+                      type="button"
+                      className="movie-delete"
+                      aria-label={`Remove ${movie.title}`}
+                      onClick={handleExampleMovieDelete}
+                    >
+                      ×
+                    </button>
+                  ) : (
                     <button
                       type="button"
                       className="movie-delete"

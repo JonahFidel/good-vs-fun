@@ -399,6 +399,33 @@
   vertical-align: middle;
 }
 
+.deck-list li.deck-list-item--example {
+  opacity: 0.72;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  cursor: default;
+}
+
+.deck-list li.deck-list-item--example.active {
+  opacity: 0.82;
+  background: #ffffff;
+}
+
+.deck-page-layout--example .grid-panel,
+.deck-page-layout--example .deck-rail .panel {
+  opacity: 0.78;
+  filter: saturate(0.88);
+}
+
+.deck-page-layout--example .grid-wrapper {
+  cursor: not-allowed;
+}
+
+.deck-page-layout--example .movie-point,
+.deck-page-layout--example .movie-list li {
+  cursor: not-allowed;
+}
+
 .deck-actions {
   display: flex;
   gap: 0.5rem;
