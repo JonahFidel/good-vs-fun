@@ -32,7 +32,7 @@ export function GridAxes() {
       {MAJOR_TICKS.map((value) => (
         <span
           key={`tick-y-${value}`}
-          className={`grid-tick grid-tick-y${value === 10 ? ' grid-tick-end-y' : ''}`}
+          className="grid-tick grid-tick-y"
           style={{ top: pctInv(value) }}
           aria-hidden="true"
         >
@@ -74,7 +74,7 @@ export function GridAxes() {
         <span
           key={`tick-y-right-${value}`}
           className={`grid-tick grid-tick-y grid-tick-y-right${
-            value === 10 ? ' grid-tick-end-y' : ''
+            value === 10 ? ' grid-tick-end-y-right' : ''
           }`}
           style={{ top: pctInv(value) }}
           aria-hidden="true"

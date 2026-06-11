@@ -2,6 +2,12 @@
   --grid-margin: 1;
   --grid-score-max: 10;
   --grid-canvas: 12;
+  --grid-tick-outset-major: 10px;
+  --grid-tick-outset-minor: 5px;
+  --grid-tick-outset-top: calc(var(--grid-tick-outset-major) + 5px);
+  --grid-tick-outset-right: calc(var(--grid-tick-outset-major) + 5px);
+  --grid-tick-outset-minor-top: calc(var(--grid-tick-outset-minor) + 5px);
+  --grid-tick-outset-minor-right: calc(var(--grid-tick-outset-minor) + 5px);
   --deck-rail-width: 280px;
   /* Square plot cap — scales with vmin, hard-stops on very large displays */
   --plot-side-max: min(1400px, 92vmin);
@@ -1119,16 +1125,16 @@ html:has(.deck-page-layout) body {
   z-index: 0;
 }
 
-/* Bottom axis labels — just below the x=0 line */
+/* Bottom axis labels — anchored on y=0, shifted into the margin below */
 .grid-tick-x {
-  bottom: calc(100% * var(--grid-margin) / var(--grid-canvas) - 10px);
-  transform: translateX(-50%);
+  bottom: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(-50%, calc(100% + var(--grid-tick-outset-major)));
 }
 
-/* Left axis labels — just left of the y=0 line */
+/* Left axis labels — anchored on x=0, shifted into the margin left */
 .grid-tick-y {
-  left: calc(100% * var(--grid-margin) / var(--grid-canvas) - 10px);
-  transform: translateY(-50%);
+  left: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(calc(-100% - var(--grid-tick-outset-major)), -50%);
 }
 
 /* Tick notch points toward the axis line it labels */
@@ -1165,18 +1171,18 @@ html:has(.deck-page-layout) body {
 
 /* Bottom subticks — just below x=0 */
 .grid-subtick-x {
-  bottom: calc(100% * var(--grid-margin) / var(--grid-canvas) - 3px);
+  bottom: calc(100% * var(--grid-margin) / var(--grid-canvas));
   width: 1px;
   height: 3px;
-  transform: translateX(-50%);
+  transform: translate(-50%, var(--grid-tick-outset-minor));
 }
 
 /* Left subticks — just left of y=0 */
 .grid-subtick-y {
-  left: calc(100% * var(--grid-margin) / var(--grid-canvas) - 3px);
+  left: calc(100% * var(--grid-margin) / var(--grid-canvas));
   width: 3px;
   height: 1px;
-  transform: translateY(-50%);
+  transform: translate(calc(-1 * var(--grid-tick-outset-minor)), -50%);
 }
 
 .grid-subtick-x.grid-subtick-mid {
@@ -1187,10 +1193,11 @@ html:has(.deck-page-layout) body {
   width: 5px;
 }
 
-/* Top axis — just ABOVE the y=10 boundary */
+/* Top axis — anchored on y=10, shifted into the margin above */
 .grid-tick-x-top {
   bottom: auto;
-  top: calc(100% * var(--grid-margin) / var(--grid-canvas) - 10px);
+  top: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(-50%, calc(-100% - var(--grid-tick-outset-top)));
 }
 
 /* Tick notch points downward toward y=10 */
@@ -1202,13 +1209,15 @@ html:has(.deck-page-layout) body {
 /* Top subticks — just above y=10 */
 .grid-subtick-x-top {
   bottom: auto;
-  top: calc(100% * var(--grid-margin) / var(--grid-canvas) - 3px);
+  top: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(-50%, calc(-100% - var(--grid-tick-outset-minor-top) + 2px));
 }
 
-/* Right axis — just to the RIGHT of the x=10 boundary */
+/* Right axis — anchored on x=10, shifted into the margin right */
 .grid-tick-y-right {
   left: auto;
-  right: calc(100% * var(--grid-margin) / var(--grid-canvas) - 10px);
+  right: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(calc(100% + var(--grid-tick-outset-right)), -50%);
 }
 
 /* Tick notch points leftward toward x=10 */
@@ -1220,17 +1229,18 @@ html:has(.deck-page-layout) body {
 /* Right subticks — just right of x=10 */
 .grid-subtick-y-right {
   left: auto;
-  right: calc(100% * var(--grid-margin) / var(--grid-canvas) - 3px);
+  right: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(var(--grid-tick-outset-minor-right), -50%);
 }
 
-/* "10" label adjustments: bottom axis "10" shifts left so it doesn't crowd the corner */
+/* Bottom axis "10" — keep centered on x=10 like other ticks (aligns with subtick) */
 .grid-tick-end-x {
-  transform: translateX(calc(-100% - 3px));
+  transform: translate(-50%, calc(100% + var(--grid-tick-outset-major)));
 }
 
-/* Right axis "10" shifts slightly to avoid the top-right corner */
-.grid-tick-end-y {
-  transform: translateY(3px);
+/* Right axis "10" shifts slightly down to avoid the top-right corner */
+.grid-tick-end-y-right {
+  transform: translate(calc(100% + var(--grid-tick-outset-right)), calc(-50% + 3px));
 }
 
 .grid-axis-y {
