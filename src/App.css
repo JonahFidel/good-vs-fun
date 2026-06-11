@@ -411,19 +411,57 @@
   background: #ffffff;
 }
 
-.deck-page-layout--example .grid-panel,
-.deck-page-layout--example .deck-rail .panel {
-  opacity: 0.78;
-  filter: saturate(0.88);
-}
-
-.deck-page-layout--example .grid-wrapper {
-  cursor: not-allowed;
-}
-
-.deck-page-layout--example .movie-point,
 .deck-page-layout--example .movie-list li {
   cursor: not-allowed;
+}
+
+.grid-wrapper--example {
+  opacity: 0.9;
+  cursor: not-allowed;
+  /* background: #f1f5f9; */
+  /* border-color: #cbd5e1; */
+  box-shadow: none;
+}
+
+.grid-wrapper--example .grid-axis {
+  color: #64748b;
+}
+
+.grid-wrapper--example .grid-tick {
+  color: #cbd5e1;
+}
+
+.grid-wrapper--example .grid-tick::before,
+.grid-wrapper--example .grid-subtick {
+  background: #cbd5e1;
+}
+
+.grid-wrapper--example .grid::before {
+  opacity: 0.55;
+  border-color: #94a3b8;
+}
+
+.grid-wrapper--example .movie-point {
+  cursor: not-allowed;
+}
+
+.grid-wrapper--example .movie-point::after {
+  background: #94a3b8;
+  box-shadow:
+    0 0 0 2px rgba(148, 163, 184, 0.35),
+    0 2px 6px rgba(15, 23, 42, 0.2);
+}
+
+.grid-wrapper--example .movie-point > span {
+  background: #64748b;
+  border-color: #94a3b8;
+  color: #f8fafc;
+  box-shadow: none;
+}
+
+.grid-wrapper--example .movie-point:hover .movie-point-score,
+.grid-wrapper--example .movie-point.dragging .movie-point-score {
+  opacity: 0;
 }
 
 .deck-actions {

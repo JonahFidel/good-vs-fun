@@ -871,7 +871,11 @@ export function DeckPage() {
             </button>
           </div>
         )}
-        <div className="grid-wrapper">
+        <div
+          className={['grid-wrapper', isExampleDeck ? 'grid-wrapper--example' : '']
+            .filter(Boolean)
+            .join(' ')}
+        >
           <div className="grid-axis grid-axis-y">Fun</div>
           <div className="grid-axis grid-axis-x">Good</div>
           <PlotGridZoom ref={gridRef}>
@@ -881,7 +885,9 @@ export function DeckPage() {
               const left = scoreToPlotPercent(group.good, 'x')
               const top = scoreToPlotPercent(group.fun, 'y')
               const key = group.key
-              const isDragging = draggingGroup?.type === 'group' && draggingGroup.key === key
+              const isDragging = draggingGroup
+                ? group.ids.some((id) => draggingGroup.ids.includes(id))
+                : false
 
               return (
                 <div
