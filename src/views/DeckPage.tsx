@@ -1110,10 +1110,29 @@ export function DeckPage() {
       </section>
 
       <div className="deck-rail">
-        <div className="grid-header">
-          <div className="grid-header-main">
+        <aside
+          className="panel deck-sidebar"
+          onPointerDown={handleSidebarBackgroundPointerDown}
+        >
+        <div className="deck-sidebar-section deck-sidebar-section--header">
+          <div className="deck-sidebar-top">
+            <div className="deck-sidebar-title-block">
+              <p className="eyebrow">{isExampleDeck ? 'Example deck' : 'Deck'}</p>
+              <h2>
+                {deckName || 'Loading…'}
+                {isExampleDeck && <span className="deck-example-badge">Example</span>}
+              </h2>
+            </div>
+            <Link className="deck-sidebar-back" to="/decks">
+              ← Back to decks
+            </Link>
+          </div>
+        </div>
+
+        {(otherDecks.length > 0 || ghostDeckId) && (
+          <div className="deck-sidebar-section deck-sidebar-section--tools deck-sidebar-tools">
             {otherDecks.length > 0 && (
-              <div className="ghost-compare-section ghost-compare-section--inline">
+              <div className="ghost-compare-section">
                 <label className="ghost-compare-label" htmlFor="ghost-deck-select">
                   Compare with
                 </label>
@@ -1141,44 +1160,28 @@ export function DeckPage() {
                 </p>
               </div>
             )}
+            {ghostDeckId && (
+              <div className="ghost-legend">
+                <span className="ghost-legend-item">
+                  <span className="ghost-swatch ghost-swatch-primary" />
+                  {deckName} (primary{isExampleDeck ? ', read-only' : ', editable'})
+                </span>
+                <span className="ghost-legend-item">
+                  <span className="ghost-swatch ghost-swatch-ghost" />
+                  {ghostDeckName || '…'} (ghost, read-only)
+                </span>
+              </div>
+            )}
           </div>
-          {ghostDeckId && (
-            <div className="ghost-legend">
-              <span className="ghost-legend-item">
-                <span className="ghost-swatch ghost-swatch-primary" />
-                {deckName} (primary{isExampleDeck ? ', read-only' : ', editable'})
-              </span>
-              <span className="ghost-legend-item">
-                <span className="ghost-swatch ghost-swatch-ghost" />
-                {ghostDeckName || '…'} (ghost, read-only)
-              </span>
-            </div>
-          )}
-        </div>
-        <aside
-          className="panel deck-sidebar"
-          onPointerDown={handleSidebarBackgroundPointerDown}
-        >
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
-          <div>
-            <p className="eyebrow">{isExampleDeck ? 'Example deck' : 'Deck'}</p>
-            <h2 style={{ margin: 0 }}>
-              {deckName || 'Loading…'}
-              {isExampleDeck && <span className="deck-example-badge">Example</span>}
-            </h2>
-          </div>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <Link to="/decks">← Back to decks</Link>
-          </div>
-        </div>
+        )}
 
         {error && <p className="error-banner">{error}</p>}
         {loading && <p className="status-line">Syncing changes…</p>}
 
         {!isExampleDeck && (
-          <>
-            <h2>Add a movie</h2>
-            <form className="movie-form" onSubmit={handleSubmit}>
+          <div className="deck-sidebar-section deck-sidebar-section--add">
+            <h3 className="deck-sidebar-section__title">Add a movie</h3>
+            <form className="movie-form movie-form--compact" onSubmit={handleSubmit}>
               <label className="field">
                 <span>Movie title</span>
                 <input
@@ -1203,11 +1206,11 @@ export function DeckPage() {
               </div>
               <button type="submit">Add movie</button>
             </form>
-          </>
+          </div>
         )}
 
         {selectedMovie && (
-          <div className="movie-selection-panel">
+          <div className="deck-sidebar-section movie-selection-panel">
             <div className="movie-selection-bar">
               <div className="movie-selection-info">
                 <span className="movie-selection-label">Selected</span>
@@ -1244,9 +1247,11 @@ export function DeckPage() {
           </div>
         )}
 
-        <div className="movie-list">
+        <div className="deck-sidebar-section deck-sidebar-section--list movie-list">
+          <h3 className="deck-sidebar-section__title deck-sidebar-section__title--inline">
+            Movies
+          </h3>
           <div className="movie-list-header">
-            <h3>Movies</h3>
             <label>
               Sort movies
               <select
