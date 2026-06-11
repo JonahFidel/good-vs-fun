@@ -107,6 +107,10 @@ export function DeckPage() {
     y: number
     startedAt: number
   } | null>(null)
+  const [hoverLink, setHoverLink] = useState<{
+    id: string
+    from: 'grid' | 'list'
+  } | null>(null)
 
   const gridRef = useRef<HTMLDivElement | null>(null)
   const moviesRef = useRef<Movie[]>([])
@@ -614,6 +618,18 @@ export function DeckPage() {
     alertExampleDeckReadOnly()
   }
 
+  const highlightFromList = useCallback((id: string) => {
+    setHoverLink({ id, from: 'list' })
+  }, [])
+
+  const highlightFromGrid = useCallback((id: string) => {
+    setHoverLink({ id, from: 'grid' })
+  }, [])
+
+  const clearHoverLink = useCallback(() => {
+    setHoverLink(null)
+  }, [])
+
   const handlePointerDown =
     (key: string, ids: string[]) => (event: React.PointerEvent<HTMLDivElement>) => {
       if (blockExampleEdit(event)) {
@@ -888,13 +904,29 @@ export function DeckPage() {
               const isDragging = draggingGroup
                 ? group.ids.some((id) => draggingGroup.ids.includes(id))
                 : false
+              const isGridHighlighted =
+                hoverLink?.from === 'list' && group.ids.includes(hoverLink.id)
 
               return (
                 <div
                   key={key}
-                  className={`movie-point${isDragging ? ' dragging' : ''}`}
+                  className={[
+                    'movie-point',
+                    isDragging ? 'dragging' : '',
+                    isGridHighlighted ? 'movie-point--highlighted' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                   style={{ left: `${left}%`, top: `${top}%` }}
                   onPointerDown={handlePointerDown(key, group.ids)}
+                  onMouseEnter={
+                    group.items.length === 1
+                      ? () => highlightFromGrid(group.items[0].id)
+                      : undefined
+                  }
+                  onMouseLeave={
+                    group.items.length === 1 ? clearHoverLink : undefined
+                  }
                   data-group-key={key}
                 >
                   <span
@@ -904,11 +936,23 @@ export function DeckPage() {
                     }}
                   >
                     {group.items.map((item) => (
-                      <span key={item.id} className="movie-label-line">
+                      <span
+                        key={item.id}
+                        className={[
+                          'movie-label-line',
+                          hoverLink?.from === 'list' && hoverLink.id === item.id
+                            ? 'movie-label-line--linked'
+                            : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                      >
                         <span
                           className="movie-label-title"
                           data-movie-id={item.id}
                           onPointerDownCapture={handleLabelPointerDown(item.id)}
+                          onMouseEnter={() => highlightFromGrid(item.id)}
+                          onMouseLeave={clearHoverLink}
                         >
                           {item.title}
                         </span>
@@ -1050,7 +1094,14 @@ export function DeckPage() {
             {sortedMovies.map((movie) => (
               <li
                 key={movie.id}
+                className={
+                  hoverLink?.from === 'grid' && hoverLink.id === movie.id
+                    ? 'movie-list-item--highlighted'
+                    : undefined
+                }
                 onPointerDown={handleMovieListPointerDown(movie.id)}
+                onMouseEnter={() => highlightFromList(movie.id)}
+                onMouseLeave={clearHoverLink}
               >
                 <div className="movie-list-title">
                   <strong title={movie.title}>{movie.title}</strong>
