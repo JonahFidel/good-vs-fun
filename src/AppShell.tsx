@@ -6,7 +6,7 @@ export default function AppShell() {
   return (
     <div className="app">
       <header className="header">
-        <p className="header-brand">Good Fun Movie</p>
+        <p className="header-brand">Good vs. Fun</p>
         <NavBar />
       </header>
 

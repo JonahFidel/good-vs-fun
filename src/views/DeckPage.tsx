@@ -928,10 +928,6 @@ export function DeckPage() {
       <div className="deck-rail">
         <div className="grid-header">
           <div className="grid-header-main">
-            <div>
-              <h2>{deckName ? `${deckName}` : 'Good vs. Fun'}</h2>
-              <p>Higher is better. Everything stays in the positive quadrant.</p>
-            </div>
             {otherDecks.length > 0 && (
               <div className="ghost-compare-section ghost-compare-section--inline">
                 <label className="ghost-compare-label" htmlFor="ghost-deck-select">

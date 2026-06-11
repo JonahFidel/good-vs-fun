@@ -35,7 +35,7 @@
 
 .header-brand {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -159,6 +159,8 @@ html:has(.deck-page-layout) body {
   overflow: hidden;
   display: grid;
   grid-template-columns: var(--deck-rail-width) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
   gap: 0.5rem;
   padding: 0.35rem 0.45rem 0.35rem 0.35rem;
 }
@@ -172,20 +174,10 @@ html:has(.deck-page-layout) body {
   grid-row: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
   min-height: 0;
   min-width: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.deck-rail .grid-header {
-  flex-shrink: 0;
-}
-
-.deck-rail .grid-header-main {
-  flex-direction: column;
-  align-items: stretch;
+  height: 100%;
+  overflow: hidden;
 }
 
 .deck-page-layout .grid-panel {
@@ -245,12 +237,12 @@ html:has(.deck-page-layout) body {
   height: 100%;
 }
 
-.deck-rail .grid-header h2 {
-  font-size: 1rem;
+.deck-sidebar .ghost-compare-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
 }
 
-.deck-rail .grid-header p,
-.deck-rail .ghost-compare-hint {
+.deck-sidebar .ghost-compare-hint {
   font-size: 0.78rem;
   line-height: 1.35;
 }
@@ -260,14 +252,37 @@ html:has(.deck-page-layout) body {
 }
 
 .deck-sidebar {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
-.deck-page-layout .movie-list ul {
+.deck-sidebar > :not(.movie-list) {
+  flex-shrink: 0;
+}
+
+.deck-sidebar .movie-list {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.deck-sidebar .movie-list-header {
+  flex-shrink: 0;
+}
+
+.deck-sidebar .movie-list ul {
+  flex: 1 1 0;
+  min-height: 0;
   max-height: none;
-  overflow: visible;
-  mask-image: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .panel {
@@ -1270,13 +1285,14 @@ html:has(.deck-page-layout) body {
   .deck-rail {
     grid-column: auto;
     grid-row: auto;
-    flex: none;
+    height: 38vh;
     max-height: 38vh;
-    overflow-y: auto;
+    overflow: hidden;
   }
 
   .deck-sidebar {
-    flex: none;
+    flex: 1 1 0;
+    min-height: 0;
     max-height: none;
   }
 
