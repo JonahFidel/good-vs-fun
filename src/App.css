@@ -3,12 +3,15 @@
   --grid-score-max: 10;
   --grid-canvas: 12;
   --deck-rail-width: 280px;
+  /* Square plot cap — scales with vmin, hard-stops on very large displays */
+  --plot-side-max: min(1400px, 92vmin);
+  --large-monitor-width: 1800px;
+  --decks-panel-max-width: calc(var(--large-monitor-width) * 2 / 3);
 }
 
 #root {
   max-width: none;
   margin: 0;
-  padding: 0.6rem 1.25rem 0.75rem 0.6rem;
 }
 
 .app {
@@ -17,28 +20,31 @@
   gap: 0.5rem;
 }
 
-/* Compact single-row header: title left, nav right */
+/* Persistent top navbar */
 .header {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.header h1 {
-  font-size: 1.05rem;
-  margin: 0 0 0.1rem;
-  line-height: 1.3;
-}
-
-.header .subhead {
-  display: none;
+.header-brand {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #374151;
+  white-space: nowrap;
 }
 
 .nav {
-  margin-top: 0.25rem;
+  margin-top: 0;
 }
 
 .nav-links {
@@ -63,14 +69,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.4rem 0.75rem;
+  padding: 0.28rem 0.6rem;
   border-radius: 999px;
   border: 1px solid #e5e7eb;
   background: #ffffff;
   color: #111827;
   text-decoration: none;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .nav-link:hover {
@@ -119,31 +125,42 @@
   align-items: start;
 }
 
-/* Deck page: plot left (full height), headers + movie list stacked on the right */
+/* Deck page: navbar on top, sidebar + plot below (no page scroll) */
+html:has(.deck-page-layout),
+html:has(.deck-page-layout) body {
+  overflow: hidden;
+  height: 100%;
+}
+
 #root:has(.deck-page-layout) {
   height: 100dvh;
   box-sizing: border-box;
-  padding: 0.35rem 0.45rem 0.35rem 0.35rem;
+  padding: 0;
+  overflow: hidden;
   background: #f1f5f9;
 }
 
 .app:has(.deck-page-layout) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--deck-rail-width);
-  grid-template-rows: auto 1fr;
-  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   height: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
 .app:has(.deck-page-layout) > .header {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: start;
+  padding: 0.3rem 0.5rem;
 }
 
 .app:has(.deck-page-layout) > .layout {
-  display: contents;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: var(--deck-rail-width) minmax(0, 1fr);
+  gap: 0.5rem;
+  padding: 0.35rem 0.45rem 0.35rem 0.35rem;
 }
 
 .deck-page-layout {
@@ -151,14 +168,15 @@
 }
 
 .deck-rail {
-  grid-column: 2;
-  grid-row: 2;
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   min-height: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .deck-rail .grid-header {
@@ -171,38 +189,56 @@
 }
 
 .deck-page-layout .grid-panel {
-  grid-column: 1;
-  grid-row: 1 / -1;
-  gap: 0;
+  grid-column: 2;
+  grid-row: 1;
+  gap: 0.25rem;
   align-items: flex-start;
   justify-content: flex-start;
   background: transparent;
+  container-type: size;
+  overflow: hidden;
+  min-height: 0;
+  height: 100%;
 }
 
 .deck-page-layout .grid-wrapper {
-  width: fit-content;
+  --plot-chrome-x: calc(0.25rem + 1.75rem + 0.1rem + 0.35rem);
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   max-width: 100%;
   padding: 0.3rem 0.35rem 0.35rem 0.25rem;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
   box-shadow: none;
   background: #ffffff;
-  grid-template-columns: 1.75rem auto;
-  grid-template-rows: auto 1.35rem;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 0.1rem;
+  align-content: start;
 }
 
 .deck-page-layout .grid-zoom-slot {
-  --plot-max-height: calc(100dvh - 3rem);
-  --plot-max-width: calc(100vw - var(--deck-rail-width) - 0.9rem);
-  --plot-side: min(var(--plot-max-height), var(--plot-max-width));
-  width: var(--plot-side);
-  height: var(--plot-side);
+  --plot-viewport-w: calc(100cqw - var(--plot-chrome-x));
+  --plot-viewport-h: calc(100cqh - 2.75rem);
+  --plot-side: min(var(--plot-viewport-w), var(--plot-viewport-h), var(--plot-side-max));
+  justify-self: stretch;
+  width: 100%;
+  height: var(--plot-viewport-h);
+  min-height: var(--plot-side);
   max-width: 100%;
-  max-height: 100%;
 }
 
-.deck-page-layout .grid-zoom-canvas,
+.deck-page-layout .grid-zoom-canvas {
+  inset: auto;
+  top: 0;
+  left: 0;
+  width: var(--plot-side);
+  height: var(--plot-side);
+  min-width: 0;
+}
+
 .deck-page-layout .grid {
   min-width: 0;
   width: 100%;
@@ -226,7 +262,12 @@
 .deck-sidebar {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+}
+
+.deck-page-layout .movie-list ul {
+  max-height: none;
+  overflow: visible;
+  mask-image: none;
 }
 
 .panel {
@@ -239,6 +280,12 @@
 
 .panel h2 {
   margin-top: 0;
+}
+
+.decks-panel {
+  width: 100%;
+  max-width: var(--decks-panel-max-width);
+  margin-inline: auto;
 }
 
 .collapsible {
@@ -1091,9 +1138,14 @@
 
 .grid-toolbar {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.4rem;
-  width: 100%;
+  gap: 0.35rem;
+}
+
+.deck-page-layout .grid-toolbar {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 4;
 }
 
 .btn-undo {
@@ -1106,6 +1158,7 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
   transition: background 0.12s, border-color 0.12s, opacity 0.12s;
 }
 
@@ -1185,60 +1238,46 @@
   }
 
   #root:has(.deck-page-layout) {
-    height: auto;
-  }
-
-  .app:has(.deck-page-layout) {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    max-height: none;
-  }
-
-  .app:has(.deck-page-layout) > .header {
-    grid-column: auto;
-    grid-row: auto;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   .app:has(.deck-page-layout) > .layout {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .deck-page-layout {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .deck-page-layout .grid-panel {
     grid-column: auto;
     grid-row: auto;
+    flex: 1;
+    min-height: 0;
     height: auto;
-    overflow: visible;
+    overflow: hidden;
+    container-type: size;
   }
 
   .deck-rail {
     grid-column: auto;
     grid-row: auto;
-    overflow: visible;
+    flex: none;
+    max-height: 38vh;
+    overflow-y: auto;
   }
 
   .deck-sidebar {
     flex: none;
     max-height: none;
-    overflow: visible;
-  }
-
-  /* Header stacks on narrow viewports */
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.4rem;
-  }
-
-  .header .subhead {
-    display: block;
-    font-size: 0.8rem;
   }
 
   .grid-wrapper {
@@ -1262,13 +1301,14 @@
     grid-template-rows: 1fr auto;
   }
 
-  /* Square grid capped by portrait viewport — fills the top of the screen */
+  /* Square plot; slot still fills available width for horizontal pan room */
   .deck-page-layout .grid-zoom-slot {
-    --grid-size: min(calc(100vw - 1.5rem), calc(100dvh - 8rem));
-    width: var(--grid-size);
-    height: auto;
-    max-width: 100%;
+    --plot-viewport-w: calc(100vw - 1.5rem - var(--plot-chrome-x));
+    --plot-viewport-h: calc(100dvh - 8rem);
+    --plot-side: min(var(--plot-viewport-w), var(--plot-viewport-h), var(--plot-side-max));
+    width: 100%;
+    height: var(--plot-side);
+    min-height: var(--plot-side);
     max-height: none;
-    aspect-ratio: 1 / 1;
   }
 }

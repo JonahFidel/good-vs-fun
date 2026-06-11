@@ -162,7 +162,7 @@ export function DecksPage() {
   }
 
   return (
-    <div className="panel">
+    <div className="panel decks-panel">
       {error && <p className="error-banner">{error}</p>}
       {loading && <p className="status-line">Syncing changes…</p>}
 

@@ -43,26 +43,33 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`
     }
 
-    useLayoutEffect(() => {
+    function anchorCenter() {
       const slot = slotRef.current
-      if (!slot) return
-      const H = slot.offsetHeight
-      stateRef.current = { scale: INITIAL_SCALE, tx: 0, ty: H * (1 - INITIAL_SCALE) }
+      const canvas = canvasRef.current
+      if (!slot || !canvas) return
+      const { scale } = stateRef.current
+      const scaledW = canvas.offsetWidth * scale
+      const scaledH = canvas.offsetHeight * scale
+      stateRef.current.tx = (slot.offsetWidth - scaledW) / 2
+      stateRef.current.ty = (slot.offsetHeight - scaledH) / 2
+    }
+
+    useLayoutEffect(() => {
+      anchorCenter()
       applyTransform()
     }, [])
 
-    // Re-anchor on slot resize.
+    // Re-center when the pan viewport or plot canvas resizes.
     useEffect(() => {
       const slot = slotRef.current
-      if (!slot) return
+      const canvas = canvasRef.current
+      if (!slot || !canvas) return
       const ro = new ResizeObserver(() => {
-        const H = slot.offsetHeight
-        const { scale } = stateRef.current
-        stateRef.current.ty = H * (1 - scale)
-        stateRef.current.tx = 0
+        anchorCenter()
         applyTransform()
       })
       ro.observe(slot)
+      ro.observe(canvas)
       return () => ro.disconnect()
     }, [])
 

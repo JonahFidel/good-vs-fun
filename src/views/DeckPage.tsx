@@ -849,33 +849,33 @@ export function DeckPage() {
         .join(' ')}
     >
       <section className="grid-panel">
-        {!isExampleDeck && (
-          <div className="grid-toolbar">
-            <button
-              type="button"
-              className="btn-undo"
-              onClick={() => void handleUndo()}
-              disabled={!canUndo}
-              title="Undo last move (⌘Z)"
-            >
-              ↩ Undo
-            </button>
-            <button
-              type="button"
-              className="btn-undo"
-              onClick={() => void handleRedo()}
-              disabled={!canRedo}
-              title="Redo last move (⌘⇧Z)"
-            >
-              ↪ Redo
-            </button>
-          </div>
-        )}
         <div
           className={['grid-wrapper', isExampleDeck ? 'grid-wrapper--example' : '']
             .filter(Boolean)
             .join(' ')}
         >
+          {!isExampleDeck && (
+            <div className="grid-toolbar">
+              <button
+                type="button"
+                className="btn-undo"
+                onClick={() => void handleUndo()}
+                disabled={!canUndo}
+                title="Undo last move (⌘Z)"
+              >
+                ↩ Undo
+              </button>
+              <button
+                type="button"
+                className="btn-undo"
+                onClick={() => void handleRedo()}
+                disabled={!canRedo}
+                title="Redo last move (⌘⇧Z)"
+              >
+                ↪ Redo
+              </button>
+            </div>
+          )}
           <div className="grid-axis grid-axis-y">Fun</div>
           <div className="grid-axis grid-axis-x">Good</div>
           <PlotGridZoom ref={gridRef}>
@@ -975,7 +975,6 @@ export function DeckPage() {
             </div>
           )}
         </div>
-
         <aside className="panel deck-sidebar">
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
