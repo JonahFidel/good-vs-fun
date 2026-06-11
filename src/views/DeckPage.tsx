@@ -7,6 +7,7 @@ import { pointerRatioToScore, scoreToPlotPercent } from '../lib/gridCanvas'
 import type { Deck, Movie } from '../lib/types'
 import { GridAxes } from '../components/GridAxes'
 import { PlotGridZoom } from '../components/PlotGridZoom'
+import { ScoreSlider } from '../components/ScoreSlider'
 
 // ── Ghost-deck helpers ────────────────────────────────────────────────────────
 
@@ -101,12 +102,14 @@ export function DeckPage() {
   const [draggingGroup, setDraggingGroup] = useState<DragState | null>(null)
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
-  const [pendingMovieDrag, setPendingMovieDrag] = useState<{
-    id: string
+  const [pendingPointer, setPendingPointer] = useState<{
+    primaryId: string
+    drag: DragState
     x: number
     y: number
     startedAt: number
   } | null>(null)
+  const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null)
   const [hoverLink, setHoverLink] = useState<{
     id: string
     from: 'grid' | 'list'
@@ -300,6 +303,20 @@ export function DeckPage() {
     })
   }, [])
 
+  const updateMovieAxisScore = useCallback(
+    (id: string, axis: 'fun' | 'good', value: number) => {
+      const snapped = snapScoreToStep(value)
+      setDeckMovies((current) => {
+        const next = current.map((movie) =>
+          movie.id === id ? { ...movie, [axis]: snapped } : movie,
+        )
+        moviesRef.current = next
+        return next
+      })
+    },
+    [],
+  )
+
   const recordUndoIfChanged = useCallback(() => {
     const before = dragStartSnapshotRef.current
     dragStartSnapshotRef.current = null
@@ -428,24 +445,28 @@ export function DeckPage() {
     [resolvedDeckId, apiFetch, isExampleDeck],
   )
 
-  const removeMovie = async (id: string) => {
-    if (!resolvedDeckId || isExampleDeck) {
-      if (isExampleDeck) {
-        alertExampleDeckReadOnly()
+  const removeMovie = useCallback(
+    async (id: string) => {
+      if (!resolvedDeckId || isExampleDeck) {
+        if (isExampleDeck) {
+          alertExampleDeckReadOnly()
+        }
+        return
       }
-      return
-    }
 
-    setError(null)
-    try {
-      await apiFetch(`/api/decks/${resolvedDeckId}/movies/${id}`, {
-        method: 'DELETE',
-      })
-      setDeckMovies((current) => current.filter((movie) => movie.id !== id))
-    } catch {
-      setError('Failed to remove movie.')
-    }
-  }
+      setError(null)
+      try {
+        await apiFetch(`/api/decks/${resolvedDeckId}/movies/${id}`, {
+          method: 'DELETE',
+        })
+        setDeckMovies((current) => current.filter((movie) => movie.id !== id))
+        setSelectedMovieId((current) => (current === id ? null : current))
+      } catch {
+        setError('Failed to remove movie.')
+      }
+    },
+    [resolvedDeckId, apiFetch, isExampleDeck],
+  )
 
   const findSnapTarget = useCallback(
     (dragging: DragState, clientX: number, clientY: number) => {
@@ -599,19 +620,6 @@ export function DeckPage() {
     [applyMovieScores],
   )
 
-  const blockExampleEdit = useCallback(
-    (event?: React.SyntheticEvent) => {
-      if (!isExampleDeck) {
-        return false
-      }
-      event?.preventDefault()
-      event?.stopPropagation()
-      alertExampleDeckReadOnly()
-      return true
-    },
-    [isExampleDeck],
-  )
-
   const handleExampleMovieDelete = (event: React.MouseEvent) => {
     event.preventDefault()
     event.stopPropagation()
@@ -630,85 +638,128 @@ export function DeckPage() {
     setHoverLink(null)
   }, [])
 
-  const handlePointerDown =
-    (key: string, ids: string[]) => (event: React.PointerEvent<HTMLDivElement>) => {
-      if (blockExampleEdit(event)) {
-        return
-      }
-      if (event.target !== event.currentTarget) {
-        return
-      }
-      event.preventDefault()
-      captureDragSnapshot(ids)
-      const drag: DragState = { type: 'group', key, ids, origin: 'grid' }
-      setDraggingGroup(drag)
-      lastPointerRef.current = { x: event.clientX, y: event.clientY }
-      updateMoviePosition(drag, event.clientX, event.clientY)
-    }
+  const selectMovie = useCallback((id: string) => {
+    setSelectedMovieId(id)
+  }, [])
 
-  const handleLabelPointerDown =
-    (id: string) => (event: React.PointerEvent<HTMLSpanElement>) => {
-      if (blockExampleEdit(event)) {
-        return
-      }
-      event.preventDefault()
-      event.stopPropagation()
-      captureDragSnapshot([id])
-      const drag: DragState = { type: 'single', key: id, ids: [id], origin: 'grid' }
-      setDraggingGroup(drag)
-      lastPointerRef.current = { x: event.clientX, y: event.clientY }
-      updateMoviePosition(drag, event.clientX, event.clientY)
-    }
+  const clearSelection = useCallback(() => {
+    setSelectedMovieId(null)
+  }, [])
 
-  const handleMovieListPointerDown =
-    (id: string) => (event: React.PointerEvent<HTMLLIElement>) => {
-      if (blockExampleEdit(event)) {
+  const beginPendingPointer = useCallback(
+    (primaryId: string, drag: DragState, event: React.PointerEvent) => {
+      event.preventDefault()
+      if (isExampleDeck) {
+        selectMovie(primaryId)
         return
       }
-      const target = event.target as HTMLElement | null
-      if (target?.closest('button')) {
-        return
-      }
-      setPendingMovieDrag({
-        id,
+      setPendingPointer({
+        primaryId,
+        drag,
         x: event.clientX,
         y: event.clientY,
         startedAt: performance.now(),
       })
+    },
+    [isExampleDeck, selectMovie],
+  )
+
+  const handlePointerDown =
+    (key: string, ids: string[], primaryId: string) =>
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.target !== event.currentTarget) {
+        return
+      }
+      beginPendingPointer(
+        primaryId,
+        { type: 'group', key, ids, origin: 'grid' },
+        event,
+      )
     }
 
+  const handleLabelPointerDown =
+    (id: string) => (event: React.PointerEvent<HTMLSpanElement>) => {
+      event.stopPropagation()
+      beginPendingPointer(
+        id,
+        { type: 'single', key: id, ids: [id], origin: 'grid' },
+        event,
+      )
+    }
+
+  const handleMovieListPointerDown =
+    (id: string) => (event: React.PointerEvent<HTMLLIElement>) => {
+      const target = event.target as HTMLElement | null
+      if (target?.closest('button')) {
+        return
+      }
+      beginPendingPointer(
+        id,
+        { type: 'single', key: id, ids: [id], origin: 'list' },
+        event,
+      )
+    }
+
+  const handleGridBackgroundPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    const target = event.target as Element
+    if (target.closest('.movie-point') || target.closest('.grid-toolbar')) {
+      return
+    }
+    clearSelection()
+  }
+
+  const handleSidebarBackgroundPointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    const target = event.target as Element
+    if (
+      target.closest('.movie-list li') ||
+      target.closest('.movie-selection-bar') ||
+      target.closest('button') ||
+      target.closest('input') ||
+      target.closest('select') ||
+      target.closest('textarea') ||
+      target.closest('a')
+    ) {
+      return
+    }
+    clearSelection()
+  }
+
   useEffect(() => {
-    if (!pendingMovieDrag) {
+    if (!pendingPointer) {
       return
     }
 
     const threshold = 12
     const minHoldMs = 120
+    let dragStarted = false
 
     const handlePointerMove = (event: PointerEvent) => {
-      if (performance.now() - pendingMovieDrag.startedAt < minHoldMs) {
+      if (dragStarted) {
         return
       }
-      const dx = event.clientX - pendingMovieDrag.x
-      const dy = event.clientY - pendingMovieDrag.y
+      if (performance.now() - pendingPointer.startedAt < minHoldMs) {
+        return
+      }
+      const dx = event.clientX - pendingPointer.x
+      const dy = event.clientY - pendingPointer.y
       if (Math.hypot(dx, dy) < threshold) {
         return
       }
 
-      const drag: DragState = {
-        type: 'single',
-        key: pendingMovieDrag.id,
-        ids: [pendingMovieDrag.id],
-        origin: 'list',
-      }
-      captureDragSnapshot(drag.ids)
-      setPendingMovieDrag(null)
-      setDraggingGroup(drag)
+      dragStarted = true
+      captureDragSnapshot(pendingPointer.drag.ids)
+      setPendingPointer(null)
+      setDraggingGroup(pendingPointer.drag)
       lastPointerRef.current = { x: event.clientX, y: event.clientY }
-      updateMoviePosition(drag, event.clientX, event.clientY)
+      updateMoviePosition(pendingPointer.drag, event.clientX, event.clientY)
     }
 
-    const handlePointerUp = () => setPendingMovieDrag(null)
+    const handlePointerUp = () => {
+      if (!dragStarted) {
+        selectMovie(pendingPointer.primaryId)
+      }
+      setPendingPointer(null)
+    }
 
     window.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerup', handlePointerUp, { once: true })
@@ -719,7 +770,71 @@ export function DeckPage() {
       window.removeEventListener('pointerup', handlePointerUp)
       window.removeEventListener('pointercancel', handlePointerUp)
     }
-  }, [captureDragSnapshot, pendingMovieDrag, updateMoviePosition])
+  }, [captureDragSnapshot, pendingPointer, selectMovie, updateMoviePosition])
+
+  const selectedMovie = useMemo(
+    () => deckMovies.find((movie) => movie.id === selectedMovieId) ?? null,
+    [deckMovies, selectedMovieId],
+  )
+
+  useEffect(() => {
+    if (!selectedMovieId) {
+      return
+    }
+    document
+      .querySelector(`[data-movie-list-id="${selectedMovieId}"]`)
+      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selectedMovieId])
+
+  const handleDeleteSelected = useCallback(() => {
+    if (!selectedMovieId) {
+      return
+    }
+    void removeMovie(selectedMovieId)
+  }, [removeMovie, selectedMovieId])
+
+  const handleSelectedScoreAdjustStart = useCallback(() => {
+    if (!selectedMovieId || isExampleDeck) {
+      return
+    }
+    captureDragSnapshot([selectedMovieId])
+  }, [captureDragSnapshot, isExampleDeck, selectedMovieId])
+
+  const handleSelectedScoreCommit = useCallback(async () => {
+    if (!selectedMovieId || isExampleDeck) {
+      return
+    }
+    await persistMoviePositions([selectedMovieId])
+    recordUndoIfChanged()
+  }, [isExampleDeck, persistMoviePositions, recordUndoIfChanged, selectedMovieId])
+
+  const handleSelectedFunChange = useCallback(
+    (value: number) => {
+      if (!selectedMovieId) {
+        return
+      }
+      if (isExampleDeck) {
+        alertExampleDeckReadOnly()
+        return
+      }
+      updateMovieAxisScore(selectedMovieId, 'fun', value)
+    },
+    [isExampleDeck, selectedMovieId, updateMovieAxisScore],
+  )
+
+  const handleSelectedGoodChange = useCallback(
+    (value: number) => {
+      if (!selectedMovieId) {
+        return
+      }
+      if (isExampleDeck) {
+        alertExampleDeckReadOnly()
+        return
+      }
+      updateMovieAxisScore(selectedMovieId, 'good', value)
+    },
+    [isExampleDeck, selectedMovieId, updateMovieAxisScore],
+  )
 
   useEffect(() => {
     if (!draggingGroup) {
@@ -791,18 +906,30 @@ export function DeckPage() {
   ])
 
   useEffect(() => {
+    const isTypingTarget = (target: EventTarget | null) =>
+      target instanceof HTMLElement &&
+      (target.isContentEditable ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        (target instanceof HTMLInputElement &&
+          target.type !== 'range' &&
+          target.type !== 'button'))
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z') {
+      if (isTypingTarget(event.target)) {
         return
       }
-      const target = event.target
-      if (
-        target instanceof HTMLElement &&
-        (target.isContentEditable ||
-          target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.tagName === 'SELECT')
-      ) {
+
+      if (event.key === 'Backspace' || event.key === 'Delete') {
+        if (!selectedMovieId) {
+          return
+        }
+        event.preventDefault()
+        void removeMovie(selectedMovieId)
+        return
+      }
+
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z') {
         return
       }
       if (isExampleDeck) {
@@ -827,7 +954,15 @@ export function DeckPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [canRedo, canUndo, handleRedo, handleUndo, isExampleDeck])
+  }, [
+    canRedo,
+    canUndo,
+    handleRedo,
+    handleUndo,
+    isExampleDeck,
+    removeMovie,
+    selectedMovieId,
+  ])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -869,6 +1004,7 @@ export function DeckPage() {
           className={['grid-wrapper', isExampleDeck ? 'grid-wrapper--example' : '']
             .filter(Boolean)
             .join(' ')}
+          onPointerDown={handleGridBackgroundPointerDown}
         >
           {!isExampleDeck && (
             <div className="grid-toolbar">
@@ -906,6 +1042,8 @@ export function DeckPage() {
                 : false
               const isGridHighlighted =
                 hoverLink?.from === 'list' && group.ids.includes(hoverLink.id)
+              const isGridSelected =
+                selectedMovieId !== null && group.ids.includes(selectedMovieId)
 
               return (
                 <div
@@ -913,12 +1051,13 @@ export function DeckPage() {
                   className={[
                     'movie-point',
                     isDragging ? 'dragging' : '',
+                    isGridSelected ? 'movie-point--selected' : '',
                     isGridHighlighted ? 'movie-point--highlighted' : '',
                   ]
                     .filter(Boolean)
                     .join(' ')}
                   style={{ left: `${left}%`, top: `${top}%` }}
-                  onPointerDown={handlePointerDown(key, group.ids)}
+                  onPointerDown={handlePointerDown(key, group.ids, group.items[0].id)}
                   onMouseEnter={
                     group.items.length === 1
                       ? () => highlightFromGrid(group.items[0].id)
@@ -940,6 +1079,7 @@ export function DeckPage() {
                         key={item.id}
                         className={[
                           'movie-label-line',
+                          selectedMovieId === item.id ? 'movie-label-line--selected' : '',
                           hoverLink?.from === 'list' && hoverLink.id === item.id
                             ? 'movie-label-line--linked'
                             : '',
@@ -1015,7 +1155,10 @@ export function DeckPage() {
             </div>
           )}
         </div>
-        <aside className="panel deck-sidebar">
+        <aside
+          className="panel deck-sidebar"
+          onPointerDown={handleSidebarBackgroundPointerDown}
+        >
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
             <p className="eyebrow">{isExampleDeck ? 'Example deck' : 'Deck'}</p>
@@ -1046,31 +1189,59 @@ export function DeckPage() {
                   required
                 />
               </label>
-              <label className="field">
-                <span>Fun (0–10)</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={10}
-                  step={0.01}
+              <div className="score-sliders score-sliders--add">
+                <ScoreSlider
+                  label="Fun"
                   value={fun}
-                  onChange={(event) => setFun(Number(event.target.value))}
+                  onChange={(value) => setFun(snapScoreToStep(value))}
                 />
-              </label>
-              <label className="field">
-                <span>Good (0–10)</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={10}
-                  step={0.01}
+                <ScoreSlider
+                  label="Good"
                   value={good}
-                  onChange={(event) => setGood(Number(event.target.value))}
+                  onChange={(value) => setGood(snapScoreToStep(value))}
                 />
-              </label>
+              </div>
               <button type="submit">Add movie</button>
             </form>
           </>
+        )}
+
+        {selectedMovie && (
+          <div className="movie-selection-panel">
+            <div className="movie-selection-bar">
+              <div className="movie-selection-info">
+                <span className="movie-selection-label">Selected</span>
+                <strong className="movie-selection-title" title={selectedMovie.title}>
+                  {selectedMovie.title}
+                </strong>
+              </div>
+              <button
+                type="button"
+                className="btn-delete-selected"
+                onClick={handleDeleteSelected}
+              >
+                Delete
+              </button>
+            </div>
+            <div className="score-sliders score-sliders--selected">
+              <ScoreSlider
+                label="Fun"
+                value={selectedMovie.fun}
+                disabled={isExampleDeck}
+                onAdjustStart={handleSelectedScoreAdjustStart}
+                onChange={handleSelectedFunChange}
+                onCommit={() => void handleSelectedScoreCommit()}
+              />
+              <ScoreSlider
+                label="Good"
+                value={selectedMovie.good}
+                disabled={isExampleDeck}
+                onAdjustStart={handleSelectedScoreAdjustStart}
+                onChange={handleSelectedGoodChange}
+                onCommit={() => void handleSelectedScoreCommit()}
+              />
+            </div>
+          </div>
         )}
 
         <div className="movie-list">
@@ -1094,11 +1265,15 @@ export function DeckPage() {
             {sortedMovies.map((movie) => (
               <li
                 key={movie.id}
-                className={
+                data-movie-list-id={movie.id}
+                className={[
+                  selectedMovieId === movie.id ? 'movie-list-item--selected' : '',
                   hoverLink?.from === 'grid' && hoverLink.id === movie.id
                     ? 'movie-list-item--highlighted'
-                    : undefined
-                }
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ') || undefined}
                 onPointerDown={handleMovieListPointerDown(movie.id)}
                 onMouseEnter={() => highlightFromList(movie.id)}
                 onMouseLeave={clearHoverLink}
