@@ -40,23 +40,28 @@ export function DecksPage() {
   }, [loadDecks])
 
   const sortedDecks = useMemo(() => {
-    const nextDecks = [...decks]
+    const examples = decks.filter((deck) => deck.isExample)
+    const userDecks = [...decks.filter((deck) => !deck.isExample)]
+
     switch (deckSort) {
       case 'manual':
-        return nextDecks
+        break
       case 'name':
-        return nextDecks.sort((a, b) => a.name.localeCompare(b.name))
+        userDecks.sort((a, b) => a.name.localeCompare(b.name))
+        break
       case 'count':
-        return nextDecks.sort(
-          (a, b) => (b.movieCount ?? 0) - (a.movieCount ?? 0),
-        )
+        userDecks.sort((a, b) => (b.movieCount ?? 0) - (a.movieCount ?? 0))
+        break
       case 'recent':
       default:
-        return nextDecks.sort(
+        userDecks.sort(
           (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
         )
+        break
     }
+
+    return [...examples, ...userDecks]
   }, [decks, deckSort])
 
   const ensureManualDeckOrder = useCallback(() => {
@@ -69,15 +74,23 @@ export function DecksPage() {
 
   const moveDeck = useCallback((draggedId: string, targetId: string) => {
     setDecks((current) => {
-      const fromIndex = current.findIndex((deck) => deck.id === draggedId)
-      const toIndex = current.findIndex((deck) => deck.id === targetId)
+      const dragged = current.find((deck) => deck.id === draggedId)
+      const target = current.find((deck) => deck.id === targetId)
+      if (!dragged || !target || dragged.isExample || target.isExample) {
+        return current
+      }
+
+      const examples = current.filter((deck) => deck.isExample)
+      const userDecks = current.filter((deck) => !deck.isExample)
+      const fromIndex = userDecks.findIndex((deck) => deck.id === draggedId)
+      const toIndex = userDecks.findIndex((deck) => deck.id === targetId)
       if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
         return current
       }
-      const next = [...current]
-      const [moved] = next.splice(fromIndex, 1)
-      next.splice(toIndex, 0, moved)
-      return next
+      const nextUserDecks = [...userDecks]
+      const [moved] = nextUserDecks.splice(fromIndex, 1)
+      nextUserDecks.splice(toIndex, 0, moved)
+      return [...examples, ...nextUserDecks]
     })
   }, [])
 
@@ -96,7 +109,11 @@ export function DecksPage() {
         body: JSON.stringify({ name: formatTitle(trimmedName) }),
       })
       if (data?.deck) {
-        setDecks((current) => [data.deck as Deck, ...current])
+        setDecks((current) => {
+          const examples = current.filter((deck) => deck.isExample)
+          const userDecks = current.filter((deck) => !deck.isExample)
+          return [...examples, data.deck as Deck, ...userDecks]
+        })
         setSelectedDeckId((data.deck as Deck).id)
         setDeckName('')
       }
@@ -170,7 +187,7 @@ export function DecksPage() {
         <div>
           <h2>Decks</h2>
           <p className="subhead">
-            Create and manage your decks, or explore the example 2025 and 2026 decks. Open a deck to compare it with another as a read-only ghost overlay.
+            Create and manage your decks, or explore the example decks. Open a deck to compare it with another as a read-only ghost overlay.
           </p>
         </div>
 
@@ -240,6 +257,9 @@ export function DecksPage() {
               }}
               onDrop={(event) => {
                 event.preventDefault()
+                if (deck.isExample) {
+                  return
+                }
                 const draggedId =
                   draggingDeckId ?? event.dataTransfer.getData('text/plain')
                 if (!draggedId || draggedId === deck.id) {

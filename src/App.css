@@ -1593,34 +1593,47 @@ html:has(.deck-page-layout) body {
     padding: 0.5rem 0.75rem 0.75rem;
   }
 
+  html:has(.deck-page-layout),
+  html:has(.deck-page-layout) body {
+    overflow: auto;
+    height: auto;
+    min-height: 100%;
+  }
+
   #root:has(.deck-page-layout) {
-    height: 100dvh;
-    overflow: hidden;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .app:has(.deck-page-layout) {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
   }
 
   .app:has(.deck-page-layout) > .layout {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
+    flex: none;
   }
 
   .deck-page-layout {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
+    flex: none;
+    overflow: visible;
   }
 
   .deck-page-layout .grid-panel {
     grid-column: auto;
     grid-row: auto;
-    flex: 1 1 auto;
-    min-height: 0;
+    flex: 0 0 auto;
     height: auto;
-    overflow: hidden;
-    container-type: size;
+    overflow: visible;
+    container-type: normal;
     align-items: stretch;
   }
 
@@ -1628,15 +1641,30 @@ html:has(.deck-page-layout) body {
     grid-column: auto;
     grid-row: auto;
     flex: 0 0 auto;
-    height: 24vh;
-    max-height: 24vh;
-    overflow: hidden;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
   }
 
   .deck-sidebar {
-    flex: 1 1 0;
-    min-height: 0;
+    flex: 0 0 auto;
+    height: auto;
+    min-height: auto;
     max-height: none;
+    overflow: visible;
+  }
+
+  .deck-sidebar-section--list.movie-list {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .deck-sidebar .movie-list ul {
+    flex: none;
+    max-height: none;
+    overflow-y: visible;
+    mask-image: none;
   }
 
   .grid-wrapper {
@@ -1651,21 +1679,22 @@ html:has(.deck-page-layout) body {
   }
 
   .deck-page-layout .grid-wrapper {
-    flex: 1 1 auto;
-    height: 100%;
+    flex: none;
+    height: auto;
+    max-height: none;
     align-self: stretch;
     grid-template-rows: minmax(0, 1fr) auto;
     --plot-chrome-y: 2.65rem;
   }
 
-  /* Square plot sized to the panel, reserving space for the Good axis row */
+  /* Square plot — viewport-based sizing so the page can scroll naturally */
   .deck-page-layout .grid-zoom-slot {
-    --plot-viewport-w: calc(100cqw - var(--plot-chrome-x));
-    --plot-viewport-h: calc(100cqh - var(--plot-chrome-y));
+    --plot-viewport-w: calc(100vw - 1.5rem - var(--plot-chrome-x));
+    --plot-viewport-h: min(var(--plot-viewport-w), 72dvh);
     --plot-side: min(var(--plot-viewport-w), var(--plot-viewport-h), var(--plot-side-max));
     width: 100%;
     height: var(--plot-viewport-h);
     min-height: 0;
-    max-height: var(--plot-viewport-h);
+    max-height: none;
   }
 }
