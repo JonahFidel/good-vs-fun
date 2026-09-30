@@ -6,9 +6,9 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react'
-import { useApiFetch } from '../lib/api'
-import { snapScoreToStep } from '../lib/format'
-import type { Movie } from '../lib/types'
+import { useApiFetch } from '../../lib/api'
+import { snapScoreToStep } from '../../lib/format'
+import type { Movie } from '../../lib/types'
 
 type MoviePosition = {
   id: string

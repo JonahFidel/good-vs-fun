@@ -9,7 +9,7 @@ import { useDeckMovieActions } from '../hooks/deck/useDeckMovieActions'
 import { useDeckSelection } from '../hooks/deck/useDeckSelection'
 import { useSelectedMovieActions } from '../hooks/deck/useSelectedMovieActions'
 import { useGhostCompare } from '../hooks/ghost/useGhostCompare'
-import { useMoveHistory } from '../hooks/useMoveHistory'
+import { useMoveHistory } from '../hooks/plot/useMoveHistory'
 import { usePlotDrag } from '../hooks/plot/usePlotDrag'
 import { groupByPosition } from '../lib/groupByPosition'
 
