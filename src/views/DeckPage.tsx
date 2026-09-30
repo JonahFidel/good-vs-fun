@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { DeckSidebar } from '../components/deck/DeckSidebar'
 import { GhostCompareControls } from '../components/GhostCompareControls'
 import { GhostPoints } from '../components/GhostPoints'
 import { GridAxes } from '../components/GridAxes'
 import { PlotGridZoom } from '../components/PlotGridZoom'
-import { ScoreSlider } from '../components/ScoreSlider'
 import { useGhostDeck } from '../hooks/useGhostDeck'
 import { useApiFetch } from '../lib/api'
 import { alertExampleDeckReadOnly } from '../lib/exampleDeck'
@@ -38,12 +38,8 @@ export function DeckPage() {
   const [deckName, setDeckName] = useState<string>('')
   const [isExampleDeck, setIsExampleDeck] = useState(false)
   const [deckMovies, setDeckMovies] = useState<Movie[]>([])
-  const [title, setTitle] = useState('')
-  const [fun, setFun] = useState(5)
-  const [good, setGood] = useState(5)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [movieSort, setMovieSort] = useState<'title' | 'fun' | 'good'>('title')
 
   const [allDecks, setAllDecks] = useState<Deck[]>([])
   const { movies: ghostMovies, name: ghostDeckName } = useGhostDeck(ghostDeckId)
@@ -172,23 +168,6 @@ export function DeckPage() {
     const qs = params.toString()
     navigate(`/deck/${swapId}/movies${qs ? `?${qs}` : ''}`)
   }
-
-  const sortedMovies = useMemo(() => {
-    const nextMovies = [...deckMovies]
-    switch (movieSort) {
-      case 'fun':
-        return nextMovies.sort((a, b) =>
-          b.fun === a.fun ? a.title.localeCompare(b.title) : b.fun - a.fun,
-        )
-      case 'good':
-        return nextMovies.sort((a, b) =>
-          b.good === a.good ? a.title.localeCompare(b.title) : b.good - a.good,
-        )
-      case 'title':
-      default:
-        return nextMovies.sort((a, b) => a.title.localeCompare(b.title))
-    }
-  }, [deckMovies, movieSort])
 
   const groupedMovies = useMemo(() => {
     const groups = new Map<
@@ -571,12 +550,6 @@ export function DeckPage() {
     [applyMovieScores],
   )
 
-  const handleExampleMovieDelete = (event: React.MouseEvent) => {
-    event.preventDefault()
-    event.stopPropagation()
-    alertExampleDeckReadOnly()
-  }
-
   const highlightFromList = useCallback((id: string) => {
     setHoverLink({ id, from: 'list' })
   }, [])
@@ -722,20 +695,6 @@ export function DeckPage() {
       window.removeEventListener('pointercancel', handlePointerUp)
     }
   }, [captureDragSnapshot, pendingPointer, selectMovie, updateMoviePosition])
-
-  const selectedMovie = useMemo(
-    () => deckMovies.find((movie) => movie.id === selectedMovieId) ?? null,
-    [deckMovies, selectedMovieId],
-  )
-
-  useEffect(() => {
-    if (!selectedMovieId) {
-      return
-    }
-    document
-      .querySelector(`[data-movie-list-id="${selectedMovieId}"]`)
-      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [selectedMovieId])
 
   const handleDeleteSelected = useCallback(() => {
     if (!selectedMovieId) {
@@ -959,34 +918,33 @@ export function DeckPage() {
     selectedMovieId,
   ])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const trimmedTitle = title.trim()
-    if (!trimmedTitle || !resolvedDeckId || isExampleDeck) {
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await apiFetch(`/api/decks/${resolvedDeckId}/movies`, {
-        method: 'POST',
-        body: JSON.stringify({
-          title: formatTitle(trimmedTitle),
-          fun: snapScoreToStep(fun),
-          good: snapScoreToStep(good),
-        }),
-      })
-      if (data?.movie) {
-        setDeckMovies((current) => [...current, data.movie as Movie])
-        setTitle('')
+  const handleAddMovie = useCallback(
+    async (movie: { title: string; fun: number; good: number }) => {
+      if (!resolvedDeckId || isExampleDeck) {
+        return false
       }
-    } catch {
-      setError('Failed to add movie.')
-    } finally {
-      setLoading(false)
-    }
-  }
+
+      setLoading(true)
+      setError(null)
+      try {
+        const data = await apiFetch(`/api/decks/${resolvedDeckId}/movies`, {
+          method: 'POST',
+          body: JSON.stringify(movie),
+        })
+        if (data?.movie) {
+          setDeckMovies((current) => [...current, data.movie as Movie])
+          return true
+        }
+        return false
+      } catch {
+        setError('Failed to add movie.')
+        return false
+      } finally {
+        setLoading(false)
+      }
+    },
+    [apiFetch, isExampleDeck, resolvedDeckId],
+  )
 
   return (
     <div
@@ -1106,187 +1064,40 @@ export function DeckPage() {
       </section>
 
       <div className="deck-rail">
-        <aside
-          className="panel deck-sidebar"
-          onPointerDown={handleSidebarBackgroundPointerDown}
+        <DeckSidebar
+          deckName={deckName}
+          isExampleDeck={isExampleDeck}
+          error={error}
+          loading={loading}
+          movies={deckMovies}
+          selectedMovieId={selectedMovieId}
+          hover={hoverLink}
+          onBackgroundPointerDown={handleSidebarBackgroundPointerDown}
+          onAddMovie={handleAddMovie}
+          onRenameSelected={() => void handleRenameSelected()}
+          onDeleteSelected={handleDeleteSelected}
+          onScoreAdjustStart={handleSelectedScoreAdjustStart}
+          onFunChange={handleSelectedFunChange}
+          onGoodChange={handleSelectedGoodChange}
+          onScoreCommit={() => void handleSelectedScoreCommit()}
+          onMoviePointerDown={handleMovieListPointerDown}
+          onHighlightFromList={highlightFromList}
+          onClearHover={clearHoverLink}
+          onRemoveMovie={(id) => void removeMovie(id)}
         >
-        <div className="deck-sidebar-section deck-sidebar-section--header">
-          <div className="deck-sidebar-top">
-            <div className="deck-sidebar-title-block">
-              <p className="eyebrow">{isExampleDeck ? 'Example deck' : 'Deck'}</p>
-              <h2>
-                {deckName || 'Loading…'}
-                {isExampleDeck && <span className="deck-example-badge">Example</span>}
-              </h2>
-            </div>
-            <Link className="deck-sidebar-back" to="/decks">
-              ← Back to decks
-            </Link>
-          </div>
-        </div>
-
-        <GhostCompareControls
-          primaryName={deckName}
-          primaryIsExample={isExampleDeck}
-          otherDecks={otherDecks}
-          ghostDeckId={ghostDeckId}
-          ghost2DeckId={ghost2DeckId}
-          ghostDeckName={ghostDeckName}
-          ghost2DeckName={ghost2DeckName}
-          onGhostDeckChange={handleSetGhostDeck}
-          onGhost2DeckChange={handleSetGhost2Deck}
-          onSwap={handleSwapDecks}
-        />
-
-        {error && <p className="error-banner">{error}</p>}
-        {loading && <p className="status-line">Syncing changes…</p>}
-
-        {!isExampleDeck && (
-          <div className="deck-sidebar-section deck-sidebar-section--add">
-            <h3 className="deck-sidebar-section__title">Add a movie</h3>
-            <form className="movie-form movie-form--compact" onSubmit={handleSubmit}>
-              <label className="field">
-                <span>Movie title</span>
-                <input
-                  type="text"
-                  placeholder="e.g. Jurassic Park"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  required
-                />
-              </label>
-              <div className="score-sliders score-sliders--add">
-                <ScoreSlider
-                  label="Fun"
-                  value={fun}
-                  onChange={(value) => setFun(snapScoreToStep(value))}
-                />
-                <ScoreSlider
-                  label="Good"
-                  value={good}
-                  onChange={(value) => setGood(snapScoreToStep(value))}
-                />
-              </div>
-              <button type="submit">Add movie</button>
-            </form>
-          </div>
-        )}
-
-        {selectedMovie && (
-          <div className="deck-sidebar-section movie-selection-panel">
-            <div className="movie-selection-bar">
-              <div className="movie-selection-info">
-                <span className="movie-selection-label">Selected</span>
-                <strong className="movie-selection-title" title={selectedMovie.title}>
-                  {selectedMovie.title}
-                </strong>
-              </div>
-              <div className="movie-selection-actions">
-                {!isExampleDeck && (
-                  <button
-                    type="button"
-                    className="btn-rename-selected"
-                    onClick={() => void handleRenameSelected()}
-                  >
-                    Rename
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="btn-delete-selected"
-                  onClick={handleDeleteSelected}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-            <div className="score-sliders score-sliders--selected">
-              <ScoreSlider
-                label="Fun"
-                value={selectedMovie.fun}
-                disabled={isExampleDeck}
-                onAdjustStart={handleSelectedScoreAdjustStart}
-                onChange={handleSelectedFunChange}
-                onCommit={() => void handleSelectedScoreCommit()}
-              />
-              <ScoreSlider
-                label="Good"
-                value={selectedMovie.good}
-                disabled={isExampleDeck}
-                onAdjustStart={handleSelectedScoreAdjustStart}
-                onChange={handleSelectedGoodChange}
-                onCommit={() => void handleSelectedScoreCommit()}
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="deck-sidebar-section deck-sidebar-section--list movie-list">
-          <h3 className="deck-sidebar-section__title deck-sidebar-section__title--inline">
-            Movies
-          </h3>
-          <div className="movie-list-header">
-            <label>
-              Sort movies
-              <select
-                value={movieSort}
-                onChange={(event) =>
-                  setMovieSort(event.target.value as 'title' | 'fun' | 'good')
-                }
-              >
-                <option value="title">Title</option>
-                <option value="fun">Fun</option>
-                <option value="good">Good</option>
-              </select>
-            </label>
-          </div>
-          <ul>
-            {sortedMovies.map((movie) => (
-              <li
-                key={movie.id}
-                data-movie-list-id={movie.id}
-                className={[
-                  selectedMovieId === movie.id ? 'movie-list-item--selected' : '',
-                  hoverLink?.from === 'grid' && hoverLink.id === movie.id
-                    ? 'movie-list-item--highlighted'
-                    : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ') || undefined}
-                onPointerDown={handleMovieListPointerDown(movie.id)}
-                onMouseEnter={() => highlightFromList(movie.id)}
-                onMouseLeave={clearHoverLink}
-              >
-                <div className="movie-list-title">
-                  <strong title={movie.title}>{movie.title}</strong>
-                  {isExampleDeck ? (
-                    <button
-                      type="button"
-                      className="movie-delete"
-                      aria-label={`Remove ${movie.title}`}
-                      onClick={handleExampleMovieDelete}
-                    >
-                      ×
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="movie-delete"
-                      aria-label={`Remove ${movie.title}`}
-                      onClick={() => removeMovie(movie.id)}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-                <span className="movie-list-scores">
-                  F {formatScore(movie.fun)} · G {formatScore(movie.good)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        </aside>
+          <GhostCompareControls
+            primaryName={deckName}
+            primaryIsExample={isExampleDeck}
+            otherDecks={otherDecks}
+            ghostDeckId={ghostDeckId}
+            ghost2DeckId={ghost2DeckId}
+            ghostDeckName={ghostDeckName}
+            ghost2DeckName={ghost2DeckName}
+            onGhostDeckChange={handleSetGhostDeck}
+            onGhost2DeckChange={handleSetGhost2Deck}
+            onSwap={handleSwapDecks}
+          />
+        </DeckSidebar>
       </div>
     </div>
   )
