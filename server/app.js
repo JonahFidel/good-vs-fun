@@ -7,13 +7,11 @@ import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { clerkMiddleware, getAuth } from '@clerk/express'
 import { db, dbInfo } from './db.js'
-import { EXAMPLE_DECKS } from './exampleDecks.js'
-
-const exampleDeckById = new Map(EXAMPLE_DECKS.map((deck) => [deck.id, deck]))
-
-const getExampleDeck = (deckId) => exampleDeckById.get(deckId) ?? null
-
-const isExampleDeckId = (deckId) => exampleDeckById.has(deckId)
+import {
+  EXAMPLE_DECKS,
+  getExampleDeck,
+  isExampleDeckId,
+} from './exampleDecks/index.js'
 
 export const app = express()
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
