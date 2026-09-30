@@ -1,7 +1,7 @@
-import { formatScore } from '../lib/format'
-import type { MovieHover } from '../lib/types'
-import { scoreToPlotPercent } from '../lib/gridCanvas'
-import type { PositionGroup } from '../lib/groupByPosition'
+import { formatScore } from '../../lib/format'
+import type { MovieHover } from '../../lib/types'
+import { scoreToPlotPercent } from '../../lib/gridCanvas'
+import type { PositionGroup } from '../../lib/groupByPosition'
 
 export function MoviePoints({
   groups,
