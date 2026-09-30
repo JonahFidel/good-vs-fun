@@ -7,7 +7,7 @@ import {
   type SetStateAction,
 } from 'react'
 import { snapScoreToStep } from '../lib/format'
-import { pointerRatioToScore } from '../lib/gridCanvas'
+import { findSnapTarget, scoresAtPointer } from '../lib/findSnapTarget'
 import type { Movie } from '../lib/types'
 
 type DragState = {
@@ -76,129 +76,6 @@ export function usePlotDrag({
     [moviesRef, setMovies],
   )
 
-  const findSnapTarget = useCallback(
-    (dragging: DragState, clientX: number, clientY: number) => {
-      const grid = gridRef.current
-      if (!grid) {
-        return null
-      }
-
-      const rect = grid.getBoundingClientRect()
-
-      // Same-cell snapping: when you drop on another point/label.
-      const intersectionArea = (a: DOMRect, b: DOMRect) => {
-        const x1 = Math.max(a.left, b.left)
-        const y1 = Math.max(a.top, b.top)
-        const x2 = Math.min(a.right, b.right)
-        const y2 = Math.min(a.bottom, b.bottom)
-        const width = Math.max(0, x2 - x1)
-        const height = Math.max(0, y2 - y1)
-        return width * height
-      }
-
-      const overlapRatio = (a: DOMRect, b: DOMRect) => {
-        const areaA = a.width * a.height
-        const areaB = b.width * b.height
-        if (areaA === 0 || areaB === 0) {
-          return 0
-        }
-        return intersectionArea(a, b) / Math.min(areaA, areaB)
-      }
-
-      const excludeSet = new Set(dragging.ids)
-      const groups = new Map<string, { fun: number; good: number; ids: string[] }>()
-
-      moviesRef.current.forEach((movie) => {
-        if (excludeSet.has(movie.id)) {
-          return
-        }
-        const funScore = snapScoreToStep(movie.fun)
-        const goodScore = snapScoreToStep(movie.good)
-        const key = `${funScore.toFixed(2)}-${goodScore.toFixed(2)}`
-        const existing = groups.get(key)
-        if (existing) {
-          existing.ids.push(movie.id)
-        } else {
-          groups.set(key, { fun: funScore, good: goodScore, ids: [movie.id] })
-        }
-      })
-
-      const overlapThreshold = 0.8
-      const draggedRects: DOMRect[] = []
-
-      const gridEl = gridRef.current
-      if (!gridEl) {
-        return null
-      }
-
-      if (dragging.type === 'single') {
-        const draggedTitle = gridEl.querySelector(
-          `[data-movie-id="${CSS.escape(dragging.key)}"]`,
-        ) as HTMLElement | null
-        if (draggedTitle) {
-          draggedRects.push(draggedTitle.getBoundingClientRect())
-          const parentPoint = draggedTitle.closest('.movie-point') as HTMLElement | null
-          if (parentPoint) {
-            draggedRects.push(parentPoint.getBoundingClientRect())
-          }
-        }
-      } else {
-        const draggedPoint = gridEl.querySelector(
-          `.movie-point[data-group-key="${CSS.escape(dragging.key)}"]`,
-        ) as HTMLElement | null
-        if (draggedPoint) {
-          draggedRects.push(draggedPoint.getBoundingClientRect())
-          const label = draggedPoint.querySelector('.movie-label') as HTMLElement | null
-          if (label) {
-            draggedRects.push(label.getBoundingClientRect())
-          }
-        }
-      }
-
-      let best: { fun: number; good: number; ratio: number } | null = null
-
-      for (const [key, group] of groups.entries()) {
-        const groupEl = gridEl.querySelector(
-          `.movie-point[data-group-key="${CSS.escape(key)}"]`,
-        ) as HTMLElement | null
-        if (!groupEl || draggedRects.length === 0) {
-          continue
-        }
-
-        const dotRect = groupEl.getBoundingClientRect()
-        const labelEls = Array.from(
-          groupEl.querySelectorAll('[data-movie-id]') as NodeListOf<HTMLElement>,
-        )
-
-        for (const draggedRect of draggedRects) {
-          const dotRatio = overlapRatio(draggedRect, dotRect)
-          if (dotRatio >= overlapThreshold && (!best || dotRatio > best.ratio)) {
-            best = { fun: group.fun, good: group.good, ratio: dotRatio }
-          }
-
-          for (const labelEl of labelEls) {
-            const labelRatio = overlapRatio(draggedRect, labelEl.getBoundingClientRect())
-            if (labelRatio >= overlapThreshold && (!best || labelRatio > best.ratio)) {
-              best = { fun: group.fun, good: group.good, ratio: labelRatio }
-            }
-          }
-        }
-      }
-
-      if (best !== null) {
-        return { fun: best.fun, good: best.good }
-      }
-
-      // Otherwise, snap to the step grid where you released (inside the grid).
-      const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width)
-      const clampedY = Math.min(Math.max(clientY - rect.top, 0), rect.height)
-      const good = snapScoreToStep(pointerRatioToScore(clampedX / rect.width))
-      const fun = snapScoreToStep(pointerRatioToScore(1 - clampedY / rect.height))
-      return { fun, good }
-    },
-    [moviesRef],
-  )
-
   const updateMoviePosition = useCallback(
     (dragging: DragState, clientX: number, clientY: number) => {
       const grid = gridRef.current
@@ -219,11 +96,8 @@ export function usePlotDrag({
         return
       }
 
-      const clampedX = Math.min(Math.max(clientX - rect.left, 0), rect.width)
-      const clampedY = Math.min(Math.max(clientY - rect.top, 0), rect.height)
-      const nextGood = snapScoreToStep(pointerRatioToScore(clampedX / rect.width))
-      const nextFun = snapScoreToStep(pointerRatioToScore(1 - clampedY / rect.height))
-      applyMovieScores(dragging.ids, nextFun, nextGood)
+      const { fun, good } = scoresAtPointer(grid, clientX, clientY)
+      applyMovieScores(dragging.ids, fun, good)
     },
     [applyMovieScores],
   )
@@ -369,7 +243,15 @@ export function usePlotDrag({
         return
       }
 
-      const snapTarget = last ? findSnapTarget(draggingGroup, last.x, last.y) : null
+      const snapTarget = last
+        ? findSnapTarget(
+            gridRef.current,
+            moviesRef.current,
+            draggingGroup,
+            last.x,
+            last.y,
+          )
+        : null
       if (snapTarget) {
         applyMovieScores(draggingGroup.ids, snapTarget.fun, snapTarget.good)
         persistMoviePositions(draggingGroup.ids, snapTarget)
@@ -394,7 +276,7 @@ export function usePlotDrag({
     applyMovieScores,
     discardDragSnapshot,
     draggingGroup,
-    findSnapTarget,
+    moviesRef,
     persistMoviePositions,
     recordUndoIfChanged,
     updateMoviePosition,
