@@ -1,0 +1,401 @@
+/* Plot grid, axis ticks, and movie points. */
+
+.grid-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  justify-self: start;
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.grid-panel h2 {
+  margin: 0;
+}
+
+.grid-panel p {
+  margin: 0.2rem 0 0;
+  color: #6b7280;
+}
+
+.grid-wrapper {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr;
+  grid-template-rows: 1fr 1.75rem;
+  gap: 0.15rem;
+  align-items: center;
+  padding: 0.75rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.grid-zoom-slot {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  justify-self: start;
+  align-self: start;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.grid-zoom-canvas {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  min-width: 700px;
+}
+
+.grid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  touch-action: none;
+  min-width: 700px;
+}
+
+/* The 0–10 scoring region inside the canvas (see --grid-margin / --grid-canvas). */
+.grid::before {
+  content: '';
+  position: absolute;
+  left: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  bottom: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  width: calc(100% * var(--grid-score-max) / var(--grid-canvas));
+  height: calc(100% * var(--grid-score-max) / var(--grid-canvas));
+  border-left: 4px solid #111827;
+  border-bottom: 4px solid #111827;
+  border-right: 2px solid #111827;
+  border-top: 2px solid #111827;
+  background-image: linear-gradient(#e5e7eb 1px, transparent 1px),
+    linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+  /* 10% of ::before width = 1 scoring unit */
+  background-size: 10% 10%;
+  background-position: 0 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.deck-page-layout .grid-axis {
+  font-size: 1.15rem;
+}
+
+.grid-axis {
+  position: static;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.grid-tick {
+  position: absolute;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #9ca3af;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Bottom axis labels — anchored on y=0, shifted into the margin below */
+.grid-tick-x {
+  bottom: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(-50%, calc(100% + var(--grid-tick-outset-major)));
+}
+
+/* Left axis labels — anchored on x=0, shifted into the margin left */
+.grid-tick-y {
+  left: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(calc(-100% - var(--grid-tick-outset-major)), -50%);
+}
+
+/* Tick notch points toward the axis line it labels */
+.grid-tick-x::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -9px;
+  bottom: auto;
+  width: 2px;
+  height: 6px;
+  transform: translateX(-50%);
+  background: #9ca3af;
+}
+
+.grid-tick-y::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -9px;
+  left: auto;
+  width: 6px;
+  height: 2px;
+  transform: translateY(-50%);
+  background: #9ca3af;
+}
+
+.grid-subtick {
+  position: absolute;
+  pointer-events: none;
+  background: #cbd5e1;
+  z-index: 0;
+}
+
+/* Bottom subticks — just below x=0 */
+.grid-subtick-x {
+  bottom: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  width: 1px;
+  height: 3px;
+  transform: translate(-50%, var(--grid-tick-outset-minor));
+}
+
+/* Left subticks — just left of y=0 */
+.grid-subtick-y {
+  left: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  width: 3px;
+  height: 1px;
+  transform: translate(calc(-1 * var(--grid-tick-outset-minor)), -50%);
+}
+
+.grid-subtick-x.grid-subtick-mid {
+  height: 5px;
+}
+
+.grid-subtick-y.grid-subtick-mid {
+  width: 5px;
+}
+
+/* Top axis — anchored on y=10, shifted into the margin above */
+.grid-tick-x-top {
+  bottom: auto;
+  top: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(-50%, calc(-100% - var(--grid-tick-outset-top)));
+}
+
+/* Tick notch points downward toward y=10 */
+.grid-tick-x-top::before {
+  top: auto;
+  bottom: -9px;
+}
+
+/* Top subticks — just above y=10 */
+.grid-subtick-x-top {
+  bottom: auto;
+  top: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(-50%, calc(-100% - var(--grid-tick-outset-minor-top) + 2px));
+}
+
+/* Right axis — anchored on x=10, shifted into the margin right */
+.grid-tick-y-right {
+  left: auto;
+  right: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(calc(100% + var(--grid-tick-outset-right)), -50%);
+}
+
+/* Tick notch points leftward toward x=10 */
+.grid-tick-y-right::before {
+  right: auto;
+  left: -9px;
+}
+
+/* Right subticks — just right of x=10 */
+.grid-subtick-y-right {
+  left: auto;
+  right: calc(100% * var(--grid-margin) / var(--grid-canvas));
+  transform: translate(var(--grid-tick-outset-minor-right), -50%);
+}
+
+/* Bottom axis "10" — keep centered on x=10 like other ticks (aligns with subtick) */
+.grid-tick-end-x {
+  transform: translate(-50%, calc(100% + var(--grid-tick-outset-major)));
+}
+
+/* Right axis "10" shifts slightly down to avoid the top-right corner */
+.grid-tick-end-y-right {
+  transform: translate(calc(100% + var(--grid-tick-outset-right)), calc(-50% + 3px));
+}
+
+.grid-axis-y {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.grid-axis-x {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: center;
+  align-self: start;
+}
+
+.movie-point {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  z-index: 1;
+}
+
+.movie-point.dragging {
+  cursor: grabbing;
+  z-index: 2;
+}
+
+.movie-point--highlighted {
+  z-index: 3;
+}
+
+/* Always-visible title label — dark pill so it reads clearly off the grid */
+.movie-point > span {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translate(calc(-100% - 7px), -50%);
+  white-space: nowrap;
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.2;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 2px 6px rgba(15, 23, 42, 0.45),
+    0 5px 14px rgba(15, 23, 42, 0.35);
+  cursor: default;
+  z-index: 1;
+}
+
+.movie-point::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #dc2626;
+  box-shadow:
+    0 0 0 2px rgba(220, 38, 38, 0.5),
+    0 2px 8px rgba(15, 23, 42, 0.45);
+  z-index: 2;
+}
+
+.movie-point.movie-point--highlighted::after {
+  background: #16a34a;
+  box-shadow:
+    0 0 0 2px rgba(34, 197, 94, 0.95),
+    0 0 10px 3px rgba(34, 197, 94, 0.65),
+    0 0 22px 8px rgba(34, 197, 94, 0.4);
+}
+
+.movie-point--selected {
+  z-index: 4;
+}
+
+.movie-point.movie-point--selected::after {
+  background: #2563eb;
+  box-shadow:
+    0 0 0 2px rgba(59, 130, 246, 0.95),
+    0 0 12px 4px rgba(59, 130, 246, 0.65),
+    0 0 24px 10px rgba(59, 130, 246, 0.4);
+}
+
+.movie-label-line--selected .movie-label-title {
+  border-color: #3b82f6;
+  color: #eff6ff;
+  box-shadow:
+    0 0 0 2px rgba(59, 130, 246, 0.6),
+    0 0 16px 5px rgba(59, 130, 246, 0.45);
+}
+
+.movie-label-line--linked .movie-label-title {
+  border-color: #22c55e;
+  box-shadow:
+    0 0 0 2px rgba(34, 197, 94, 0.55),
+    0 0 14px 4px rgba(34, 197, 94, 0.45);
+}
+
+/* Score tooltip on hover — darker, red-outlined pill above the dot */
+.movie-point .movie-point-score {
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: calc(100% + 5px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: #030712;
+  color: #ffffff;
+  border: 2px solid #ef4444;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 3px 10px rgba(15, 23, 42, 0.55),
+    0 6px 18px rgba(239, 68, 68, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  z-index: 3;
+}
+
+.movie-point:hover .movie-point-score,
+.movie-point.dragging .movie-point-score {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.movie-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  line-height: 1.2;
+}
+
+.movie-label-line {
+  display: block;
+  white-space: nowrap;
+  position: static;
+}
+
+.movie-label-title {
+  display: inline-block;
+}
+
+.movie-delete {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding-left: .2em;
+  padding-right: 0px;
+  cursor: pointer;
+  align-self: center;
+  vertical-align: middle;
+  transform: translateY(0px);
+}
+
+.movie-delete:hover {
+  color: #ef4444;
+}
+
+/* Hide delete (×) buttons in the grid labels, keep them in the list */
+.movie-point .movie-delete {
+  display: none;
+}

@@ -1,0 +1,187 @@
+/* Ghost deck compare controls, undo toolbar, and ghost plot markers. */
+
+/* ── Ghost deck overlay ────────────────────────────────────────────────── */
+
+.ghost-compare-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.ghost-compare-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.ghost-compare-label--secondary {
+  margin-top: 0.75rem;
+}
+
+.ghost-compare-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.35;
+}
+
+.ghost-compare-section h3 {
+  margin: 0 0 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.ghost-compare-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.ghost-compare-row select {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: #fff;
+  color: #111827;
+}
+
+.btn-swap {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.btn-swap:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.grid-toolbar {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.deck-page-layout .grid-toolbar {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 4;
+}
+
+.btn-undo {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+}
+
+.btn-undo:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btn-undo:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Legend in grid header */
+.ghost-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.35rem;
+}
+
+.ghost-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.ghost-swatch {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+}
+
+.ghost-swatch-primary {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.ghost-swatch-ghost {
+  background: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  opacity: 0.65;
+}
+
+.ghost-swatch-ghost2 {
+  background: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+  opacity: 0.65;
+}
+
+/* Ghost points on the grid */
+.ghost-point {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.5;
+  z-index: 0;
+}
+
+.ghost-point--1::after {
+  background: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.18);
+}
+
+.ghost-point--2::after {
+  background: #0d9488;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.18);
+}
+
+/* Ghost labels appear on the right to minimise overlap with primary labels */
+.ghost-point > span {
+  left: auto;
+  right: 0;
+  transform: translate(calc(100% + 7px), -50%);
+  font-size: 0.58rem;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.1);
+}
+
+.ghost-point--1 > span {
+  background: rgba(245, 243, 255, 0.96);
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
+}
+
+.ghost-point--2 > span {
+  background: rgba(240, 253, 250, 0.96);
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
