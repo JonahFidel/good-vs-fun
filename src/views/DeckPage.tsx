@@ -7,6 +7,7 @@ import { useDeckKeyboard } from '../hooks/useDeckKeyboard'
 import { useDeckLoad } from '../hooks/useDeckLoad'
 import { useDeckMovieActions } from '../hooks/useDeckMovieActions'
 import { useDeckSelection } from '../hooks/useDeckSelection'
+import { useSelectedMovieActions } from '../hooks/useSelectedMovieActions'
 import { useGhostCompare } from '../hooks/useGhostCompare'
 import { useMoveHistory } from '../hooks/useMoveHistory'
 import { usePlotDrag } from '../hooks/usePlotDrag'
@@ -70,25 +71,32 @@ export function DeckPage() {
     handleSwapDecks,
   } = useGhostCompare(resolvedDeckId)
 
-  const {
-    persistMoviePositions,
-    removeMovie,
-    handleAddMovie,
-    handleDeleteSelected,
-    handleRenameSelected,
-    handleSelectedScoreAdjustStart,
-    handleSelectedScoreCommit,
-    handleSelectedFunChange,
-    handleSelectedGoodChange,
-  } = useDeckMovieActions({
+  const { persistMoviePositions, removeMovie, handleAddMovie } = useDeckMovieActions({
     deckId: resolvedDeckId,
     isExampleDeck,
     moviesRef,
     setMovies: setDeckMovies,
     setError,
     setLoading,
-    selectedMovieId,
     setSelectedMovieId,
+  })
+
+  const {
+    handleDeleteSelected,
+    handleRenameSelected,
+    handleSelectedScoreAdjustStart,
+    handleSelectedScoreCommit,
+    handleSelectedFunChange,
+    handleSelectedGoodChange,
+  } = useSelectedMovieActions({
+    deckId: resolvedDeckId,
+    isExampleDeck,
+    moviesRef,
+    setMovies: setDeckMovies,
+    setError,
+    selectedMovieId,
+    persistMoviePositions,
+    removeMovie,
     captureDragSnapshot,
     recordUndoIfChanged,
   })
