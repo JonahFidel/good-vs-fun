@@ -187,7 +187,7 @@ export function DecksPage() {
         <div>
           <h2>Decks</h2>
           <p className="subhead">
-            Create and manage your decks, or explore the example decks. Open a deck to compare it with another as a read-only ghost overlay.
+            Create and manage your decks, or explore the example decks. Open a deck to compare it with up to two others as read-only ghost overlays.
           </p>
         </div>
 

@@ -37,7 +37,14 @@ function groupByPosition(movies: Movie[]): PositionGroup[] {
   }))
 }
 
-function GhostPoints({ groups }: { groups: PositionGroup[] }) {
+function GhostPoints({
+  groups,
+  variant = 1,
+}: {
+  groups: PositionGroup[]
+  variant?: 1 | 2
+}) {
+  const variantClass = variant === 2 ? 'ghost-point--2' : 'ghost-point--1'
   return (
     <>
       {groups.map((group) => {
@@ -45,8 +52,8 @@ function GhostPoints({ groups }: { groups: PositionGroup[] }) {
         const top = scoreToPlotPercent(group.fun, 'y')
         return (
           <div
-            key={`ghost-${group.key}`}
-            className="movie-point ghost-point"
+            key={`ghost-${variant}-${group.key}`}
+            className={`movie-point ghost-point ${variantClass}`}
             style={{ left: `${left}%`, top: `${top}%` }}
           >
             <span className="movie-label">
@@ -83,6 +90,7 @@ export function DeckPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const resolvedDeckId = typeof deckId === 'string' ? deckId : null
   const ghostDeckId = searchParams.get('ghost') ?? ''
+  const ghost2DeckId = searchParams.get('ghost2') ?? ''
 
   const [deckName, setDeckName] = useState<string>('')
   const [isExampleDeck, setIsExampleDeck] = useState(false)
@@ -94,10 +102,12 @@ export function DeckPage() {
   const [loading, setLoading] = useState(false)
   const [movieSort, setMovieSort] = useState<'title' | 'fun' | 'good'>('title')
 
-  // Ghost deck state
+  // Ghost deck state (up to two overlays)
   const [allDecks, setAllDecks] = useState<Deck[]>([])
   const [ghostMovies, setGhostMovies] = useState<Movie[]>([])
   const [ghostDeckName, setGhostDeckName] = useState('')
+  const [ghost2Movies, setGhost2Movies] = useState<Movie[]>([])
+  const [ghost2DeckName, setGhost2DeckName] = useState('')
 
   const [draggingGroup, setDraggingGroup] = useState<DragState | null>(null)
   const [canUndo, setCanUndo] = useState(false)
@@ -182,7 +192,7 @@ export function DeckPage() {
     }
   }, [apiFetch])
 
-  // Load ghost deck movies whenever the ghost ID changes
+  // Load ghost deck movies whenever the ghost IDs change
   useEffect(() => {
     if (!ghostDeckId) {
       setGhostMovies([])
@@ -203,23 +213,65 @@ export function DeckPage() {
     }
   }, [ghostDeckId, apiFetch])
 
+  useEffect(() => {
+    if (!ghost2DeckId) {
+      setGhost2Movies([])
+      setGhost2DeckName('')
+      return
+    }
+    let isActive = true
+    apiFetch(`/api/decks/${ghost2DeckId}`)
+      .then((data) => {
+        if (isActive) {
+          setGhost2Movies((data?.movies ?? []) as Movie[])
+          setGhost2DeckName(String(data?.deck?.name ?? ''))
+        }
+      })
+      .catch(() => {})
+    return () => {
+      isActive = false
+    }
+  }, [ghost2DeckId, apiFetch])
+
   const ghostGroups = useMemo(() => groupByPosition(ghostMovies), [ghostMovies])
+  const ghost2Groups = useMemo(() => groupByPosition(ghost2Movies), [ghost2Movies])
   const otherDecks = useMemo(
     () => allDecks.filter((d) => d.id !== resolvedDeckId),
     [allDecks, resolvedDeckId],
   )
 
-  function handleSetGhostDeck(id: string) {
-    if (id) {
-      setSearchParams({ ghost: id }, { replace: true })
-    } else {
-      setSearchParams({}, { replace: true })
-    }
+  function writeGhostParams(nextGhost: string, nextGhost2: string) {
+    const params = new URLSearchParams()
+    if (nextGhost) params.set('ghost', nextGhost)
+    if (nextGhost2) params.set('ghost2', nextGhost2)
+    setSearchParams(params, { replace: true })
   }
 
-  function handleSwapDecks() {
-    if (!resolvedDeckId || !ghostDeckId) return
-    navigate(`/deck/${ghostDeckId}/movies?ghost=${resolvedDeckId}`)
+  function handleSetGhostDeck(id: string) {
+    // Don't allow the same deck in both ghost slots
+    const nextGhost2 = id && id === ghost2DeckId ? '' : ghost2DeckId
+    writeGhostParams(id, nextGhost2)
+  }
+
+  function handleSetGhost2Deck(id: string) {
+    const nextGhost = id && id === ghostDeckId ? '' : ghostDeckId
+    writeGhostParams(nextGhost, id)
+  }
+
+  function handleSwapDecks(withGhost: 1 | 2 = 1) {
+    if (!resolvedDeckId) return
+    const swapId = withGhost === 1 ? ghostDeckId : ghost2DeckId
+    if (!swapId) return
+    const params = new URLSearchParams()
+    if (withGhost === 1) {
+      params.set('ghost', resolvedDeckId)
+      if (ghost2DeckId) params.set('ghost2', ghost2DeckId)
+    } else {
+      if (ghostDeckId) params.set('ghost', ghostDeckId)
+      params.set('ghost2', resolvedDeckId)
+    }
+    const qs = params.toString()
+    navigate(`/deck/${swapId}/movies${qs ? `?${qs}` : ''}`)
   }
 
   const sortedMovies = useMemo(() => {
@@ -793,6 +845,50 @@ export function DeckPage() {
     void removeMovie(selectedMovieId)
   }, [removeMovie, selectedMovieId])
 
+  const handleRenameSelected = useCallback(async () => {
+    if (!selectedMovieId || !resolvedDeckId) {
+      return
+    }
+    if (isExampleDeck) {
+      alertExampleDeckReadOnly()
+      return
+    }
+
+    const current = moviesRef.current.find((movie) => movie.id === selectedMovieId)
+    if (!current) {
+      return
+    }
+
+    const nextTitle = window.prompt('Rename movie', current.title)
+    if (!nextTitle) {
+      return
+    }
+
+    const formattedTitle = formatTitle(nextTitle.trim())
+    if (!formattedTitle || formattedTitle === current.title) {
+      return
+    }
+
+    setError(null)
+    try {
+      await apiFetch(`/api/decks/${resolvedDeckId}/movies/${selectedMovieId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: formattedTitle,
+          fun: current.fun,
+          good: current.good,
+        }),
+      })
+      setDeckMovies((movies) =>
+        movies.map((movie) =>
+          movie.id === selectedMovieId ? { ...movie, title: formattedTitle } : movie,
+        ),
+      )
+    } catch {
+      setError('Failed to rename movie.')
+    }
+  }, [apiFetch, isExampleDeck, resolvedDeckId, selectedMovieId])
+
   const handleSelectedScoreAdjustStart = useCallback(() => {
     if (!selectedMovieId || isExampleDeck) {
       return
@@ -1032,7 +1128,8 @@ export function DeckPage() {
           <div className="grid-axis grid-axis-x">Good</div>
           <PlotGridZoom ref={gridRef}>
             <GridAxes />
-            {ghostDeckId && <GhostPoints groups={ghostGroups} />}
+            {ghostDeckId && <GhostPoints groups={ghostGroups} variant={1} />}
+            {ghost2DeckId && <GhostPoints groups={ghost2Groups} variant={2} />}
             {groupedMovies.map((group) => {
               const left = scoreToPlotPercent(group.good, 'x')
               const top = scoreToPlotPercent(group.fun, 'y')
@@ -1129,7 +1226,7 @@ export function DeckPage() {
           </div>
         </div>
 
-        {(otherDecks.length > 0 || ghostDeckId) && (
+        {(otherDecks.length > 0 || ghostDeckId || ghost2DeckId) && (
           <div className="deck-sidebar-section deck-sidebar-section--tools deck-sidebar-tools">
             {otherDecks.length > 0 && (
               <div className="ghost-compare-section">
@@ -1143,33 +1240,79 @@ export function DeckPage() {
                     onChange={(e) => handleSetGhostDeck(e.target.value)}
                   >
                     <option value="">None</option>
-                    {otherDecks.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
+                    {otherDecks
+                      .filter((d) => d.id !== ghost2DeckId)
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
                   </select>
                   {ghostDeckId && (
-                    <button type="button" className="btn-swap" onClick={handleSwapDecks}>
+                    <button
+                      type="button"
+                      className="btn-swap"
+                      onClick={() => handleSwapDecks(1)}
+                    >
+                      ⇄ Swap primary
+                    </button>
+                  )}
+                </div>
+                <label
+                  className="ghost-compare-label ghost-compare-label--secondary"
+                  htmlFor="ghost2-deck-select"
+                >
+                  And also
+                </label>
+                <div className="ghost-compare-row">
+                  <select
+                    id="ghost2-deck-select"
+                    value={ghost2DeckId}
+                    onChange={(e) => handleSetGhost2Deck(e.target.value)}
+                  >
+                    <option value="">None</option>
+                    {otherDecks
+                      .filter((d) => d.id !== ghostDeckId)
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                  </select>
+                  {ghost2DeckId && (
+                    <button
+                      type="button"
+                      className="btn-swap"
+                      onClick={() => handleSwapDecks(2)}
+                    >
                       ⇄ Swap primary
                     </button>
                   )}
                 </div>
                 <p className="ghost-compare-hint">
-                  Ghost deck is view-only on the grid — edit the primary deck, then swap if needed.
+                  Ghost decks are view-only on the grid — edit the primary deck, then swap if
+                  needed.
                 </p>
               </div>
             )}
-            {ghostDeckId && (
+            {(ghostDeckId || ghost2DeckId) && (
               <div className="ghost-legend">
                 <span className="ghost-legend-item">
                   <span className="ghost-swatch ghost-swatch-primary" />
                   {deckName} (primary{isExampleDeck ? ', read-only' : ', editable'})
                 </span>
-                <span className="ghost-legend-item">
-                  <span className="ghost-swatch ghost-swatch-ghost" />
-                  {ghostDeckName || '…'} (ghost, read-only)
-                </span>
+                {ghostDeckId && (
+                  <span className="ghost-legend-item">
+                    <span className="ghost-swatch ghost-swatch-ghost" />
+                    {ghostDeckName || '…'} (ghost, read-only)
+                  </span>
+                )}
+                {ghost2DeckId && (
+                  <span className="ghost-legend-item">
+                    <span className="ghost-swatch ghost-swatch-ghost2" />
+                    {ghost2DeckName || '…'} (ghost, read-only)
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -1218,13 +1361,24 @@ export function DeckPage() {
                   {selectedMovie.title}
                 </strong>
               </div>
-              <button
-                type="button"
-                className="btn-delete-selected"
-                onClick={handleDeleteSelected}
-              >
-                Delete
-              </button>
+              <div className="movie-selection-actions">
+                {!isExampleDeck && (
+                  <button
+                    type="button"
+                    className="btn-rename-selected"
+                    onClick={() => void handleRenameSelected()}
+                  >
+                    Rename
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn-delete-selected"
+                  onClick={handleDeleteSelected}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
             <div className="score-sliders score-sliders--selected">
               <ScoreSlider

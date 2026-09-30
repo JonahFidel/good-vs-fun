@@ -964,6 +964,31 @@ html:has(.deck-page-layout) body {
   color: #64748b;
 }
 
+.movie-selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.btn-rename-selected {
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-rename-selected:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
 .btn-delete-selected {
   flex-shrink: 0;
   padding: 0.35rem 0.75rem;
@@ -1442,6 +1467,10 @@ html:has(.deck-page-layout) body {
   color: #374151;
 }
 
+.ghost-compare-label--secondary {
+  margin-top: 0.75rem;
+}
+
 .ghost-compare-hint {
   margin: 0.35rem 0 0;
   font-size: 0.75rem;
@@ -1563,6 +1592,12 @@ html:has(.deck-page-layout) body {
   opacity: 0.65;
 }
 
+.ghost-swatch-ghost2 {
+  background: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+  opacity: 0.65;
+}
+
 /* Ghost points on the grid */
 .ghost-point {
   cursor: default;
@@ -1571,9 +1606,14 @@ html:has(.deck-page-layout) body {
   z-index: 0;
 }
 
-.ghost-point::after {
+.ghost-point--1::after {
   background: #8b5cf6;
   box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.18);
+}
+
+.ghost-point--2::after {
+  background: #0d9488;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.18);
 }
 
 /* Ghost labels appear on the right to minimise overlap with primary labels */
@@ -1581,11 +1621,20 @@ html:has(.deck-page-layout) body {
   left: auto;
   right: 0;
   transform: translate(calc(100% + 7px), -50%);
+  font-size: 0.58rem;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.1);
+}
+
+.ghost-point--1 > span {
   background: rgba(245, 243, 255, 0.96);
   color: #5b21b6;
   border: 1px solid #c4b5fd;
-  font-size: 0.58rem;
-  box-shadow: 0 1px 4px rgba(91, 33, 182, 0.12);
+}
+
+.ghost-point--2 > span {
+  background: rgba(240, 253, 250, 0.96);
+  color: #0f766e;
+  border: 1px solid #99f6e4;
 }
 
 @media (max-width: 900px) {
