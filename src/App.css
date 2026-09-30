@@ -4,7 +4,7 @@
 @import './styles/shell.css';
 @import './styles/deck-layout.css';
 @import './styles/decks.css';
-@import './styles/movies.css';
+@import './styles/movies/index.css';
 @import './styles/feedback.css';
 @import './styles/plot/index.css';
 @import './styles/ghost/index.css';
