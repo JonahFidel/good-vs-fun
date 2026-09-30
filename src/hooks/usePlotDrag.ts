@@ -1,6 +1,5 @@
 import {
   useCallback,
-  useEffect,
   useRef,
   useState,
   type Dispatch,
@@ -8,9 +7,10 @@ import {
   type SetStateAction,
 } from 'react'
 import { snapScoreToStep } from '../lib/format'
-import { findSnapTarget, scoresAtPointer } from '../lib/findSnapTarget'
+import { scoresAtPointer } from '../lib/findSnapTarget'
 import type { Movie } from '../lib/types'
 import { useHoldToDrag, type PlotDrag } from './useHoldToDrag'
+import { usePlotDragSession } from './usePlotDragSession'
 
 type Score = {
   fun: number
@@ -37,8 +37,6 @@ export function usePlotDrag({
   onSelectMovie: (id: string) => void
 }) {
   const gridRef = useRef<HTMLDivElement | null>(null)
-  const lastPointerRef = useRef<{ x: number; y: number } | null>(null)
-  const lastInGridPointerRef = useRef<{ x: number; y: number } | null>(null)
   const [draggingGroup, setDraggingGroup] = useState<PlotDrag | null>(null)
 
   const applyMovieScores = useCallback(
@@ -90,14 +88,30 @@ export function usePlotDrag({
     [applyMovieScores],
   )
 
+  const endDrag = useCallback(() => {
+    setDraggingGroup(null)
+  }, [])
+
+  const { notePointer } = usePlotDragSession({
+    dragging: draggingGroup,
+    gridRef,
+    moviesRef,
+    updateMoviePosition,
+    applyMovieScores,
+    persistMoviePositions,
+    discardDragSnapshot,
+    recordUndoIfChanged,
+    onDragEnd: endDrag,
+  })
+
   const startDrag = useCallback(
     (drag: PlotDrag, point: { x: number; y: number }) => {
       captureDragSnapshot(drag.ids)
       setDraggingGroup(drag)
-      lastPointerRef.current = point
+      notePointer(point)
       updateMoviePosition(drag, point.x, point.y)
     },
-    [captureDragSnapshot, updateMoviePosition],
+    [captureDragSnapshot, notePointer, updateMoviePosition],
   )
 
   const { beginPendingPointer } = useHoldToDrag({
@@ -141,84 +155,6 @@ export function usePlotDrag({
         event,
       )
     }
-
-  useEffect(() => {
-    if (!draggingGroup) {
-      return
-    }
-
-    const handlePointerMove = (event: PointerEvent) => {
-      lastPointerRef.current = { x: event.clientX, y: event.clientY }
-      updateMoviePosition(draggingGroup, event.clientX, event.clientY)
-
-      if (draggingGroup.origin === 'list') {
-        const grid = gridRef.current
-        if (!grid) {
-          return
-        }
-        const rect = grid.getBoundingClientRect()
-        if (
-          event.clientX >= rect.left &&
-          event.clientX <= rect.right &&
-          event.clientY >= rect.top &&
-          event.clientY <= rect.bottom
-        ) {
-          lastInGridPointerRef.current = { x: event.clientX, y: event.clientY }
-        }
-      }
-    }
-
-    const handlePointerUp = () => {
-      const last =
-        draggingGroup.origin === 'list'
-          ? lastInGridPointerRef.current
-          : lastPointerRef.current
-
-      // If you dragged from the list but never entered the grid: no change.
-      if (draggingGroup.origin === 'list' && !last) {
-        discardDragSnapshot()
-        setDraggingGroup(null)
-        return
-      }
-
-      const snapTarget = last
-        ? findSnapTarget(
-            gridRef.current,
-            moviesRef.current,
-            draggingGroup,
-            last.x,
-            last.y,
-          )
-        : null
-      if (snapTarget) {
-        applyMovieScores(draggingGroup.ids, snapTarget.fun, snapTarget.good)
-        persistMoviePositions(draggingGroup.ids, snapTarget)
-      } else {
-        persistMoviePositions(draggingGroup.ids)
-      }
-      recordUndoIfChanged()
-      setDraggingGroup(null)
-      lastInGridPointerRef.current = null
-    }
-
-    window.addEventListener('pointermove', handlePointerMove)
-    window.addEventListener('pointerup', handlePointerUp)
-    window.addEventListener('pointercancel', handlePointerUp)
-
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('pointerup', handlePointerUp)
-      window.removeEventListener('pointercancel', handlePointerUp)
-    }
-  }, [
-    applyMovieScores,
-    discardDragSnapshot,
-    draggingGroup,
-    moviesRef,
-    persistMoviePositions,
-    recordUndoIfChanged,
-    updateMoviePosition,
-  ])
 
   return {
     gridRef,
