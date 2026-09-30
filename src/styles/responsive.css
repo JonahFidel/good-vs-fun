@@ -96,17 +96,24 @@
     max-height: none;
     align-self: stretch;
     grid-template-rows: minmax(0, 1fr) auto;
-    --plot-chrome-y: 2.65rem;
   }
 
-  /* Square plot — viewport-based sizing so the page can scroll naturally */
-  .deck-page-layout .grid-zoom-slot {
-    --plot-viewport-w: calc(100vw - 1.5rem - var(--plot-chrome-x));
-    --plot-viewport-h: min(var(--plot-viewport-w), 72dvh);
-    --plot-side: min(var(--plot-viewport-w), var(--plot-viewport-h), var(--plot-side-max));
+  /* The stacked page has no definite plot height, so size the square from the
+     viewport: header, layout padding, axis label, and wrapper padding. */
+  .deck-page-layout .grid-fit {
+    --plot-viewport-w: calc(100vw - 0.35rem - 0.45rem - 0.25rem - 0.35rem - 1.75rem - 0.1rem);
+    --plot-viewport-h: calc(100dvh - 2.6rem - 0.35rem - 0.35rem - 0.3rem - 0.35rem - 0.1rem - 1.2rem);
+    --plot-side: min(var(--plot-viewport-w), var(--plot-viewport-h));
+    container-type: normal;
+    width: min(var(--plot-side), 100%);
+    max-width: 100%;
+    aspect-ratio: 1;
+    height: auto;
+    flex: none;
+  }
+
+  .deck-page-layout .grid-fit > .grid {
     width: 100%;
-    height: var(--plot-viewport-h);
-    min-height: 0;
-    max-height: none;
+    height: 100%;
   }
 }
