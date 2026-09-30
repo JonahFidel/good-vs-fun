@@ -10,7 +10,7 @@ import { useDeckSelection } from '../hooks/useDeckSelection'
 import { useSelectedMovieActions } from '../hooks/useSelectedMovieActions'
 import { useGhostCompare } from '../hooks/useGhostCompare'
 import { useMoveHistory } from '../hooks/useMoveHistory'
-import { usePlotDrag } from '../hooks/usePlotDrag'
+import { usePlotDrag } from '../hooks/plot/usePlotDrag'
 import { groupByPosition } from '../lib/groupByPosition'
 
 export function DeckPage() {

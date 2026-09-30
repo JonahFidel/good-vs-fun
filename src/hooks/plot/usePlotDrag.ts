@@ -6,9 +6,9 @@ import {
   type PointerEvent as ReactPointerEvent,
   type SetStateAction,
 } from 'react'
-import { snapScoreToStep } from '../lib/format'
-import { scoresAtPointer } from '../lib/findSnapTarget'
-import type { Movie } from '../lib/types'
+import { snapScoreToStep } from '../../lib/format'
+import { scoresAtPointer } from '../../lib/findSnapTarget'
+import type { Movie } from '../../lib/types'
 import { useHoldToDrag, type PlotDrag } from './useHoldToDrag'
 import { usePlotDragSession } from './usePlotDragSession'
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { findSnapTarget, type PlotScore } from '../lib/findSnapTarget'
-import type { Movie } from '../lib/types'
+import { findSnapTarget, type PlotScore } from '../../lib/findSnapTarget'
+import type { Movie } from '../../lib/types'
 import type { PlotDrag } from './useHoldToDrag'
 
 /**
