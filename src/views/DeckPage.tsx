@@ -1,74 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { useApiFetch } from '../lib/api'
-import { formatScore, formatTitle, snapScoreToStep } from '../lib/format'
-import { alertExampleDeckReadOnly } from '../lib/exampleDeck'
-import { pointerRatioToScore, scoreToPlotPercent } from '../lib/gridCanvas'
-import type { Deck, Movie } from '../lib/types'
+import { GhostCompareControls } from '../components/GhostCompareControls'
+import { GhostPoints } from '../components/GhostPoints'
 import { GridAxes } from '../components/GridAxes'
 import { PlotGridZoom } from '../components/PlotGridZoom'
 import { ScoreSlider } from '../components/ScoreSlider'
-
-// ── Ghost-deck helpers ────────────────────────────────────────────────────────
-
-type PositionGroup = {
-  key: string
-  fun: number
-  good: number
-  titles: string[]
-}
-
-function groupByPosition(movies: Movie[]): PositionGroup[] {
-  const groups = new Map<string, PositionGroup>()
-  movies.forEach((m) => {
-    const fun = snapScoreToStep(m.fun)
-    const good = snapScoreToStep(m.good)
-    const key = `${fun.toFixed(2)}-${good.toFixed(2)}`
-    const existing = groups.get(key)
-    if (existing) {
-      existing.titles.push(m.title)
-    } else {
-      groups.set(key, { key, fun, good, titles: [m.title] })
-    }
-  })
-  return Array.from(groups.values()).map((g) => ({
-    ...g,
-    titles: g.titles.sort((a, b) => a.localeCompare(b)),
-  }))
-}
-
-function GhostPoints({
-  groups,
-  variant = 1,
-}: {
-  groups: PositionGroup[]
-  variant?: 1 | 2
-}) {
-  const variantClass = variant === 2 ? 'ghost-point--2' : 'ghost-point--1'
-  return (
-    <>
-      {groups.map((group) => {
-        const left = scoreToPlotPercent(group.good, 'x')
-        const top = scoreToPlotPercent(group.fun, 'y')
-        return (
-          <div
-            key={`ghost-${variant}-${group.key}`}
-            className={`movie-point ghost-point ${variantClass}`}
-            style={{ left: `${left}%`, top: `${top}%` }}
-          >
-            <span className="movie-label">
-              {group.titles.map((title) => (
-                <span key={title} className="movie-label-line">
-                  <span className="movie-label-title">{title}</span>
-                </span>
-              ))}
-            </span>
-          </div>
-        )
-      })}
-    </>
-  )
-}
+import { useGhostDeck } from '../hooks/useGhostDeck'
+import { useApiFetch } from '../lib/api'
+import { alertExampleDeckReadOnly } from '../lib/exampleDeck'
+import { formatScore, formatTitle, snapScoreToStep } from '../lib/format'
+import { groupByPosition } from '../lib/groupByPosition'
+import { pointerRatioToScore, scoreToPlotPercent } from '../lib/gridCanvas'
+import type { Deck, Movie } from '../lib/types'
 
 type DragState = {
   type: 'group' | 'single'
@@ -102,12 +45,9 @@ export function DeckPage() {
   const [loading, setLoading] = useState(false)
   const [movieSort, setMovieSort] = useState<'title' | 'fun' | 'good'>('title')
 
-  // Ghost deck state (up to two overlays)
   const [allDecks, setAllDecks] = useState<Deck[]>([])
-  const [ghostMovies, setGhostMovies] = useState<Movie[]>([])
-  const [ghostDeckName, setGhostDeckName] = useState('')
-  const [ghost2Movies, setGhost2Movies] = useState<Movie[]>([])
-  const [ghost2DeckName, setGhost2DeckName] = useState('')
+  const { movies: ghostMovies, name: ghostDeckName } = useGhostDeck(ghostDeckId)
+  const { movies: ghost2Movies, name: ghost2DeckName } = useGhostDeck(ghost2DeckId)
 
   const [draggingGroup, setDraggingGroup] = useState<DragState | null>(null)
   const [canUndo, setCanUndo] = useState(false)
@@ -191,47 +131,6 @@ export function DeckPage() {
       isActive = false
     }
   }, [apiFetch])
-
-  // Load ghost deck movies whenever the ghost IDs change
-  useEffect(() => {
-    if (!ghostDeckId) {
-      setGhostMovies([])
-      setGhostDeckName('')
-      return
-    }
-    let isActive = true
-    apiFetch(`/api/decks/${ghostDeckId}`)
-      .then((data) => {
-        if (isActive) {
-          setGhostMovies((data?.movies ?? []) as Movie[])
-          setGhostDeckName(String(data?.deck?.name ?? ''))
-        }
-      })
-      .catch(() => {})
-    return () => {
-      isActive = false
-    }
-  }, [ghostDeckId, apiFetch])
-
-  useEffect(() => {
-    if (!ghost2DeckId) {
-      setGhost2Movies([])
-      setGhost2DeckName('')
-      return
-    }
-    let isActive = true
-    apiFetch(`/api/decks/${ghost2DeckId}`)
-      .then((data) => {
-        if (isActive) {
-          setGhost2Movies((data?.movies ?? []) as Movie[])
-          setGhost2DeckName(String(data?.deck?.name ?? ''))
-        }
-      })
-      .catch(() => {})
-    return () => {
-      isActive = false
-    }
-  }, [ghost2DeckId, apiFetch])
 
   const ghostGroups = useMemo(() => groupByPosition(ghostMovies), [ghostMovies])
   const ghost2Groups = useMemo(() => groupByPosition(ghost2Movies), [ghost2Movies])
@@ -1226,97 +1125,18 @@ export function DeckPage() {
           </div>
         </div>
 
-        {(otherDecks.length > 0 || ghostDeckId || ghost2DeckId) && (
-          <div className="deck-sidebar-section deck-sidebar-section--tools deck-sidebar-tools">
-            {otherDecks.length > 0 && (
-              <div className="ghost-compare-section">
-                <label className="ghost-compare-label" htmlFor="ghost-deck-select">
-                  Compare with
-                </label>
-                <div className="ghost-compare-row">
-                  <select
-                    id="ghost-deck-select"
-                    value={ghostDeckId}
-                    onChange={(e) => handleSetGhostDeck(e.target.value)}
-                  >
-                    <option value="">None</option>
-                    {otherDecks
-                      .filter((d) => d.id !== ghost2DeckId)
-                      .map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                  </select>
-                  {ghostDeckId && (
-                    <button
-                      type="button"
-                      className="btn-swap"
-                      onClick={() => handleSwapDecks(1)}
-                    >
-                      ⇄ Swap primary
-                    </button>
-                  )}
-                </div>
-                <label
-                  className="ghost-compare-label ghost-compare-label--secondary"
-                  htmlFor="ghost2-deck-select"
-                >
-                  And also
-                </label>
-                <div className="ghost-compare-row">
-                  <select
-                    id="ghost2-deck-select"
-                    value={ghost2DeckId}
-                    onChange={(e) => handleSetGhost2Deck(e.target.value)}
-                  >
-                    <option value="">None</option>
-                    {otherDecks
-                      .filter((d) => d.id !== ghostDeckId)
-                      .map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                  </select>
-                  {ghost2DeckId && (
-                    <button
-                      type="button"
-                      className="btn-swap"
-                      onClick={() => handleSwapDecks(2)}
-                    >
-                      ⇄ Swap primary
-                    </button>
-                  )}
-                </div>
-                <p className="ghost-compare-hint">
-                  Ghost decks are view-only on the grid — edit the primary deck, then swap if
-                  needed.
-                </p>
-              </div>
-            )}
-            {(ghostDeckId || ghost2DeckId) && (
-              <div className="ghost-legend">
-                <span className="ghost-legend-item">
-                  <span className="ghost-swatch ghost-swatch-primary" />
-                  {deckName} (primary{isExampleDeck ? ', read-only' : ', editable'})
-                </span>
-                {ghostDeckId && (
-                  <span className="ghost-legend-item">
-                    <span className="ghost-swatch ghost-swatch-ghost" />
-                    {ghostDeckName || '…'} (ghost, read-only)
-                  </span>
-                )}
-                {ghost2DeckId && (
-                  <span className="ghost-legend-item">
-                    <span className="ghost-swatch ghost-swatch-ghost2" />
-                    {ghost2DeckName || '…'} (ghost, read-only)
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <GhostCompareControls
+          primaryName={deckName}
+          primaryIsExample={isExampleDeck}
+          otherDecks={otherDecks}
+          ghostDeckId={ghostDeckId}
+          ghost2DeckId={ghost2DeckId}
+          ghostDeckName={ghostDeckName}
+          ghost2DeckName={ghost2DeckName}
+          onGhostDeckChange={handleSetGhostDeck}
+          onGhost2DeckChange={handleSetGhost2Deck}
+          onSwap={handleSwapDecks}
+        />
 
         {error && <p className="error-banner">{error}</p>}
         {loading && <p className="status-line">Syncing changes…</p>}
