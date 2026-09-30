@@ -1,14 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { alertExampleDeckReadOnly } from '../../lib/exampleDeck'
 import { formatScore } from '../../lib/format'
-import type { Movie } from '../../lib/types'
+import type { Movie, MovieHover } from '../../lib/types'
 
 type MovieSort = 'title' | 'fun' | 'good'
-
-export type MovieHover = {
-  id: string
-  from: 'grid' | 'list'
-}
 
 export function MovieList({
   movies,

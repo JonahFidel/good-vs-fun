@@ -1,6 +1,6 @@
 import type { RefObject } from 'react'
 import type { PositionGroup } from '../lib/groupByPosition'
-import type { MovieHover } from './deck/MovieList'
+import type { MovieHover } from '../lib/types'
 import { GhostPoints } from './GhostPoints'
 import { GridAxes } from './GridAxes'
 import { MoviePoints } from './MoviePoints'

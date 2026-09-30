@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatTitle, snapScoreToStep } from '../../lib/format'
-import type { Movie } from '../../lib/types'
+import type { Movie, MovieHover } from '../../lib/types'
 import { AddMovieForm } from './AddMovieForm'
-import { MovieList, type MovieHover } from './MovieList'
+import { MovieList } from './MovieList'
 import { MovieSelectionPanel } from './MovieSelectionPanel'
 
 export function DeckSidebar({

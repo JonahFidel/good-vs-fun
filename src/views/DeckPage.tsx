@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { DeckSidebar } from '../components/deck/DeckSidebar'
 import { GhostCompareControls } from '../components/GhostCompareControls'
@@ -6,6 +6,7 @@ import { PlotPanel } from '../components/PlotPanel'
 import { useDeckKeyboard } from '../hooks/useDeckKeyboard'
 import { useDeckLoad } from '../hooks/useDeckLoad'
 import { useDeckMovieActions } from '../hooks/useDeckMovieActions'
+import { useDeckSelection } from '../hooks/useDeckSelection'
 import { useGhostCompare } from '../hooks/useGhostCompare'
 import { useMoveHistory } from '../hooks/useMoveHistory'
 import { usePlotDrag } from '../hooks/usePlotDrag'
@@ -27,11 +28,17 @@ export function DeckPage() {
     moviesRef,
   } = useDeckLoad(resolvedDeckId)
 
-  const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null)
-  const [hoverLink, setHoverLink] = useState<{
-    id: string
-    from: 'grid' | 'list'
-  } | null>(null)
+  const {
+    selectedMovieId,
+    setSelectedMovieId,
+    hoverLink,
+    highlightFromList,
+    highlightFromGrid,
+    clearHoverLink,
+    selectMovie,
+    clearSelection,
+    handleSidebarBackgroundPointerDown,
+  } = useDeckSelection()
 
   const {
     canUndo,
@@ -86,26 +93,6 @@ export function DeckPage() {
     recordUndoIfChanged,
   })
 
-  const highlightFromList = useCallback((id: string) => {
-    setHoverLink({ id, from: 'list' })
-  }, [])
-
-  const highlightFromGrid = useCallback((id: string) => {
-    setHoverLink({ id, from: 'grid' })
-  }, [])
-
-  const clearHoverLink = useCallback(() => {
-    setHoverLink(null)
-  }, [])
-
-  const selectMovie = useCallback((id: string) => {
-    setSelectedMovieId(id)
-  }, [])
-
-  const clearSelection = useCallback(() => {
-    setSelectedMovieId(null)
-  }, [])
-
   const {
     gridRef,
     draggingIds,
@@ -132,22 +119,6 @@ export function DeckPage() {
     undo,
     redo,
   })
-
-  const handleSidebarBackgroundPointerDown = (event: React.PointerEvent<HTMLElement>) => {
-    const target = event.target as Element
-    if (
-      target.closest('.movie-list li') ||
-      target.closest('.movie-selection-bar') ||
-      target.closest('button') ||
-      target.closest('input') ||
-      target.closest('select') ||
-      target.closest('textarea') ||
-      target.closest('a')
-    ) {
-      return
-    }
-    clearSelection()
-  }
 
   return (
     <div
