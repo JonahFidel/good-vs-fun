@@ -1,6 +1,6 @@
-import './App.css'
+import '../App.css'
 import { AppRoutes } from './routes'
-import { NavBar } from './components/NavBar'
+import { NavBar } from './NavBar'
 
 export default function AppShell() {
   return (

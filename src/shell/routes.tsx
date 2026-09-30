@@ -1,8 +1,8 @@
 import { SignIn, SignUp, useAuth } from '@clerk/clerk-react'
 import { Navigate, Outlet, Route, Routes, generatePath, useParams } from 'react-router-dom'
-import { useIsHydrated } from './hooks/useIsHydrated'
-import { DecksPage } from './views/DecksPage'
-import { DeckPage } from './views/DeckPage'
+import { useIsHydrated } from '../hooks/useIsHydrated'
+import { DecksPage } from '../views/DecksPage'
+import { DeckPage } from '../views/DeckPage'
 
 function ProtectedLayout() {
   const hydrated = useIsHydrated()
