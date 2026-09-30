@@ -21,9 +21,9 @@ export function GhostPoints({
             style={{ left: `${left}%`, top: `${top}%` }}
           >
             <span className="movie-label">
-              {group.titles.map((title) => (
-                <span key={title} className="movie-label-line">
-                  <span className="movie-label-title">{title}</span>
+              {group.items.map((item) => (
+                <span key={item.id} className="movie-label-line">
+                  <span className="movie-label-title">{item.title}</span>
                 </span>
               ))}
             </span>

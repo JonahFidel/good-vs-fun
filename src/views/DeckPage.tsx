@@ -4,13 +4,14 @@ import { DeckSidebar } from '../components/deck/DeckSidebar'
 import { GhostCompareControls } from '../components/GhostCompareControls'
 import { GhostPoints } from '../components/GhostPoints'
 import { GridAxes } from '../components/GridAxes'
+import { MoviePoints } from '../components/MoviePoints'
 import { PlotGridZoom } from '../components/PlotGridZoom'
 import { useGhostDeck } from '../hooks/useGhostDeck'
 import { useApiFetch } from '../lib/api'
 import { alertExampleDeckReadOnly } from '../lib/exampleDeck'
-import { formatScore, formatTitle, snapScoreToStep } from '../lib/format'
+import { formatTitle, snapScoreToStep } from '../lib/format'
 import { groupByPosition } from '../lib/groupByPosition'
-import { pointerRatioToScore, scoreToPlotPercent } from '../lib/gridCanvas'
+import { pointerRatioToScore } from '../lib/gridCanvas'
 import type { Deck, Movie } from '../lib/types'
 
 type DragState = {
@@ -130,6 +131,7 @@ export function DeckPage() {
 
   const ghostGroups = useMemo(() => groupByPosition(ghostMovies), [ghostMovies])
   const ghost2Groups = useMemo(() => groupByPosition(ghost2Movies), [ghost2Movies])
+  const movieGroups = useMemo(() => groupByPosition(deckMovies), [deckMovies])
   const otherDecks = useMemo(
     () => allDecks.filter((d) => d.id !== resolvedDeckId),
     [allDecks, resolvedDeckId],
@@ -168,43 +170,6 @@ export function DeckPage() {
     const qs = params.toString()
     navigate(`/deck/${swapId}/movies${qs ? `?${qs}` : ''}`)
   }
-
-  const groupedMovies = useMemo(() => {
-    const groups = new Map<
-      string,
-      {
-        key: string
-        fun: number
-        good: number
-        items: { id: string; title: string }[]
-        ids: string[]
-      }
-    >()
-
-    deckMovies.forEach((movie) => {
-      const funScore = snapScoreToStep(movie.fun)
-      const goodScore = snapScoreToStep(movie.good)
-      const key = `${funScore.toFixed(2)}-${goodScore.toFixed(2)}`
-      const existing = groups.get(key)
-      if (existing) {
-        existing.items.push({ id: movie.id, title: movie.title })
-        existing.ids.push(movie.id)
-      } else {
-        groups.set(key, {
-          key,
-          fun: funScore,
-          good: goodScore,
-          items: [{ id: movie.id, title: movie.title }],
-          ids: [movie.id],
-        })
-      }
-    })
-
-    return Array.from(groups.values()).map((group) => ({
-      ...group,
-      items: group.items.sort((a, b) => a.title.localeCompare(b.title)),
-    }))
-  }, [deckMovies])
 
   const captureDragSnapshot = useCallback((ids: string[]) => {
     const idSet = new Set(ids)
@@ -987,78 +952,16 @@ export function DeckPage() {
             <GridAxes />
             {ghostDeckId && <GhostPoints groups={ghostGroups} variant={1} />}
             {ghost2DeckId && <GhostPoints groups={ghost2Groups} variant={2} />}
-            {groupedMovies.map((group) => {
-              const left = scoreToPlotPercent(group.good, 'x')
-              const top = scoreToPlotPercent(group.fun, 'y')
-              const key = group.key
-              const isDragging = draggingGroup
-                ? group.ids.some((id) => draggingGroup.ids.includes(id))
-                : false
-              const isGridHighlighted =
-                hoverLink?.from === 'list' && group.ids.includes(hoverLink.id)
-              const isGridSelected =
-                selectedMovieId !== null && group.ids.includes(selectedMovieId)
-
-              return (
-                <div
-                  key={key}
-                  className={[
-                    'movie-point',
-                    isDragging ? 'dragging' : '',
-                    isGridSelected ? 'movie-point--selected' : '',
-                    isGridHighlighted ? 'movie-point--highlighted' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  style={{ left: `${left}%`, top: `${top}%` }}
-                  onPointerDown={handlePointerDown(key, group.ids, group.items[0].id)}
-                  onMouseEnter={
-                    group.items.length === 1
-                      ? () => highlightFromGrid(group.items[0].id)
-                      : undefined
-                  }
-                  onMouseLeave={
-                    group.items.length === 1 ? clearHoverLink : undefined
-                  }
-                  data-group-key={key}
-                >
-                  <span
-                    className="movie-label"
-                    onPointerDown={(event) => {
-                      event.stopPropagation()
-                    }}
-                  >
-                    {group.items.map((item) => (
-                      <span
-                        key={item.id}
-                        className={[
-                          'movie-label-line',
-                          selectedMovieId === item.id ? 'movie-label-line--selected' : '',
-                          hoverLink?.from === 'list' && hoverLink.id === item.id
-                            ? 'movie-label-line--linked'
-                            : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      >
-                        <span
-                          className="movie-label-title"
-                          data-movie-id={item.id}
-                          onPointerDownCapture={handleLabelPointerDown(item.id)}
-                          onMouseEnter={() => highlightFromGrid(item.id)}
-                          onMouseLeave={clearHoverLink}
-                        >
-                          {item.title}
-                        </span>
-                      </span>
-                    ))}
-                  </span>
-                  <span className="movie-point-score" aria-hidden="true">
-                    Good {formatScore(group.good)} · Fun {formatScore(group.fun)}
-                  </span>
-                </div>
-              )
-            })}
+            <MoviePoints
+              groups={movieGroups}
+              draggingIds={draggingGroup?.ids ?? null}
+              selectedMovieId={selectedMovieId}
+              hover={hoverLink}
+              onGroupPointerDown={handlePointerDown}
+              onLabelPointerDown={handleLabelPointerDown}
+              onHighlight={highlightFromGrid}
+              onClearHover={clearHoverLink}
+            />
           </PlotGridZoom>
         </div>
       </section>
