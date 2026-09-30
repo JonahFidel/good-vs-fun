@@ -1,5 +1,5 @@
 import { useCallback, useState, type PointerEvent } from 'react'
-import type { MovieHover } from '../lib/types'
+import type { MovieHover } from '../../lib/types'
 
 export function useDeckSelection() {
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null)

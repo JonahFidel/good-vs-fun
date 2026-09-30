@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useApiFetch } from '../lib/api'
-import type { Movie } from '../lib/types'
+import { useApiFetch } from '../../lib/api'
+import type { Movie } from '../../lib/types'
 
 export function useDeckLoad(deckId: string | null) {
   const apiFetch = useApiFetch()

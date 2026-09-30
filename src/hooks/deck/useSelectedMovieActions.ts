@@ -1,8 +1,8 @@
 import { useCallback, type Dispatch, type SetStateAction } from 'react'
-import { useApiFetch } from '../lib/api'
-import { alertExampleDeckReadOnly } from '../lib/exampleDeck'
-import { formatTitle, snapScoreToStep } from '../lib/format'
-import type { Movie } from '../lib/types'
+import { useApiFetch } from '../../lib/api'
+import { alertExampleDeckReadOnly } from '../../lib/exampleDeck'
+import { formatTitle, snapScoreToStep } from '../../lib/format'
+import type { Movie } from '../../lib/types'
 
 export function useSelectedMovieActions({
   deckId,

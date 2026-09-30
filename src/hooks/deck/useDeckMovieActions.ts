@@ -1,7 +1,7 @@
 import { useCallback, type Dispatch, type SetStateAction } from 'react'
-import { useApiFetch } from '../lib/api'
-import { alertExampleDeckReadOnly } from '../lib/exampleDeck'
-import type { Movie } from '../lib/types'
+import { useApiFetch } from '../../lib/api'
+import { alertExampleDeckReadOnly } from '../../lib/exampleDeck'
+import type { Movie } from '../../lib/types'
 
 type ScoreOverride = {
   fun: number
