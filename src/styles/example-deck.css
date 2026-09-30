@@ -1,0 +1,108 @@
+/* Read-only example decks. These rules stay ahead of the base plot styles so equal-specificity declarations there still win. */
+
+.deck-example-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.deck-list li.deck-list-item--example {
+  opacity: 0.72;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  cursor: default;
+}
+
+.deck-list li.deck-list-item--example.active {
+  opacity: 0.82;
+  background: #ffffff;
+}
+
+.deck-page-layout--example .movie-list li {
+  cursor: not-allowed;
+}
+
+.grid-wrapper--example {
+  opacity: 0.9;
+  cursor: not-allowed;
+  /* background: #f1f5f9; */
+  /* border-color: #cbd5e1; */
+  box-shadow: none;
+}
+
+.grid-wrapper--example .grid-axis {
+  color: #64748b;
+}
+
+.grid-wrapper--example .grid-tick {
+  color: #cbd5e1;
+}
+
+.grid-wrapper--example .grid-tick::before,
+.grid-wrapper--example .grid-subtick {
+  background: #cbd5e1;
+}
+
+.grid-wrapper--example .grid::before {
+  opacity: 0.55;
+  border-color: #94a3b8;
+}
+
+.grid-wrapper--example .movie-point {
+  cursor: not-allowed;
+}
+
+.grid-wrapper--example .movie-point::after {
+  background: #94a3b8;
+  box-shadow:
+    0 0 0 2px rgba(148, 163, 184, 0.35),
+    0 2px 6px rgba(15, 23, 42, 0.2);
+}
+
+.grid-wrapper--example .movie-point > span {
+  background: #64748b;
+  border-color: #94a3b8;
+  color: #f8fafc;
+  box-shadow: none;
+}
+
+.grid-wrapper--example .movie-point:hover .movie-point-score,
+.grid-wrapper--example .movie-point.dragging .movie-point-score {
+  opacity: 0;
+}
+
+.grid-wrapper--example .movie-point.movie-point--highlighted::after {
+  background: #22c55e;
+  box-shadow:
+    0 0 0 2px rgba(34, 197, 94, 0.85),
+    0 0 10px 3px rgba(34, 197, 94, 0.55),
+    0 0 22px 8px rgba(34, 197, 94, 0.35);
+}
+
+.grid-wrapper--example .movie-point.movie-point--selected::after {
+  background: #3b82f6;
+  box-shadow:
+    0 0 0 2px rgba(59, 130, 246, 0.9),
+    0 0 12px 4px rgba(59, 130, 246, 0.55),
+    0 0 24px 10px rgba(59, 130, 246, 0.35);
+}
+
+.grid-wrapper--example .movie-label-line--selected .movie-label-title {
+  background: #1e40af;
+  border-color: #3b82f6;
+  color: #eff6ff;
+}
+
+.grid-wrapper--example .movie-label-line--linked .movie-label-title {
+  background: #166534;
+  border-color: #22c55e;
+  color: #ecfdf5;
+}
