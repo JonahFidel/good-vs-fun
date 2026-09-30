@@ -6,6 +6,6 @@
 @import './styles/decks.css';
 @import './styles/movies.css';
 @import './styles/feedback.css';
-@import './styles/plot.css';
+@import './styles/plot/index.css';
 @import './styles/ghost.css';
 @import './styles/responsive.css';
