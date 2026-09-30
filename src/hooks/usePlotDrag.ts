@@ -4,18 +4,13 @@ import {
   useRef,
   useState,
   type Dispatch,
+  type PointerEvent as ReactPointerEvent,
   type SetStateAction,
 } from 'react'
 import { snapScoreToStep } from '../lib/format'
 import { findSnapTarget, scoresAtPointer } from '../lib/findSnapTarget'
 import type { Movie } from '../lib/types'
-
-type DragState = {
-  type: 'group' | 'single'
-  key: string
-  ids: string[]
-  origin: 'grid' | 'list'
-}
+import { useHoldToDrag, type PlotDrag } from './useHoldToDrag'
 
 type Score = {
   fun: number
@@ -44,14 +39,7 @@ export function usePlotDrag({
   const gridRef = useRef<HTMLDivElement | null>(null)
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null)
   const lastInGridPointerRef = useRef<{ x: number; y: number } | null>(null)
-  const [draggingGroup, setDraggingGroup] = useState<DragState | null>(null)
-  const [pendingPointer, setPendingPointer] = useState<{
-    primaryId: string
-    drag: DragState
-    x: number
-    y: number
-    startedAt: number
-  } | null>(null)
+  const [draggingGroup, setDraggingGroup] = useState<PlotDrag | null>(null)
 
   const applyMovieScores = useCallback(
     (ids: string[], fun: number, good: number) => {
@@ -77,7 +65,7 @@ export function usePlotDrag({
   )
 
   const updateMoviePosition = useCallback(
-    (dragging: DragState, clientX: number, clientY: number) => {
+    (dragging: PlotDrag, clientX: number, clientY: number) => {
       const grid = gridRef.current
       if (!grid) {
         return
@@ -102,27 +90,25 @@ export function usePlotDrag({
     [applyMovieScores],
   )
 
-  const beginPendingPointer = useCallback(
-    (primaryId: string, drag: DragState, event: React.PointerEvent) => {
-      event.preventDefault()
-      if (isExampleDeck) {
-        onSelectMovie(primaryId)
-        return
-      }
-      setPendingPointer({
-        primaryId,
-        drag,
-        x: event.clientX,
-        y: event.clientY,
-        startedAt: performance.now(),
-      })
+  const startDrag = useCallback(
+    (drag: PlotDrag, point: { x: number; y: number }) => {
+      captureDragSnapshot(drag.ids)
+      setDraggingGroup(drag)
+      lastPointerRef.current = point
+      updateMoviePosition(drag, point.x, point.y)
     },
-    [isExampleDeck, onSelectMovie],
+    [captureDragSnapshot, updateMoviePosition],
   )
+
+  const { beginPendingPointer } = useHoldToDrag({
+    isExampleDeck,
+    onSelectMovie,
+    onDragStart: startDrag,
+  })
 
   const handlePointerDown =
     (key: string, ids: string[], primaryId: string) =>
-    (event: React.PointerEvent<HTMLDivElement>) => {
+    (event: ReactPointerEvent<HTMLDivElement>) => {
       if (event.target !== event.currentTarget) {
         return
       }
@@ -134,7 +120,7 @@ export function usePlotDrag({
     }
 
   const handleLabelPointerDown =
-    (id: string) => (event: React.PointerEvent<HTMLSpanElement>) => {
+    (id: string) => (event: ReactPointerEvent<HTMLSpanElement>) => {
       event.stopPropagation()
       beginPendingPointer(
         id,
@@ -144,7 +130,7 @@ export function usePlotDrag({
     }
 
   const handleMovieListPointerDown =
-    (id: string) => (event: React.PointerEvent<HTMLLIElement>) => {
+    (id: string) => (event: ReactPointerEvent<HTMLLIElement>) => {
       const target = event.target as HTMLElement | null
       if (target?.closest('button')) {
         return
@@ -155,54 +141,6 @@ export function usePlotDrag({
         event,
       )
     }
-
-  useEffect(() => {
-    if (!pendingPointer) {
-      return
-    }
-
-    const threshold = 12
-    const minHoldMs = 120
-    let dragStarted = false
-
-    const handlePointerMove = (event: PointerEvent) => {
-      if (dragStarted) {
-        return
-      }
-      if (performance.now() - pendingPointer.startedAt < minHoldMs) {
-        return
-      }
-      const dx = event.clientX - pendingPointer.x
-      const dy = event.clientY - pendingPointer.y
-      if (Math.hypot(dx, dy) < threshold) {
-        return
-      }
-
-      dragStarted = true
-      captureDragSnapshot(pendingPointer.drag.ids)
-      setPendingPointer(null)
-      setDraggingGroup(pendingPointer.drag)
-      lastPointerRef.current = { x: event.clientX, y: event.clientY }
-      updateMoviePosition(pendingPointer.drag, event.clientX, event.clientY)
-    }
-
-    const handlePointerUp = () => {
-      if (!dragStarted) {
-        onSelectMovie(pendingPointer.primaryId)
-      }
-      setPendingPointer(null)
-    }
-
-    window.addEventListener('pointermove', handlePointerMove)
-    window.addEventListener('pointerup', handlePointerUp, { once: true })
-    window.addEventListener('pointercancel', handlePointerUp, { once: true })
-
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('pointerup', handlePointerUp)
-      window.removeEventListener('pointercancel', handlePointerUp)
-    }
-  }, [captureDragSnapshot, onSelectMovie, pendingPointer, updateMoviePosition])
 
   useEffect(() => {
     if (!draggingGroup) {
