@@ -1,41 +1,30 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { DeckSidebar } from '../components/deck/DeckSidebar'
 import { GhostCompareControls } from '../components/GhostCompareControls'
 import { PlotPanel } from '../components/PlotPanel'
+import { useDeckLoad } from '../hooks/useDeckLoad'
 import { useDeckMovieActions } from '../hooks/useDeckMovieActions'
 import { useGhostCompare } from '../hooks/useGhostCompare'
 import { useMoveHistory } from '../hooks/useMoveHistory'
 import { usePlotDrag } from '../hooks/usePlotDrag'
-import { useApiFetch } from '../lib/api'
 import { groupByPosition } from '../lib/groupByPosition'
-import type { Movie } from '../lib/types'
 
 export function DeckPage() {
   const { deckId } = useParams()
-  const apiFetch = useApiFetch()
   const resolvedDeckId = typeof deckId === 'string' ? deckId : null
 
-  const [deckName, setDeckName] = useState<string>('')
-  const [isExampleDeck, setIsExampleDeck] = useState(false)
-  const [deckMovies, setDeckMovies] = useState<Movie[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(resolvedDeckId !== null)
-  const [trackedDeckLoad, setTrackedDeckLoad] = useState({
-    deckId: resolvedDeckId,
-    apiFetch,
-  })
-
-  if (
-    trackedDeckLoad.deckId !== resolvedDeckId ||
-    trackedDeckLoad.apiFetch !== apiFetch
-  ) {
-    setTrackedDeckLoad({ deckId: resolvedDeckId, apiFetch })
-    if (resolvedDeckId) {
-      setLoading(true)
-      setError(null)
-    }
-  }
+  const {
+    deckName,
+    isExampleDeck,
+    movies: deckMovies,
+    setMovies: setDeckMovies,
+    error,
+    setError,
+    loading,
+    setLoading,
+    moviesRef,
+  } = useDeckLoad(resolvedDeckId)
 
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null)
   const [hoverLink, setHoverLink] = useState<{
@@ -43,7 +32,6 @@ export function DeckPage() {
     from: 'grid' | 'list'
   } | null>(null)
 
-  const moviesRef = useRef<Movie[]>([])
   const {
     canUndo,
     canRedo,
@@ -59,42 +47,6 @@ export function DeckPage() {
     setMovies: setDeckMovies,
     setError,
   })
-
-  useEffect(() => {
-    moviesRef.current = deckMovies
-  }, [deckMovies])
-
-  useEffect(() => {
-    if (!resolvedDeckId) {
-      return
-    }
-
-    let isActive = true
-
-    apiFetch(`/api/decks/${resolvedDeckId}`)
-      .then((data) => {
-        if (!isActive) {
-          return
-        }
-        setDeckName(String(data?.deck?.name ?? ''))
-        setIsExampleDeck(Boolean(data?.deck?.isExample))
-        setDeckMovies((data?.movies ?? []) as Movie[])
-      })
-      .catch(() => {
-        if (isActive) {
-          setError('Failed to load deck.')
-        }
-      })
-      .finally(() => {
-        if (isActive) {
-          setLoading(false)
-        }
-      })
-
-    return () => {
-      isActive = false
-    }
-  }, [resolvedDeckId, apiFetch])
 
   const movieGroups = useMemo(() => groupByPosition(deckMovies), [deckMovies])
   const {
