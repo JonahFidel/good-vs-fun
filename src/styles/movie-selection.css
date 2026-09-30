@@ -1,0 +1,88 @@
+/* Selected-movie panel and its rename and delete actions. */
+
+.movie-selection-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.08);
+}
+
+.movie-selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.movie-selection-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.movie-selection-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3b82f6;
+}
+
+.movie-selection-title {
+  font-size: 0.88rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.movie-selection-scores {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.movie-selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.btn-rename-selected {
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-rename-selected:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btn-delete-selected {
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-delete-selected:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
