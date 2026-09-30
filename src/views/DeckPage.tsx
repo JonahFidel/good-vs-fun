@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { DeckSidebar } from '../components/deck/DeckSidebar'
 import { GhostCompareControls } from '../components/GhostCompareControls'
 import { PlotPanel } from '../components/PlotPanel'
+import { useDeckKeyboard } from '../hooks/useDeckKeyboard'
 import { useDeckLoad } from '../hooks/useDeckLoad'
 import { useDeckMovieActions } from '../hooks/useDeckMovieActions'
 import { useGhostCompare } from '../hooks/useGhostCompare'
@@ -122,6 +123,16 @@ export function DeckPage() {
     onSelectMovie: selectMovie,
   })
 
+  useDeckKeyboard({
+    isExampleDeck,
+    selectedMovieId,
+    canUndo,
+    canRedo,
+    removeMovie,
+    undo,
+    redo,
+  })
+
   const handleSidebarBackgroundPointerDown = (event: React.PointerEvent<HTMLElement>) => {
     const target = event.target as Element
     if (
@@ -137,65 +148,6 @@ export function DeckPage() {
     }
     clearSelection()
   }
-
-  useEffect(() => {
-    const isTypingTarget = (target: EventTarget | null) =>
-      target instanceof HTMLElement &&
-      (target.isContentEditable ||
-        target.tagName === 'TEXTAREA' ||
-        target.tagName === 'SELECT' ||
-        (target instanceof HTMLInputElement &&
-          target.type !== 'range' &&
-          target.type !== 'button'))
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isTypingTarget(event.target)) {
-        return
-      }
-
-      if (event.key === 'Backspace' || event.key === 'Delete') {
-        if (!selectedMovieId) {
-          return
-        }
-        event.preventDefault()
-        void removeMovie(selectedMovieId)
-        return
-      }
-
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z') {
-        return
-      }
-      if (isExampleDeck) {
-        return
-      }
-
-      if (event.shiftKey) {
-        if (!canRedo) {
-          return
-        }
-        event.preventDefault()
-        void redo()
-        return
-      }
-
-      if (!canUndo) {
-        return
-      }
-      event.preventDefault()
-      void undo()
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [
-    canRedo,
-    canUndo,
-    redo,
-    undo,
-    isExampleDeck,
-    removeMovie,
-    selectedMovieId,
-  ])
 
   return (
     <div
