@@ -7,6 +7,7 @@ import { GridAxes } from '../components/GridAxes'
 import { MoviePoints } from '../components/MoviePoints'
 import { PlotGridZoom } from '../components/PlotGridZoom'
 import { useGhostDeck } from '../hooks/useGhostDeck'
+import { useMoveHistory } from '../hooks/useMoveHistory'
 import { useApiFetch } from '../lib/api'
 import { alertExampleDeckReadOnly } from '../lib/exampleDeck'
 import { formatTitle, snapScoreToStep } from '../lib/format'
@@ -19,12 +20,6 @@ type DragState = {
   key: string
   ids: string[]
   origin: 'grid' | 'list'
-}
-
-type MoviePosition = {
-  id: string
-  fun: number
-  good: number
 }
 
 export function DeckPage() {
@@ -47,8 +42,6 @@ export function DeckPage() {
   const { movies: ghost2Movies, name: ghost2DeckName } = useGhostDeck(ghost2DeckId)
 
   const [draggingGroup, setDraggingGroup] = useState<DragState | null>(null)
-  const [canUndo, setCanUndo] = useState(false)
-  const [canRedo, setCanRedo] = useState(false)
   const [pendingPointer, setPendingPointer] = useState<{
     primaryId: string
     drag: DragState
@@ -66,10 +59,21 @@ export function DeckPage() {
   const moviesRef = useRef<Movie[]>([])
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null)
   const lastInGridPointerRef = useRef<{ x: number; y: number } | null>(null)
-  const dragStartSnapshotRef = useRef<MoviePosition[] | null>(null)
-  const lastMoveRef = useRef<{ before: MoviePosition[]; after: MoviePosition[] } | null>(
-    null,
-  )
+  const {
+    canUndo,
+    canRedo,
+    captureDragSnapshot,
+    discardDragSnapshot,
+    recordUndoIfChanged,
+    undo,
+    redo,
+  } = useMoveHistory({
+    deckId: resolvedDeckId,
+    isExampleDeck,
+    moviesRef,
+    setMovies: setDeckMovies,
+    setError,
+  })
 
   useEffect(() => {
     moviesRef.current = deckMovies
@@ -108,13 +112,6 @@ export function DeckPage() {
       isActive = false
     }
   }, [resolvedDeckId, apiFetch])
-
-  useEffect(() => {
-    dragStartSnapshotRef.current = null
-    lastMoveRef.current = null
-    setCanUndo(false)
-    setCanRedo(false)
-  }, [resolvedDeckId])
 
   // Load all decks for the ghost selector
   useEffect(() => {
@@ -171,13 +168,6 @@ export function DeckPage() {
     navigate(`/deck/${swapId}/movies${qs ? `?${qs}` : ''}`)
   }
 
-  const captureDragSnapshot = useCallback((ids: string[]) => {
-    const idSet = new Set(ids)
-    dragStartSnapshotRef.current = moviesRef.current
-      .filter((movie) => idSet.has(movie.id))
-      .map((movie) => ({ id: movie.id, fun: movie.fun, good: movie.good }))
-  }, [])
-
   const applyMovieScores = useCallback((ids: string[], fun: number, good: number) => {
     const nextFun = snapScoreToStep(fun)
     const nextGood = snapScoreToStep(good)
@@ -211,105 +201,6 @@ export function DeckPage() {
     },
     [],
   )
-
-  const recordUndoIfChanged = useCallback(() => {
-    const before = dragStartSnapshotRef.current
-    dragStartSnapshotRef.current = null
-    if (!before || before.length === 0) {
-      return
-    }
-
-    const changed = before.some((entry) => {
-      const movie = moviesRef.current.find((item) => item.id === entry.id)
-      if (!movie) {
-        return false
-      }
-      return (
-        snapScoreToStep(movie.fun) !== snapScoreToStep(entry.fun) ||
-        snapScoreToStep(movie.good) !== snapScoreToStep(entry.good)
-      )
-    })
-
-    if (!changed) {
-      return
-    }
-
-    const after = before.map((entry) => {
-      const movie = moviesRef.current.find((item) => item.id === entry.id)
-      return movie
-        ? { id: movie.id, fun: movie.fun, good: movie.good }
-        : entry
-    })
-
-    lastMoveRef.current = { before, after }
-    setCanUndo(true)
-    setCanRedo(false)
-  }, [])
-
-  const applyPositions = useCallback(
-    async (positions: MoviePosition[], errorMessage: string) => {
-      if (!resolvedDeckId || isExampleDeck) {
-        return false
-      }
-
-      setError(null)
-      setDeckMovies((current) => {
-        const next = current.map((movie) => {
-          const update = positions.find((item) => item.id === movie.id)
-          return update ? { ...movie, fun: update.fun, good: update.good } : movie
-        })
-        moviesRef.current = next
-        return next
-      })
-
-      try {
-        await Promise.all(
-          positions.map((movie) => {
-            const current = moviesRef.current.find((item) => item.id === movie.id)
-            return apiFetch(`/api/decks/${resolvedDeckId}/movies/${movie.id}`, {
-              method: 'PUT',
-              body: JSON.stringify({
-                fun: movie.fun,
-                good: movie.good,
-                title: current?.title ?? '',
-              }),
-            })
-          }),
-        )
-        return true
-      } catch {
-        setError(errorMessage)
-        return false
-      }
-    },
-    [apiFetch, isExampleDeck, resolvedDeckId],
-  )
-
-  const handleUndo = useCallback(async () => {
-    const entry = lastMoveRef.current
-    if (!entry || !canUndo) {
-      return
-    }
-
-    const ok = await applyPositions(entry.before, 'Failed to undo move.')
-    if (ok) {
-      setCanUndo(false)
-      setCanRedo(true)
-    }
-  }, [applyPositions, canUndo])
-
-  const handleRedo = useCallback(async () => {
-    const entry = lastMoveRef.current
-    if (!entry || !canRedo) {
-      return
-    }
-
-    const ok = await applyPositions(entry.after, 'Failed to redo move.')
-    if (ok) {
-      setCanUndo(true)
-      setCanRedo(false)
-    }
-  }, [applyPositions, canRedo])
 
   const persistMoviePositions = useCallback(
     async (ids: string[], override?: { fun: number; good: number }) => {
@@ -789,7 +680,7 @@ export function DeckPage() {
 
       // If you dragged from the list but never entered the grid: no change.
       if (draggingGroup.origin === 'list' && !last) {
-        dragStartSnapshotRef.current = null
+        discardDragSnapshot()
         setDraggingGroup(null)
         return
       }
@@ -817,6 +708,7 @@ export function DeckPage() {
     }
   }, [
     applyMovieScores,
+    discardDragSnapshot,
     draggingGroup,
     findSnapTarget,
     persistMoviePositions,
@@ -860,7 +752,7 @@ export function DeckPage() {
           return
         }
         event.preventDefault()
-        void handleRedo()
+        void redo()
         return
       }
 
@@ -868,7 +760,7 @@ export function DeckPage() {
         return
       }
       event.preventDefault()
-      void handleUndo()
+      void undo()
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -876,8 +768,8 @@ export function DeckPage() {
   }, [
     canRedo,
     canUndo,
-    handleRedo,
-    handleUndo,
+    redo,
+    undo,
     isExampleDeck,
     removeMovie,
     selectedMovieId,
@@ -929,7 +821,7 @@ export function DeckPage() {
               <button
                 type="button"
                 className="btn-undo"
-                onClick={() => void handleUndo()}
+                onClick={() => void undo()}
                 disabled={!canUndo}
                 title="Undo last move (⌘Z)"
               >
@@ -938,7 +830,7 @@ export function DeckPage() {
               <button
                 type="button"
                 className="btn-undo"
-                onClick={() => void handleRedo()}
+                onClick={() => void redo()}
                 disabled={!canRedo}
                 title="Redo last move (⌘⇧Z)"
               >
