@@ -6,12 +6,11 @@ import { GhostPoints } from '../components/GhostPoints'
 import { GridAxes } from '../components/GridAxes'
 import { MoviePoints } from '../components/MoviePoints'
 import { PlotGridZoom } from '../components/PlotGridZoom'
+import { useDeckMovieActions } from '../hooks/useDeckMovieActions'
 import { useGhostDeck } from '../hooks/useGhostDeck'
 import { useMoveHistory } from '../hooks/useMoveHistory'
 import { usePlotDrag } from '../hooks/usePlotDrag'
 import { useApiFetch } from '../lib/api'
-import { alertExampleDeckReadOnly } from '../lib/exampleDeck'
-import { formatTitle, snapScoreToStep } from '../lib/format'
 import { groupByPosition } from '../lib/groupByPosition'
 import type { Deck, Movie } from '../lib/types'
 
@@ -28,7 +27,22 @@ export function DeckPage() {
   const [isExampleDeck, setIsExampleDeck] = useState(false)
   const [deckMovies, setDeckMovies] = useState<Movie[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(resolvedDeckId !== null)
+  const [trackedDeckLoad, setTrackedDeckLoad] = useState({
+    deckId: resolvedDeckId,
+    apiFetch,
+  })
+
+  if (
+    trackedDeckLoad.deckId !== resolvedDeckId ||
+    trackedDeckLoad.apiFetch !== apiFetch
+  ) {
+    setTrackedDeckLoad({ deckId: resolvedDeckId, apiFetch })
+    if (resolvedDeckId) {
+      setLoading(true)
+      setError(null)
+    }
+  }
 
   const [allDecks, setAllDecks] = useState<Deck[]>([])
   const { movies: ghostMovies, name: ghostDeckName } = useGhostDeck(ghostDeckId)
@@ -67,8 +81,6 @@ export function DeckPage() {
     }
 
     let isActive = true
-    setLoading(true)
-    setError(null)
 
     apiFetch(`/api/decks/${resolvedDeckId}`)
       .then((data) => {
@@ -150,71 +162,28 @@ export function DeckPage() {
     navigate(`/deck/${swapId}/movies${qs ? `?${qs}` : ''}`)
   }
 
-  const updateMovieAxisScore = useCallback(
-    (id: string, axis: 'fun' | 'good', value: number) => {
-      const snapped = snapScoreToStep(value)
-      setDeckMovies((current) => {
-        const next = current.map((movie) =>
-          movie.id === id ? { ...movie, [axis]: snapped } : movie,
-        )
-        moviesRef.current = next
-        return next
-      })
-    },
-    [],
-  )
-
-  const persistMoviePositions = useCallback(
-    async (ids: string[], override?: { fun: number; good: number }) => {
-      if (!resolvedDeckId || isExampleDeck) {
-        return
-      }
-
-      const idSet = new Set(ids)
-      const updates = moviesRef.current.filter((movie) => idSet.has(movie.id))
-
-      try {
-        await Promise.all(
-          updates.map((movie) =>
-            apiFetch(`/api/decks/${resolvedDeckId}/movies/${movie.id}`, {
-              method: 'PUT',
-              body: JSON.stringify({
-                fun: override?.fun ?? movie.fun,
-                good: override?.good ?? movie.good,
-                title: movie.title,
-              }),
-            }),
-          ),
-        )
-      } catch {
-        setError('Failed to save movie positions.')
-      }
-    },
-    [resolvedDeckId, apiFetch, isExampleDeck],
-  )
-
-  const removeMovie = useCallback(
-    async (id: string) => {
-      if (!resolvedDeckId || isExampleDeck) {
-        if (isExampleDeck) {
-          alertExampleDeckReadOnly()
-        }
-        return
-      }
-
-      setError(null)
-      try {
-        await apiFetch(`/api/decks/${resolvedDeckId}/movies/${id}`, {
-          method: 'DELETE',
-        })
-        setDeckMovies((current) => current.filter((movie) => movie.id !== id))
-        setSelectedMovieId((current) => (current === id ? null : current))
-      } catch {
-        setError('Failed to remove movie.')
-      }
-    },
-    [resolvedDeckId, apiFetch, isExampleDeck],
-  )
+  const {
+    persistMoviePositions,
+    removeMovie,
+    handleAddMovie,
+    handleDeleteSelected,
+    handleRenameSelected,
+    handleSelectedScoreAdjustStart,
+    handleSelectedScoreCommit,
+    handleSelectedFunChange,
+    handleSelectedGoodChange,
+  } = useDeckMovieActions({
+    deckId: resolvedDeckId,
+    isExampleDeck,
+    moviesRef,
+    setMovies: setDeckMovies,
+    setError,
+    setLoading,
+    selectedMovieId,
+    setSelectedMovieId,
+    captureDragSnapshot,
+    recordUndoIfChanged,
+  })
 
   const highlightFromList = useCallback((id: string) => {
     setHoverLink({ id, from: 'list' })
@@ -277,100 +246,6 @@ export function DeckPage() {
     clearSelection()
   }
 
-  const handleDeleteSelected = useCallback(() => {
-    if (!selectedMovieId) {
-      return
-    }
-    void removeMovie(selectedMovieId)
-  }, [removeMovie, selectedMovieId])
-
-  const handleRenameSelected = useCallback(async () => {
-    if (!selectedMovieId || !resolvedDeckId) {
-      return
-    }
-    if (isExampleDeck) {
-      alertExampleDeckReadOnly()
-      return
-    }
-
-    const current = moviesRef.current.find((movie) => movie.id === selectedMovieId)
-    if (!current) {
-      return
-    }
-
-    const nextTitle = window.prompt('Rename movie', current.title)
-    if (!nextTitle) {
-      return
-    }
-
-    const formattedTitle = formatTitle(nextTitle.trim())
-    if (!formattedTitle || formattedTitle === current.title) {
-      return
-    }
-
-    setError(null)
-    try {
-      await apiFetch(`/api/decks/${resolvedDeckId}/movies/${selectedMovieId}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          title: formattedTitle,
-          fun: current.fun,
-          good: current.good,
-        }),
-      })
-      setDeckMovies((movies) =>
-        movies.map((movie) =>
-          movie.id === selectedMovieId ? { ...movie, title: formattedTitle } : movie,
-        ),
-      )
-    } catch {
-      setError('Failed to rename movie.')
-    }
-  }, [apiFetch, isExampleDeck, resolvedDeckId, selectedMovieId])
-
-  const handleSelectedScoreAdjustStart = useCallback(() => {
-    if (!selectedMovieId || isExampleDeck) {
-      return
-    }
-    captureDragSnapshot([selectedMovieId])
-  }, [captureDragSnapshot, isExampleDeck, selectedMovieId])
-
-  const handleSelectedScoreCommit = useCallback(async () => {
-    if (!selectedMovieId || isExampleDeck) {
-      return
-    }
-    await persistMoviePositions([selectedMovieId])
-    recordUndoIfChanged()
-  }, [isExampleDeck, persistMoviePositions, recordUndoIfChanged, selectedMovieId])
-
-  const handleSelectedFunChange = useCallback(
-    (value: number) => {
-      if (!selectedMovieId) {
-        return
-      }
-      if (isExampleDeck) {
-        alertExampleDeckReadOnly()
-        return
-      }
-      updateMovieAxisScore(selectedMovieId, 'fun', value)
-    },
-    [isExampleDeck, selectedMovieId, updateMovieAxisScore],
-  )
-
-  const handleSelectedGoodChange = useCallback(
-    (value: number) => {
-      if (!selectedMovieId) {
-        return
-      }
-      if (isExampleDeck) {
-        alertExampleDeckReadOnly()
-        return
-      }
-      updateMovieAxisScore(selectedMovieId, 'good', value)
-    },
-    [isExampleDeck, selectedMovieId, updateMovieAxisScore],
-  )
-
   useEffect(() => {
     const isTypingTarget = (target: EventTarget | null) =>
       target instanceof HTMLElement &&
@@ -429,34 +304,6 @@ export function DeckPage() {
     removeMovie,
     selectedMovieId,
   ])
-
-  const handleAddMovie = useCallback(
-    async (movie: { title: string; fun: number; good: number }) => {
-      if (!resolvedDeckId || isExampleDeck) {
-        return false
-      }
-
-      setLoading(true)
-      setError(null)
-      try {
-        const data = await apiFetch(`/api/decks/${resolvedDeckId}/movies`, {
-          method: 'POST',
-          body: JSON.stringify(movie),
-        })
-        if (data?.movie) {
-          setDeckMovies((current) => [...current, data.movie as Movie])
-          return true
-        }
-        return false
-      } catch {
-        setError('Failed to add movie.')
-        return false
-      } finally {
-        setLoading(false)
-      }
-    },
-    [apiFetch, isExampleDeck, resolvedDeckId],
-  )
 
   return (
     <div
