@@ -1,0 +1,162 @@
+/* Movie markers, labels, score tooltips, and the delete control hidden on the plot. */
+
+.movie-point {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  z-index: 1;
+}
+
+.movie-point.dragging {
+  cursor: grabbing;
+  z-index: 2;
+}
+
+.movie-point--highlighted {
+  z-index: 3;
+}
+
+/* Always-visible title label — dark pill so it reads clearly off the grid */
+.movie-point > span {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translate(calc(-100% - 7px), -50%);
+  white-space: nowrap;
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.2;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 2px 6px rgba(15, 23, 42, 0.45),
+    0 5px 14px rgba(15, 23, 42, 0.35);
+  cursor: default;
+  z-index: 1;
+}
+
+.movie-point::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #dc2626;
+  box-shadow:
+    0 0 0 2px rgba(220, 38, 38, 0.5),
+    0 2px 8px rgba(15, 23, 42, 0.45);
+  z-index: 2;
+}
+
+.movie-point.movie-point--highlighted::after {
+  background: #16a34a;
+  box-shadow:
+    0 0 0 2px rgba(34, 197, 94, 0.95),
+    0 0 10px 3px rgba(34, 197, 94, 0.65),
+    0 0 22px 8px rgba(34, 197, 94, 0.4);
+}
+
+.movie-point--selected {
+  z-index: 4;
+}
+
+.movie-point.movie-point--selected::after {
+  background: #2563eb;
+  box-shadow:
+    0 0 0 2px rgba(59, 130, 246, 0.95),
+    0 0 12px 4px rgba(59, 130, 246, 0.65),
+    0 0 24px 10px rgba(59, 130, 246, 0.4);
+}
+
+.movie-label-line--selected .movie-label-title {
+  border-color: #3b82f6;
+  color: #eff6ff;
+  box-shadow:
+    0 0 0 2px rgba(59, 130, 246, 0.6),
+    0 0 16px 5px rgba(59, 130, 246, 0.45);
+}
+
+.movie-label-line--linked .movie-label-title {
+  border-color: #22c55e;
+  box-shadow:
+    0 0 0 2px rgba(34, 197, 94, 0.55),
+    0 0 14px 4px rgba(34, 197, 94, 0.45);
+}
+
+/* Score tooltip on hover — darker, red-outlined pill above the dot */
+.movie-point .movie-point-score {
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: calc(100% + 5px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: #030712;
+  color: #ffffff;
+  border: 2px solid #ef4444;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 3px 10px rgba(15, 23, 42, 0.55),
+    0 6px 18px rgba(239, 68, 68, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  z-index: 3;
+}
+
+.movie-point:hover .movie-point-score,
+.movie-point.dragging .movie-point-score {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.movie-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  line-height: 1.2;
+}
+
+.movie-label-line {
+  display: block;
+  white-space: nowrap;
+  position: static;
+}
+
+.movie-label-title {
+  display: inline-block;
+}
+
+.movie-delete {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding-left: .2em;
+  padding-right: 0px;
+  cursor: pointer;
+  align-self: center;
+  vertical-align: middle;
+  transform: translateY(0px);
+}
+
+.movie-delete:hover {
+  color: #ef4444;
+}
+
+/* Hide delete (×) buttons in the grid labels, keep them in the list */
+.movie-point .movie-delete {
+  display: none;
+}
