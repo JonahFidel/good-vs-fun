@@ -1,4 +1,4 @@
-import { GRID_CANVAS, GRID_MARGIN } from '../lib/gridCanvas'
+import { GRID_CANVAS, GRID_MARGIN } from '../../lib/gridCanvas'
 
 // Canvas spans –margin..(scoreMax + margin). Ticks use the same math as .grid::before.
 

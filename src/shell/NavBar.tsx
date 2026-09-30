@@ -1,6 +1,6 @@
 import { UserButton, useAuth } from '@clerk/clerk-react'
 import { NavLink } from 'react-router-dom'
-import { useIsHydrated } from '../hooks/useIsHydrated'
+import { useIsHydrated } from './useIsHydrated'
 
 export function NavBar() {
   const hydrated = useIsHydrated()

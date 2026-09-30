@@ -1,0 +1,56 @@
+/* Fun and good score sliders, shared by the add form and the selection panel. */
+
+.score-sliders {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.score-sliders--add {
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.score-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.score-slider-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.score-slider-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.score-slider-value {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-slider-input {
+  width: 100%;
+  height: 0.9rem;
+  margin: 0;
+  accent-color: #111827;
+  cursor: pointer;
+}
+
+.score-slider-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.score-sliders--selected {
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}

@@ -1,0 +1,18 @@
+/* Shared layout tokens for the plot, deck rail, and decks page. */
+
+:root {
+  --grid-margin: 1;
+  --grid-score-max: 10;
+  --grid-canvas: 12;
+  --grid-tick-outset-major: 10px;
+  --grid-tick-outset-minor: 5px;
+  --grid-tick-outset-top: calc(var(--grid-tick-outset-major) + 5px);
+  --grid-tick-outset-right: calc(var(--grid-tick-outset-major) + 5px);
+  --grid-tick-outset-minor-top: calc(var(--grid-tick-outset-minor) + 5px);
+  --grid-tick-outset-minor-right: calc(var(--grid-tick-outset-minor) + 5px);
+  --deck-rail-width: 280px;
+  /* Square plot cap — scales with vmin, hard-stops on very large displays */
+  --plot-side-max: min(1400px, 92vmin);
+  --large-monitor-width: 1800px;
+  --decks-panel-max-width: calc(var(--large-monitor-width) * 2 / 3);
+}

@@ -15,3 +15,8 @@ export type Movie = {
   createdAt?: string
 }
 
+export type MovieHover = {
+  id: string
+  from: 'grid' | 'list'
+}
+

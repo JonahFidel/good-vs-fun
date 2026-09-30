@@ -1,0 +1,37 @@
+/* Plot undo and redo toolbar. Sits between ghost compare and ghost markers. */
+
+.grid-toolbar {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.deck-page-layout .grid-toolbar {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 4;
+}
+
+.btn-undo {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+}
+
+.btn-undo:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btn-undo:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

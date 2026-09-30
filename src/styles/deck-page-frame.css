@@ -1,0 +1,120 @@
+/* Deck page frame: locked viewport, sidebar column, and plot slot. */
+
+/* Deck page: navbar on top, sidebar + plot below (no page scroll) */
+html:has(.deck-page-layout),
+html:has(.deck-page-layout) body {
+  overflow: hidden;
+  height: 100%;
+}
+
+#root:has(.deck-page-layout) {
+  height: 100dvh;
+  box-sizing: border-box;
+  padding: 0;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.app:has(.deck-page-layout) {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app:has(.deck-page-layout) > .header {
+  padding: 0.3rem 0.5rem;
+}
+
+.app:has(.deck-page-layout) > .layout {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: var(--deck-rail-width) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0.35rem 0.45rem 0.35rem 0.35rem;
+}
+
+.deck-page-layout {
+  display: contents;
+}
+
+.deck-rail {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.deck-page-layout .grid-panel {
+  grid-column: 2;
+  grid-row: 1;
+  gap: 0.25rem;
+  align-items: flex-start;
+  justify-content: flex-start;
+  background: transparent;
+  container-type: size;
+  overflow: hidden;
+  min-height: 0;
+  height: 100%;
+}
+
+.deck-page-layout .grid-wrapper {
+  --plot-chrome-x: calc(0.25rem + 1.75rem + 0.1rem + 0.35rem);
+  --plot-chrome-y: 2.75rem;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.3rem 0.35rem 0.35rem 0.25rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+  background: #ffffff;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0.1rem;
+  align-content: start;
+}
+
+.deck-page-layout .grid-zoom-slot {
+  --plot-viewport-w: calc(100cqw - var(--plot-chrome-x));
+  --plot-viewport-h: calc(100cqh - var(--plot-chrome-y));
+  --plot-side: min(var(--plot-viewport-w), var(--plot-viewport-h), var(--plot-side-max));
+  justify-self: stretch;
+  width: 100%;
+  height: var(--plot-viewport-h);
+  min-height: 0;
+  max-height: var(--plot-viewport-h);
+  max-width: 100%;
+}
+
+.deck-page-layout .grid-zoom-canvas {
+  inset: auto;
+  top: 0;
+  left: 0;
+  width: var(--plot-side);
+  height: var(--plot-side);
+  min-width: 0;
+}
+
+.deck-page-layout .grid {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.deck-rail .panel {
+  padding: 0;
+}

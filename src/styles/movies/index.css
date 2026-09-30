@@ -1,0 +1,6 @@
+/* Movie sidebar styles. Import order is the cascade within the sidebar. */
+
+@import './movie-form.css';
+@import './score-slider.css';
+@import './movie-list.css';
+@import './movie-selection.css';
