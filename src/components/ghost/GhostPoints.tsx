@@ -1,5 +1,5 @@
-import { scoreToPlotPercent } from '../lib/gridCanvas'
-import type { PositionGroup } from '../lib/groupByPosition'
+import { scoreToPlotPercent } from '../../lib/gridCanvas'
+import type { PositionGroup } from '../../lib/groupByPosition'
 
 export function GhostPoints({
   groups,

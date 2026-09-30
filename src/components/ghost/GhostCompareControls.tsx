@@ -1,4 +1,4 @@
-import type { Deck } from '../lib/types'
+import type { Deck } from '../../lib/types'
 
 type GhostCompareControlsProps = {
   primaryName: string
