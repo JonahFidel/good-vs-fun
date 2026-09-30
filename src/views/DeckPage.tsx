@@ -2,10 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { DeckSidebar } from '../components/deck/DeckSidebar'
 import { GhostCompareControls } from '../components/GhostCompareControls'
-import { GhostPoints } from '../components/GhostPoints'
-import { GridAxes } from '../components/GridAxes'
-import { MoviePoints } from '../components/MoviePoints'
-import { PlotGridZoom } from '../components/PlotGridZoom'
+import { PlotPanel } from '../components/PlotPanel'
 import { useDeckMovieActions } from '../hooks/useDeckMovieActions'
 import { useGhostCompare } from '../hooks/useGhostCompare'
 import { useMoveHistory } from '../hooks/useMoveHistory'
@@ -173,14 +170,6 @@ export function DeckPage() {
     onSelectMovie: selectMovie,
   })
 
-  const handleGridBackgroundPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    const target = event.target as Element
-    if (target.closest('.movie-point') || target.closest('.grid-toolbar')) {
-      return
-    }
-    clearSelection()
-  }
-
   const handleSidebarBackgroundPointerDown = (event: React.PointerEvent<HTMLElement>) => {
     const target = event.target as Element
     if (
@@ -262,54 +251,27 @@ export function DeckPage() {
         .filter(Boolean)
         .join(' ')}
     >
-      <section className="grid-panel">
-        <div
-          className={['grid-wrapper', isExampleDeck ? 'grid-wrapper--example' : '']
-            .filter(Boolean)
-            .join(' ')}
-          onPointerDown={handleGridBackgroundPointerDown}
-        >
-          {!isExampleDeck && (
-            <div className="grid-toolbar">
-              <button
-                type="button"
-                className="btn-undo"
-                onClick={() => void undo()}
-                disabled={!canUndo}
-                title="Undo last move (⌘Z)"
-              >
-                ↩ Undo
-              </button>
-              <button
-                type="button"
-                className="btn-undo"
-                onClick={() => void redo()}
-                disabled={!canRedo}
-                title="Redo last move (⌘⇧Z)"
-              >
-                ↪ Redo
-              </button>
-            </div>
-          )}
-          <div className="grid-axis grid-axis-y">Fun</div>
-          <div className="grid-axis grid-axis-x">Good</div>
-          <PlotGridZoom ref={gridRef}>
-            <GridAxes />
-            {ghostDeckId && <GhostPoints groups={ghostGroups} variant={1} />}
-            {ghost2DeckId && <GhostPoints groups={ghost2Groups} variant={2} />}
-            <MoviePoints
-              groups={movieGroups}
-              draggingIds={draggingIds}
-              selectedMovieId={selectedMovieId}
-              hover={hoverLink}
-              onGroupPointerDown={handlePointerDown}
-              onLabelPointerDown={handleLabelPointerDown}
-              onHighlight={highlightFromGrid}
-              onClearHover={clearHoverLink}
-            />
-          </PlotGridZoom>
-        </div>
-      </section>
+      <PlotPanel
+        isExampleDeck={isExampleDeck}
+        gridRef={gridRef}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={undo}
+        onRedo={redo}
+        onClearSelection={clearSelection}
+        ghostDeckId={ghostDeckId}
+        ghost2DeckId={ghost2DeckId}
+        ghostGroups={ghostGroups}
+        ghost2Groups={ghost2Groups}
+        movieGroups={movieGroups}
+        draggingIds={draggingIds}
+        selectedMovieId={selectedMovieId}
+        hover={hoverLink}
+        onGroupPointerDown={handlePointerDown}
+        onLabelPointerDown={handleLabelPointerDown}
+        onHighlight={highlightFromGrid}
+        onClearHover={clearHoverLink}
+      />
 
       <div className="deck-rail">
         <DeckSidebar
