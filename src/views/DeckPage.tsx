@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { DeckSidebar } from '../components/deck/DeckSidebar'
 import { GhostCompareControls } from '../components/GhostCompareControls'
 import { GhostPoints } from '../components/GhostPoints'
@@ -7,21 +7,17 @@ import { GridAxes } from '../components/GridAxes'
 import { MoviePoints } from '../components/MoviePoints'
 import { PlotGridZoom } from '../components/PlotGridZoom'
 import { useDeckMovieActions } from '../hooks/useDeckMovieActions'
-import { useGhostDeck } from '../hooks/useGhostDeck'
+import { useGhostCompare } from '../hooks/useGhostCompare'
 import { useMoveHistory } from '../hooks/useMoveHistory'
 import { usePlotDrag } from '../hooks/usePlotDrag'
 import { useApiFetch } from '../lib/api'
 import { groupByPosition } from '../lib/groupByPosition'
-import type { Deck, Movie } from '../lib/types'
+import type { Movie } from '../lib/types'
 
 export function DeckPage() {
   const { deckId } = useParams()
   const apiFetch = useApiFetch()
-  const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
   const resolvedDeckId = typeof deckId === 'string' ? deckId : null
-  const ghostDeckId = searchParams.get('ghost') ?? ''
-  const ghost2DeckId = searchParams.get('ghost2') ?? ''
 
   const [deckName, setDeckName] = useState<string>('')
   const [isExampleDeck, setIsExampleDeck] = useState(false)
@@ -43,10 +39,6 @@ export function DeckPage() {
       setError(null)
     }
   }
-
-  const [allDecks, setAllDecks] = useState<Deck[]>([])
-  const { movies: ghostMovies, name: ghostDeckName } = useGhostDeck(ghostDeckId)
-  const { movies: ghost2Movies, name: ghost2DeckName } = useGhostDeck(ghost2DeckId)
 
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null)
   const [hoverLink, setHoverLink] = useState<{
@@ -107,60 +99,19 @@ export function DeckPage() {
     }
   }, [resolvedDeckId, apiFetch])
 
-  // Load all decks for the ghost selector
-  useEffect(() => {
-    let isActive = true
-    apiFetch('/api/decks')
-      .then((data) => {
-        if (isActive) setAllDecks((data?.decks ?? []) as Deck[])
-      })
-      .catch(() => {})
-    return () => {
-      isActive = false
-    }
-  }, [apiFetch])
-
-  const ghostGroups = useMemo(() => groupByPosition(ghostMovies), [ghostMovies])
-  const ghost2Groups = useMemo(() => groupByPosition(ghost2Movies), [ghost2Movies])
   const movieGroups = useMemo(() => groupByPosition(deckMovies), [deckMovies])
-  const otherDecks = useMemo(
-    () => allDecks.filter((d) => d.id !== resolvedDeckId),
-    [allDecks, resolvedDeckId],
-  )
-
-  function writeGhostParams(nextGhost: string, nextGhost2: string) {
-    const params = new URLSearchParams()
-    if (nextGhost) params.set('ghost', nextGhost)
-    if (nextGhost2) params.set('ghost2', nextGhost2)
-    setSearchParams(params, { replace: true })
-  }
-
-  function handleSetGhostDeck(id: string) {
-    // Don't allow the same deck in both ghost slots
-    const nextGhost2 = id && id === ghost2DeckId ? '' : ghost2DeckId
-    writeGhostParams(id, nextGhost2)
-  }
-
-  function handleSetGhost2Deck(id: string) {
-    const nextGhost = id && id === ghostDeckId ? '' : ghostDeckId
-    writeGhostParams(nextGhost, id)
-  }
-
-  function handleSwapDecks(withGhost: 1 | 2 = 1) {
-    if (!resolvedDeckId) return
-    const swapId = withGhost === 1 ? ghostDeckId : ghost2DeckId
-    if (!swapId) return
-    const params = new URLSearchParams()
-    if (withGhost === 1) {
-      params.set('ghost', resolvedDeckId)
-      if (ghost2DeckId) params.set('ghost2', ghost2DeckId)
-    } else {
-      if (ghostDeckId) params.set('ghost', ghostDeckId)
-      params.set('ghost2', resolvedDeckId)
-    }
-    const qs = params.toString()
-    navigate(`/deck/${swapId}/movies${qs ? `?${qs}` : ''}`)
-  }
+  const {
+    ghostDeckId,
+    ghost2DeckId,
+    ghostDeckName,
+    ghost2DeckName,
+    ghostGroups,
+    ghost2Groups,
+    otherDecks,
+    handleSetGhostDeck,
+    handleSetGhost2Deck,
+    handleSwapDecks,
+  } = useGhostCompare(resolvedDeckId)
 
   const {
     persistMoviePositions,
