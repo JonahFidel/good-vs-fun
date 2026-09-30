@@ -1,5 +1,5 @@
 import { DeckList } from '../components/decks/DeckList'
-import { useDecks } from '../hooks/useDecks'
+import { useDecks } from '../hooks/decks/useDecks'
 import type { DeckSort } from '../lib/deckOrder'
 
 export function DecksPage() {

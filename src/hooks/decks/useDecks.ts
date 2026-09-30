@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useApiFetch } from '../lib/api'
-import { moveUserDeck, sortDecks, type DeckSort } from '../lib/deckOrder'
-import { formatTitle } from '../lib/format'
-import type { Deck } from '../lib/types'
+import { useApiFetch } from '../../lib/api'
+import { moveUserDeck, sortDecks, type DeckSort } from '../../lib/deckOrder'
+import { formatTitle } from '../../lib/format'
+import type { Deck } from '../../lib/types'
 
 export function useDecks() {
   const apiFetch = useApiFetch()
