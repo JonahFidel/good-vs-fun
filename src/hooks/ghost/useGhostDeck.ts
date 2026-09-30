@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useApiFetch } from '../lib/api'
-import type { Movie } from '../lib/types'
+import { useApiFetch } from '../../lib/api'
+import type { Movie } from '../../lib/types'
 
 export function useGhostDeck(deckId: string) {
   const apiFetch = useApiFetch()

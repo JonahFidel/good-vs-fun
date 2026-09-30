@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useApiFetch } from '../lib/api'
-import { groupByPosition } from '../lib/groupByPosition'
-import type { Deck } from '../lib/types'
+import { useApiFetch } from '../../lib/api'
+import { groupByPosition } from '../../lib/groupByPosition'
+import type { Deck } from '../../lib/types'
 import { useGhostDeck } from './useGhostDeck'
 
 export function useGhostCompare(deckId: string | null) {
