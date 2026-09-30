@@ -1,4 +1,4 @@
-import { ScoreSlider } from '../ScoreSlider'
+import { ScoreSlider } from './ScoreSlider'
 import type { Movie } from '../../lib/types'
 
 export function MovieSelectionPanel({

@@ -1,4 +1,4 @@
-import { formatScore, POSITION_STEP } from '../lib/format'
+import { formatScore, POSITION_STEP } from '../../lib/format'
 
 type Props = {
   label: string

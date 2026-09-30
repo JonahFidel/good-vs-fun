@@ -1,4 +1,4 @@
-import { ScoreSlider } from '../ScoreSlider'
+import { ScoreSlider } from './ScoreSlider'
 import { snapScoreToStep } from '../../lib/format'
 
 export function AddMovieForm({
