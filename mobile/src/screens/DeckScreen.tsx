@@ -24,6 +24,13 @@ import { MoviePlot, type PlotLegend } from '@/components/MoviePlot'
 import { ScoreSlider } from '@/components/ScoreSlider'
 import { useApiFetch } from '@/lib/api'
 import { formatTitle, formattedMovieTitle } from '@/lib/formatTitle'
+import {
+  applyPositions,
+  scoreMoveFromSnapshot,
+  snapshotPositions,
+  type MoviePosition,
+  type ScoreMove,
+} from '@/lib/moveHistory'
 import { useGhostCompare } from '@/lib/useGhostCompare'
 import { colors, radii } from '@/theme'
 
@@ -67,6 +74,10 @@ export function DeckScreen({
   const [loading, setLoading] = useState(true)
   const moviesRef = useRef<Movie[]>([])
   moviesRef.current = movies
+  const dragSnapshotRef = useRef<MoviePosition[] | null>(null)
+  const lastMoveRef = useRef<ScoreMove | null>(null)
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
   const ghost = useGhostCompare(deckId, initialGhostId, initialGhost2Id)
   const plotLegend = useMemo<PlotLegend | null>(() => {
     if (!ghost.ghostDeckId && !ghost.ghost2DeckId) {
@@ -109,8 +120,89 @@ export function DeckScreen({
   }, [apiFetch, deckId])
 
   useEffect(() => {
+    dragSnapshotRef.current = null
+    lastMoveRef.current = null
+    setCanUndo(false)
+    setCanRedo(false)
+  }, [deckId])
+
+  useEffect(() => {
     void loadDeck()
   }, [loadDeck])
+
+  const captureMoveSnapshot = (ids: string[]) => {
+    if (isExampleDeck) {
+      return
+    }
+    dragSnapshotRef.current = snapshotPositions(moviesRef.current, ids)
+  }
+
+  const recordMoveIfChanged = () => {
+    const before = dragSnapshotRef.current
+    dragSnapshotRef.current = null
+    const move = scoreMoveFromSnapshot(before, moviesRef.current)
+    if (!move) {
+      return
+    }
+    lastMoveRef.current = move
+    setCanUndo(true)
+    setCanRedo(false)
+  }
+
+  const applyScoreMove = async (positions: MoviePosition[], errorMessage: string) => {
+    if (isExampleDeck) {
+      return false
+    }
+
+    setError(null)
+    const nextMovies = applyPositions(moviesRef.current, positions)
+    moviesRef.current = nextMovies
+    setMovies(nextMovies)
+
+    try {
+      await Promise.all(
+        positions.map((position) => {
+          const current = moviesRef.current.find((item) => item.id === position.id)
+          return apiFetch(deckMoviePath(deckId, position.id), {
+            method: 'PUT',
+            body: JSON.stringify({
+              title: current?.title ?? '',
+              fun: position.fun,
+              good: position.good,
+            }),
+          })
+        }),
+      )
+      return true
+    } catch {
+      setError(errorMessage)
+      return false
+    }
+  }
+
+  const undoMove = async () => {
+    const entry = lastMoveRef.current
+    if (!entry || !canUndo) {
+      return
+    }
+    const ok = await applyScoreMove(entry.before, 'Failed to undo move.')
+    if (ok) {
+      setCanUndo(false)
+      setCanRedo(true)
+    }
+  }
+
+  const redoMove = async () => {
+    const entry = lastMoveRef.current
+    if (!entry || !canRedo) {
+      return
+    }
+    const ok = await applyScoreMove(entry.after, 'Failed to redo move.')
+    if (ok) {
+      setCanUndo(true)
+      setCanRedo(false)
+    }
+  }
 
   const sortedMovies = useMemo(() => {
     const nextMovies = [...movies]
@@ -323,6 +415,21 @@ export function DeckScreen({
               ghost2Movies={ghost.ghost2Movies}
               legend={plotLegend}
               editable={!isExampleDeck}
+              undo={
+                !isExampleDeck && deckName !== ''
+                  ? {
+                      canUndo,
+                      canRedo,
+                      onUndo: () => {
+                        void undoMove()
+                      },
+                      onRedo: () => {
+                        void redoMove()
+                      },
+                    }
+                  : null
+              }
+              onMoveStart={captureMoveSnapshot}
               onMove={(ids, nextFun, nextGood) => {
                 const idSet = new Set(ids)
                 const nextMovies = moviesRef.current.map((movie) =>
@@ -332,6 +439,7 @@ export function DeckScreen({
                 setMovies(nextMovies)
               }}
               onMoveEnd={(ids) => {
+                recordMoveIfChanged()
                 const idSet = new Set(ids)
                 for (const movie of moviesRef.current) {
                   if (idSet.has(movie.id)) {
@@ -379,15 +487,23 @@ export function DeckScreen({
                     label="Fun"
                     value={selectedMovie.fun}
                     disabled={isExampleDeck}
+                    onAdjustStart={() => captureMoveSnapshot([selectedMovie.id])}
                     onChange={(value) => updateScore('fun', value)}
-                    onCommit={(value) => commitScore('fun', value)}
+                    onCommit={(value) => {
+                      commitScore('fun', value)
+                      recordMoveIfChanged()
+                    }}
                   />
                   <ScoreSlider
                     label="Good"
                     value={selectedMovie.good}
                     disabled={isExampleDeck}
+                    onAdjustStart={() => captureMoveSnapshot([selectedMovie.id])}
                     onChange={(value) => updateScore('good', value)}
-                    onCommit={(value) => commitScore('good', value)}
+                    onCommit={(value) => {
+                      commitScore('good', value)
+                      recordMoveIfChanged()
+                    }}
                   />
                 </View>
               </View>

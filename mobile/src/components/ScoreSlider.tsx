@@ -7,6 +7,7 @@ type Props = {
   label: string
   value: number
   disabled?: boolean
+  onAdjustStart?: () => void
   onChange: (value: number) => void
   onCommit?: (value: number) => void
 }
@@ -15,15 +16,18 @@ export function ScoreSlider({
   label,
   value,
   disabled = false,
+  onAdjustStart,
   onChange,
   onCommit,
 }: Props) {
   const widthRef = useRef(1)
   const latestRef = useRef(value)
+  const onAdjustStartRef = useRef(onAdjustStart)
   const onChangeRef = useRef(onChange)
   const onCommitRef = useRef(onCommit)
   const disabledRef = useRef(disabled)
   latestRef.current = value
+  onAdjustStartRef.current = onAdjustStart
   onChangeRef.current = onChange
   onCommitRef.current = onCommit
   disabledRef.current = disabled
@@ -35,6 +39,7 @@ export function ScoreSlider({
         onMoveShouldSetPanResponder: () => !disabledRef.current,
         onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: (event) => {
+          onAdjustStartRef.current?.()
           applyScore(event.nativeEvent.locationX)
         },
         onPanResponderMove: (event) => {
