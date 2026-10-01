@@ -1,4 +1,5 @@
 import { useSignIn, useSignUp } from '@clerk/expo'
+import { useSSO } from '@clerk/expo/experimental'
 import { useState } from 'react'
 import {
   KeyboardAvoidingView,
@@ -10,7 +11,7 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { clerkErrorMessage } from '@/lib/clerkErrors'
+import { clerkErrorMessage, clerkThrownMessage } from '@/lib/clerkErrors'
 import { colors, radii } from '@/theme'
 
 type Mode = 'sign-in' | 'sign-up'
@@ -19,14 +20,16 @@ type Step = 'credentials' | 'code' | 'trust'
 export function SignInScreen() {
   const { signIn, fetchStatus: signInStatus } = useSignIn()
   const { signUp, fetchStatus: signUpStatus } = useSignUp()
+  const { startSSOFlow } = useSSO()
   const [mode, setMode] = useState<Mode>('sign-in')
   const [step, setStep] = useState<Step>('credentials')
   const [emailAddress, setEmailAddress] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+  const [googleBusy, setGoogleBusy] = useState(false)
 
-  const busy = signInStatus === 'fetching' || signUpStatus === 'fetching'
+  const busy = signInStatus === 'fetching' || signUpStatus === 'fetching' || googleBusy
 
   const switchMode = (next: Mode) => {
     setMode(next)
@@ -52,6 +55,38 @@ export function SignInScreen() {
     })
     if (error) {
       setFormError(clerkErrorMessage(error, 'Could not finish signing in.'))
+    }
+  }
+
+  const signInWithGoogle = async () => {
+    setFormError(null)
+    setGoogleBusy(true)
+    try {
+      const { createdSessionId, authSessionResult } = await startSSOFlow({
+        strategy: 'oauth_google',
+      })
+      const sessionType = authSessionResult?.type
+      if (sessionType === 'cancel' || sessionType === 'dismiss') {
+        return
+      }
+      if (createdSessionId) {
+        return
+      }
+      if (signIn.status === 'needs_client_trust') {
+        const { error: sendError } = await signIn.mfa.sendEmailCode()
+        if (sendError) {
+          setFormError(clerkErrorMessage(sendError, 'Could not send a verification code.'))
+          return
+        }
+        setCode('')
+        setStep('trust')
+        return
+      }
+      setFormError('Could not finish signing in with Google.')
+    } catch (error) {
+      setFormError(clerkThrownMessage(error, 'Could not sign in with Google.'))
+    } finally {
+      setGoogleBusy(false)
     }
   }
 
@@ -178,6 +213,27 @@ export function SignInScreen() {
           <Text style={styles.subhead}>{subhead}</Text>
 
           {formError ? <Text style={styles.error}>{formError}</Text> : null}
+
+          {step === 'credentials' && mode === 'sign-in' ? (
+            <>
+              <Pressable
+                style={[styles.googleButton, busy && styles.disabled]}
+                disabled={busy}
+                onPress={() => {
+                  void signInWithGoogle()
+                }}
+              >
+                <Text style={styles.googleLabel}>
+                  {googleBusy ? 'Working…' : 'Log in with Google'}
+                </Text>
+              </Pressable>
+              <View style={styles.orRow}>
+                <View style={styles.orLine} />
+                <Text style={styles.orText}>or</Text>
+                <View style={styles.orLine} />
+              </View>
+            </>
+          ) : null}
 
           {step === 'credentials' ? (
             <>
@@ -328,6 +384,35 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  googleButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  googleLabel: {
+    color: colors.heading,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  orRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  orText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '600',
   },
   switchMode: {
     textAlign: 'center',
