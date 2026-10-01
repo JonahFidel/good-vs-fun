@@ -1,9 +1,10 @@
 import { useClerk } from '@clerk/expo'
-import { ApiRoute, type Deck } from '@good-vs-fun/shared'
+import { ApiRoute, deckPath, type Deck } from '@good-vs-fun/shared'
 import { useRouter } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useApiFetch } from '@/lib/api'
+import { sortDecks, type DeckSort } from '@/lib/deckOrder'
 import { formatTitle } from '@/lib/formatTitle'
 import { colors, radii } from '@/theme'
 
@@ -24,14 +26,30 @@ type DeckResponse = {
   deck?: Deck
 }
 
+type RenameResponse = {
+  deck?: {
+    name?: string
+    updatedAt?: string
+  }
+}
+
+const SORT_OPTIONS: { id: DeckSort; label: string }[] = [
+  { id: 'recent', label: 'Recent' },
+  { id: 'name', label: 'Name' },
+  { id: 'count', label: 'Count' },
+]
+
 export function DecksScreen() {
   const router = useRouter()
   const apiFetch = useApiFetch()
   const { signOut } = useClerk()
   const [decks, setDecks] = useState<Deck[]>([])
   const [deckName, setDeckName] = useState('')
+  const [deckSort, setDeckSort] = useState<DeckSort>('recent')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const sortedDecks = useMemo(() => sortDecks(decks, deckSort), [decks, deckSort])
 
   const loadDecks = useCallback(async () => {
     setLoading(true)
@@ -78,6 +96,98 @@ export function DecksScreen() {
     }
   }
 
+  const renameDeck = async (deck: Deck, nextName: string | undefined) => {
+    const trimmedName = nextName?.trim() ?? ''
+    if (!trimmedName || deck.isExample) {
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    try {
+      const formattedName = formatTitle(trimmedName)
+      const data = (await apiFetch(deckPath(deck.id), {
+        method: 'PUT',
+        body: JSON.stringify({ name: formattedName }),
+      })) as RenameResponse | null
+      setDecks((current) =>
+        current.map((item) =>
+          item.id === deck.id
+            ? {
+                ...item,
+                name: data?.deck?.name ?? formattedName,
+                updatedAt: data?.deck?.updatedAt ?? item.updatedAt,
+              }
+            : item,
+        ),
+      )
+    } catch {
+      setError('Failed to rename deck.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const promptRename = (deck: Deck) => {
+    if (deck.isExample) {
+      return
+    }
+
+    Alert.prompt(
+      'Rename deck',
+      undefined,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Save',
+          onPress: (value?: string) => {
+            void renameDeck(deck, value)
+          },
+        },
+      ],
+      'plain-text',
+      deck.name,
+    )
+  }
+
+  const deleteDeck = async (deck: Deck) => {
+    if (deck.isExample) {
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    try {
+      await apiFetch(deckPath(deck.id), { method: 'DELETE' })
+      setDecks((current) => current.filter((item) => item.id !== deck.id))
+    } catch {
+      setError('Failed to delete deck.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const confirmDelete = (deck: Deck) => {
+    if (deck.isExample) {
+      return
+    }
+
+    Alert.alert(
+      'Delete deck',
+      `Delete "${deck.name}" and its movies? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            void deleteDeck(deck)
+          },
+        },
+      ],
+    )
+  }
+
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
@@ -88,7 +198,7 @@ export function DecksScreen() {
       </View>
 
       <FlatList
-        data={decks}
+        data={sortedDecks}
         keyExtractor={(deck) => deck.id}
         refreshing={loading}
         onRefresh={() => void loadDecks()}
@@ -113,6 +223,27 @@ export function DecksScreen() {
                 <Text style={styles.addLabel}>Add deck</Text>
               </Pressable>
             </View>
+            <View style={styles.sortRow}>
+              <Text style={styles.sortLabel}>Sort decks</Text>
+              <View style={styles.sortOptions}>
+                {SORT_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option.id}
+                    style={[styles.sortChip, deckSort === option.id && styles.sortChipActive]}
+                    onPress={() => setDeckSort(option.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.sortChipLabel,
+                        deckSort === option.id && styles.sortChipLabelActive,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
           </View>
         }
         ListEmptyComponent={
@@ -123,18 +254,36 @@ export function DecksScreen() {
           )
         }
         renderItem={({ item }) => (
-          <Pressable
-            style={[styles.row, item.isExample && styles.exampleRow]}
-            onPress={() =>
-              router.push({ pathname: '/deck/[deckId]', params: { deckId: item.id } })
-            }
-          >
-            <View style={styles.rowTitle}>
-              <Text style={styles.deckName}>{item.name}</Text>
-              {item.isExample ? <Text style={styles.badge}>Example</Text> : null}
-            </View>
-            <Text style={styles.meta}>{(item.movieCount ?? 0).toString()} films</Text>
-          </Pressable>
+          <View style={[styles.row, item.isExample && styles.exampleRow]}>
+            <Pressable
+              style={styles.rowMain}
+              onPress={() =>
+                router.push({ pathname: '/deck/[deckId]', params: { deckId: item.id } })
+              }
+            >
+              <View style={styles.rowTitle}>
+                <Text style={styles.deckName}>{item.name}</Text>
+                {item.isExample ? <Text style={styles.badge}>Example</Text> : null}
+              </View>
+              <Text style={styles.meta}>{(item.movieCount ?? 0).toString()} films</Text>
+            </Pressable>
+            {item.isExample ? null : (
+              <View style={styles.actions}>
+                <Pressable
+                  onPress={() => promptRename(item)}
+                  accessibilityLabel={`Rename ${item.name}`}
+                >
+                  <Text style={styles.actionLabel}>Rename</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => confirmDelete(item)}
+                  accessibilityLabel={`Delete ${item.name}`}
+                >
+                  <Text style={styles.deleteLabel}>Delete</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
         )}
       />
     </SafeAreaView>
@@ -235,11 +384,43 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '700',
   },
-  row: {
+  sortRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+  },
+  sortLabel: {
+    color: colors.heading,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  sortOptions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  sortChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  sortChipActive: {
+    backgroundColor: colors.heading,
+    borderColor: colors.heading,
+  },
+  sortChipLabel: {
+    color: colors.heading,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  sortChipLabelActive: {
+    color: '#ffffff',
+  },
+  row: {
+    gap: 10,
     paddingHorizontal: 14,
     paddingVertical: 14,
     backgroundColor: colors.surface,
@@ -249,6 +430,26 @@ const styles = StyleSheet.create({
   },
   exampleRow: {
     backgroundColor: colors.exampleRow,
+  },
+  rowMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  actionLabel: {
+    color: colors.heading,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  deleteLabel: {
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: '700',
   },
   rowTitle: {
     flex: 1,
