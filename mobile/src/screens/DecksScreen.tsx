@@ -207,7 +207,8 @@ export function DecksScreen() {
           <View style={styles.intro}>
             <Text style={styles.title}>Decks</Text>
             <Text style={styles.subhead}>
-              Create and manage your decks, or explore the example decks.
+              Create and manage your decks, or explore the example decks. Open a deck to
+              compare it with up to two others as read-only ghost overlays.
             </Text>
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {loading ? <Text style={styles.status}>Syncing changes…</Text> : null}

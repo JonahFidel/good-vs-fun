@@ -26,16 +26,35 @@ const regionPercent = {
   height: `${(SCORE_MAX / PLOT_SPAN) * 100}%`,
 } as const
 
+export type PlotLegend = {
+  primary: string
+  ghost?: string
+  ghost2?: string
+}
+
 type Props = {
   movies: Movie[]
   selectedMovieId: string | null
   onSelect: (id: string | null) => void
   pending?: boolean
+  ghostMovies?: Movie[]
+  ghost2Movies?: Movie[]
+  legend?: PlotLegend | null
 }
 
-export function MoviePlot({ movies, selectedMovieId, onSelect, pending = false }: Props) {
+export function MoviePlot({
+  movies,
+  selectedMovieId,
+  onSelect,
+  pending = false,
+  ghostMovies = [],
+  ghost2Movies = [],
+  legend = null,
+}: Props) {
   const [size, setSize] = useState(0)
   const groups = useMemo(() => groupByPosition(movies), [movies])
+  const ghostGroups = useMemo(() => groupByPosition(ghostMovies), [ghostMovies])
+  const ghost2Groups = useMemo(() => groupByPosition(ghost2Movies), [ghost2Movies])
 
   const handleLayout = (event: LayoutChangeEvent) => {
     const next = Math.floor(event.nativeEvent.layout.width)
@@ -93,6 +112,13 @@ export function MoviePlot({ movies, selectedMovieId, onSelect, pending = false }
                   {value}
                 </Text>
               ))}
+              <GhostDots groups={ghostGroups} color={colors.ghost1} ring={colors.ghost1Ring} />
+              <GhostDots
+                groups={ghost2Groups}
+                color={colors.ghost2}
+                ring={colors.ghost2Ring}
+                offset
+              />
               <Pressable
                 accessible={false}
                 style={StyleSheet.absoluteFill}
@@ -151,7 +177,10 @@ export function MoviePlot({ movies, selectedMovieId, onSelect, pending = false }
                   </Pressable>
                 )
               })}
-              {movies.length === 0 && !pending ? (
+              {movies.length === 0 &&
+              ghostMovies.length === 0 &&
+              ghost2Movies.length === 0 &&
+              !pending ? (
                 <View style={styles.empty} pointerEvents="none">
                   <Text style={styles.emptyText}>Movies land here by Good and Fun.</Text>
                 </View>
@@ -161,6 +190,59 @@ export function MoviePlot({ movies, selectedMovieId, onSelect, pending = false }
         </View>
       </View>
       <Text style={styles.goodAxis}>Good</Text>
+      {legend ? (
+        <View style={styles.legend}>
+          <LegendItem color={colors.plotDot} label={legend.primary} />
+          {legend.ghost ? <LegendItem color={colors.ghost1} label={legend.ghost} /> : null}
+          {legend.ghost2 ? <LegendItem color={colors.ghost2} label={legend.ghost2} /> : null}
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+function GhostDots({
+  groups,
+  color,
+  ring,
+  offset = false,
+}: {
+  groups: PositionGroup[]
+  color: string
+  ring: string
+  offset?: boolean
+}) {
+  return groups.map((group) => (
+    <View
+      key={group.key}
+      pointerEvents="none"
+      style={[
+        styles.point,
+        offset ? styles.pointGhost2 : null,
+        {
+          left: `${scoreToPlotPercent(group.good, 'x')}%`,
+          top: `${scoreToPlotPercent(group.fun, 'y')}%`,
+          opacity: 0.65,
+        },
+      ]}
+    >
+      <View style={[styles.dot, { backgroundColor: color, borderColor: ring }]} />
+      {group.items.length > 1 ? (
+        <View style={[styles.countBadge, { backgroundColor: color }]}>
+          <Text style={styles.count}>{group.items.length}</Text>
+        </View>
+      ) : null}
+    </View>
+  ))
+}
+
+function LegendItem({ color, label }: { color: string; label: string }) {
+  return (
+    <View style={styles.legendItem}>
+      <View style={[styles.legendSwatch, { backgroundColor: color }]} />
+      <Text style={styles.legendText} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   )
 }
@@ -246,7 +328,11 @@ const styles = StyleSheet.create({
   },
   point: {
     position: 'absolute',
+    zIndex: 0,
     transform: [{ translateX: -5 }, { translateY: -5 }],
+  },
+  pointGhost2: {
+    transform: [{ translateX: 1 }, { translateY: 1 }],
   },
   dot: {
     width: 10,
@@ -323,5 +409,25 @@ const styles = StyleSheet.create({
     color: colors.heading,
     fontSize: 12,
     fontWeight: '700',
+  },
+  legend: {
+    gap: 6,
+    marginTop: 4,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legendSwatch: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendText: {
+    flex: 1,
+    color: colors.brand,
+    fontSize: 13,
+    fontWeight: '600',
   },
 })
