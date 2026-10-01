@@ -20,6 +20,10 @@ export const colors = {
   plotLabel: '#0f172a',
   plotLabelText: '#f8fafc',
   plotLabelBorder: '#334155',
+  ghost1: '#8b5cf6',
+  ghost1Ring: 'rgba(139, 92, 246, 0.35)',
+  ghost2: '#0d9488',
+  ghost2Ring: 'rgba(13, 148, 136, 0.35)',
 }
 
 export const radii = {

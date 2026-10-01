@@ -19,9 +19,11 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { MoviePlot } from '@/components/MoviePlot'
+import { GhostCompare } from '@/components/GhostCompare'
+import { MoviePlot, type PlotLegend } from '@/components/MoviePlot'
 import { ScoreSlider } from '@/components/ScoreSlider'
 import { useApiFetch } from '@/lib/api'
+import { useGhostCompare } from '@/lib/useGhostCompare'
 import { formatTitle } from '@/lib/formatTitle'
 import { colors, radii } from '@/theme'
 
@@ -42,7 +44,15 @@ type MovieResponse = {
   movie?: Movie
 }
 
-export function DeckScreen({ deckId }: { deckId: string }) {
+export function DeckScreen({
+  deckId,
+  initialGhostId = '',
+  initialGhost2Id = '',
+}: {
+  deckId: string
+  initialGhostId?: string
+  initialGhost2Id?: string
+}) {
   const router = useRouter()
   const apiFetch = useApiFetch()
   const [deckName, setDeckName] = useState('')
@@ -57,6 +67,29 @@ export function DeckScreen({ deckId }: { deckId: string }) {
   const [loading, setLoading] = useState(true)
   const moviesRef = useRef<Movie[]>([])
   moviesRef.current = movies
+  const ghost = useGhostCompare(deckId, initialGhostId, initialGhost2Id)
+  const plotLegend = useMemo<PlotLegend | null>(() => {
+    if (!ghost.ghostDeckId && !ghost.ghost2DeckId) {
+      return null
+    }
+    const primaryRole = isExampleDeck ? 'read-only' : 'editable'
+    return {
+      primary: `${deckName || 'This deck'} (primary, ${primaryRole})`,
+      ghost: ghost.ghostDeckId
+        ? `${ghost.ghostDeckName || '…'} (read-only)`
+        : undefined,
+      ghost2: ghost.ghost2DeckId
+        ? `${ghost.ghost2DeckName || '…'} (read-only)`
+        : undefined,
+    }
+  }, [
+    deckName,
+    ghost.ghost2DeckId,
+    ghost.ghost2DeckName,
+    ghost.ghostDeckId,
+    ghost.ghostDeckName,
+    isExampleDeck,
+  ])
 
   const loadDeck = useCallback(async () => {
     setLoading(true)
@@ -240,6 +273,20 @@ export function DeckScreen({ deckId }: { deckId: string }) {
               selectedMovieId={selectedMovieId}
               onSelect={setSelectedMovieId}
               pending={loading && deckName === ''}
+              ghostMovies={ghost.ghostMovies}
+              ghost2Movies={ghost.ghost2Movies}
+              legend={plotLegend}
+            />
+            <GhostCompare
+              decksLoaded={ghost.decksLoaded}
+              otherDecks={ghost.otherDecks}
+              ghostDeckId={ghost.ghostDeckId}
+              ghost2DeckId={ghost.ghost2DeckId}
+              ghostDeckName={ghost.ghostDeckName}
+              ghost2DeckName={ghost.ghost2DeckName}
+              onGhostDeckChange={ghost.setGhost}
+              onGhost2DeckChange={ghost.setGhost2}
+              onSwap={ghost.swap}
             />
 
             {selectedMovie ? (

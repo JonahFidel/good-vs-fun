@@ -2,9 +2,31 @@ import { useLocalSearchParams } from 'expo-router'
 import { AuthGate } from '@/components/AuthGate'
 import { DeckScreen } from '@/screens/DeckScreen'
 
-export default function DeckRoute() {
-  const { deckId } = useLocalSearchParams<{ deckId: string }>()
-  const id = Array.isArray(deckId) ? deckId[0] : deckId
+function firstParam(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    return value[0] ?? ''
+  }
+  return value ?? ''
+}
 
-  return <AuthGate>{id ? <DeckScreen deckId={id} /> : null}</AuthGate>
+export default function DeckRoute() {
+  const { deckId, ghost, ghost2 } = useLocalSearchParams<{
+    deckId: string
+    ghost?: string
+    ghost2?: string
+  }>()
+  const id = firstParam(deckId)
+
+  return (
+    <AuthGate>
+      {id ? (
+        <DeckScreen
+          key={id}
+          deckId={id}
+          initialGhostId={firstParam(ghost)}
+          initialGhost2Id={firstParam(ghost2)}
+        />
+      ) : null}
+    </AuthGate>
+  )
 }
