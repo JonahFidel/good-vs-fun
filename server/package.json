@@ -1,10 +1,20 @@
 {
-  "name": "good-fun-movie-server",
+  "name": "@good-vs-fun/server",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "npm run build -w @good-vs-fun/shared",
     "dev": "node --watch index.js",
+    "prestart": "npm run build -w @good-vs-fun/shared",
     "start": "node index.js"
+  },
+  "dependencies": {
+    "@clerk/express": "^1.7.70",
+    "@good-vs-fun/shared": "*",
+    "@libsql/client": "^0.15.15",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2"
   }
 }

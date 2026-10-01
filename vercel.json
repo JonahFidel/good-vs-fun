@@ -1,7 +1,10 @@
 {
+  "framework": null,
+  "installCommand": "npm install",
+  "buildCommand": "npm run build -w @good-vs-fun/web",
+  "outputDirectory": "web/dist",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api?__path=$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
-

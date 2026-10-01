@@ -1,4 +1,5 @@
 import { useCallback, type Dispatch, type SetStateAction } from 'react'
+import { deckMoviePath } from '@good-vs-fun/shared'
 import { useApiFetch } from '../../lib/api'
 import { alertExampleDeckReadOnly } from '../../lib/exampleDeck'
 import { formatTitle, snapScoreToStep } from '../../lib/format'
@@ -76,7 +77,7 @@ export function useSelectedMovieActions({
 
     setError(null)
     try {
-      await apiFetch(`/api/decks/${deckId}/movies/${selectedMovieId}`, {
+      await apiFetch(deckMoviePath(deckId, selectedMovieId), {
         method: 'PUT',
         body: JSON.stringify({
           title: formattedTitle,

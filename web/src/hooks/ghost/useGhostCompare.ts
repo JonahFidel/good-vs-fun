@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ApiRoute } from '@good-vs-fun/shared'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useApiFetch } from '../../lib/api'
 import { groupByPosition } from '../../lib/groupByPosition'
@@ -19,7 +20,7 @@ export function useGhostCompare(deckId: string | null) {
   // Load all decks for the ghost selector
   useEffect(() => {
     let isActive = true
-    apiFetch('/api/decks')
+    apiFetch(ApiRoute.decks)
       .then((data) => {
         if (isActive) setAllDecks((data?.decks ?? []) as Deck[])
       })

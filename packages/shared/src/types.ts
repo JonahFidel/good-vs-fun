@@ -14,9 +14,3 @@ export type Movie = {
   good: number
   createdAt?: string
 }
-
-export type MovieHover = {
-  id: string
-  from: 'grid' | 'list'
-}
-

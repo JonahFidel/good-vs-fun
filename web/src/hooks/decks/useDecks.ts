@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ApiRoute, deckPath } from '@good-vs-fun/shared'
 import { useApiFetch } from '../../lib/api'
 import { moveUserDeck, sortDecks, type DeckSort } from '../../lib/deckOrder'
 import { formatTitle } from '../../lib/format'
@@ -17,7 +18,7 @@ export function useDecks() {
     setLoading(true)
     setError(null)
     try {
-      const data = await apiFetch('/api/decks')
+      const data = await apiFetch(ApiRoute.decks)
       const nextDecks = (data?.decks ?? []) as Deck[]
       setDecks(nextDecks)
       if (!selectedDeckId && nextDecks.length > 0) {
@@ -61,7 +62,7 @@ export function useDecks() {
     setLoading(true)
     setError(null)
     try {
-      const data = await apiFetch('/api/decks', {
+      const data = await apiFetch(ApiRoute.decks, {
         method: 'POST',
         body: JSON.stringify({ name: formatTitle(trimmedName) }),
       })
@@ -91,7 +92,7 @@ export function useDecks() {
     setError(null)
     try {
       const formattedName = formatTitle(nextName)
-      const data = await apiFetch(`/api/decks/${deck.id}`, {
+      const data = await apiFetch(deckPath(deck.id), {
         method: 'PUT',
         body: JSON.stringify({ name: formattedName }),
       })
@@ -120,7 +121,7 @@ export function useDecks() {
     setLoading(true)
     setError(null)
     try {
-      await apiFetch(`/api/decks/${deck.id}`, { method: 'DELETE' })
+      await apiFetch(deckPath(deck.id), { method: 'DELETE' })
       setDecks((current) => {
         const remaining = current.filter((item) => item.id !== deck.id)
         if (selectedDeckId === deck.id) {

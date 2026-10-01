@@ -2,9 +2,22 @@
 
 Rank movies by **Good** vs **Fun**, organized into decks. Each user has their own decks and movies.
 
+## Workspace
+
+The repo is an npm workspace.
+`.npmrc` sets `install-strategy=linked`, so each package only sees the dependencies it declares.
+Vite and Metro each get their own install root.
+The workspace root depends on `@types/react` and `@types/react-dom` so TypeScript can resolve React types for packages in the linked store.
+`web/` is the Vite site, versioned on its own in `web/package.json`.
+`server/` is the Express API, versioned on its own in `server/package.json`.
+`packages/shared` is the only shared code: deck and movie types, score rules, and API paths.
+Screens, CSS, and the browser chart stay in `web/`.
+A website deploy builds only `web/`.
+A store build will be a separate package and a separate version, so it does not republish the site.
+
 ## Local development
 
-Install deps:
+Install deps from the repo root:
 
 ```bash
 npm install
@@ -38,11 +51,12 @@ npm run dev
 
 - Frontend runs on `http://localhost:5173` (or next available port).
 - API runs on `http://localhost:3001`.
-- In dev, Vite proxies `/api/*` to `http://localhost:3001` (see `vite.config.ts`).
+- In dev, Vite proxies `/api/*` to `http://localhost:3001` (see `web/vite.config.ts`).
 
 ## Production (Vercel)
 
-- Frontend is served by Vercel.
+- Frontend is served by Vercel from `web/dist`.
+- That deploy does not build or publish a store app.
 - Backend is served by Vercel serverless functions under `/api/*` (see `api/index.js`).
 - Database is Turso/libSQL.
 - Auth is Clerk.

@@ -1,23 +1,8 @@
-const clampScore = (value: number) => Math.min(10, Math.max(0, value))
-
-export const POSITION_STEP = 0.01
-
-export const snapScoreToStep = (value: number, step = POSITION_STEP) => {
-  const safeStep = step <= 0 ? POSITION_STEP : step
-  const snapped = Math.round(value / safeStep) * safeStep
-  const decimals = safeStep >= 1 ? 0 : safeStep >= 0.1 ? 1 : 2
-  return clampScore(Number(snapped.toFixed(decimals)))
-}
-
-export const formatScore = (value: number) => {
-  if (Number.isInteger(value)) {
-    return value.toString()
-  }
-  if (Number.isInteger(value * 10)) {
-    return value.toFixed(1)
-  }
-  return value.toFixed(2)
-}
+export {
+  SCORE_STEP as POSITION_STEP,
+  formatScore,
+  snapScoreToStep,
+} from '@good-vs-fun/shared'
 
 export const formatTitle = (value: string) => {
   const smallWords = new Set([
