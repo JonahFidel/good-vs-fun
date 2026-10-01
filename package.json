@@ -6,6 +6,7 @@
     "dev": "npm run dev -w @good-vs-fun/web",
     "dev:web": "npm run dev -w @good-vs-fun/web",
     "dev:server": "npm run dev -w @good-vs-fun/server",
+    "dev:mobile": "npm run start -w @good-vs-fun/mobile",
     "build": "npm run build -w @good-vs-fun/web",
     "lint": "npm run lint -w @good-vs-fun/web",
     "test": "npm run test -w @good-vs-fun/shared",
@@ -19,6 +20,7 @@
   "workspaces": [
     "web",
     "server",
+    "mobile",
     "packages/*"
   ]
 }
