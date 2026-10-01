@@ -19,6 +19,7 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { MoviePlot } from '@/components/MoviePlot'
 import { ScoreSlider } from '@/components/ScoreSlider'
 import { useApiFetch } from '@/lib/api'
 import { formatTitle } from '@/lib/formatTitle'
@@ -234,27 +235,12 @@ export function DeckScreen({ deckId }: { deckId: string }) {
           <View style={styles.intro}>
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {loading ? <Text style={styles.status}>Syncing changes…</Text> : null}
-            {isExampleDeck ? (
-              <Text style={styles.note}>{EXAMPLE_DECK_ALERT}</Text>
-            ) : (
-              <View style={styles.card}>
-                <Text style={styles.sectionTitle}>Add a movie</Text>
-                <TextInput
-                  value={title}
-                  onChangeText={setTitle}
-                  placeholder="e.g. Jurassic Park"
-                  placeholderTextColor={colors.muted}
-                  style={styles.input}
-                />
-                <View style={styles.sliderRow}>
-                  <ScoreSlider label="Fun" value={fun} onChange={setFun} />
-                  <ScoreSlider label="Good" value={good} onChange={setGood} />
-                </View>
-                <Pressable style={styles.addButton} onPress={() => void addMovie()}>
-                  <Text style={styles.addLabel}>Add movie</Text>
-                </Pressable>
-              </View>
-            )}
+            <MoviePlot
+              movies={movies}
+              selectedMovieId={selectedMovieId}
+              onSelect={setSelectedMovieId}
+              pending={loading && deckName === ''}
+            />
 
             {selectedMovie ? (
               <View style={styles.card}>
@@ -283,6 +269,28 @@ export function DeckScreen({ deckId }: { deckId: string }) {
                 </View>
               </View>
             ) : null}
+
+            {isExampleDeck ? (
+              <Text style={styles.note}>{EXAMPLE_DECK_ALERT}</Text>
+            ) : (
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>Add a movie</Text>
+                <TextInput
+                  value={title}
+                  onChangeText={setTitle}
+                  placeholder="e.g. Jurassic Park"
+                  placeholderTextColor={colors.muted}
+                  style={styles.input}
+                />
+                <View style={styles.sliderRow}>
+                  <ScoreSlider label="Fun" value={fun} onChange={setFun} />
+                  <ScoreSlider label="Good" value={good} onChange={setGood} />
+                </View>
+                <Pressable style={styles.addButton} onPress={() => void addMovie()}>
+                  <Text style={styles.addLabel}>Add movie</Text>
+                </Pressable>
+              </View>
+            )}
 
             <View style={styles.sortRow}>
               <Text style={styles.sectionTitle}>Movies</Text>
