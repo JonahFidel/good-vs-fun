@@ -62,7 +62,7 @@ npm run dev:mobile
 - In dev, Vite proxies `/api/*` to `http://localhost:3001` (see `web/vite.config.ts`).
 - The Expo app calls `http://localhost:3001` directly.
 - It uses the same Clerk publishable key as the website (`VITE_CLERK_PUBLISHABLE_KEY` in the root `.env`).
-- Sign in with the email and password for an existing account.
+- Sign in with an email code or Log in with Google for an existing account.
 
 ## Production (Vercel)
 

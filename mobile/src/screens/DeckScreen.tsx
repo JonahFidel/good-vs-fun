@@ -76,6 +76,7 @@ export function DeckScreen({
   moviesRef.current = movies
   const dragSnapshotRef = useRef<MoviePosition[] | null>(null)
   const lastMoveRef = useRef<ScoreMove | null>(null)
+  const scoreWriteRef = useRef(Promise.resolve())
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
   const ghost = useGhostCompare(deckId, initialGhostId, initialGhost2Id)
@@ -148,6 +149,26 @@ export function DeckScreen({
     setCanRedo(false)
   }
 
+  const putMovieScore = (movie: {
+    id: string
+    title: string
+    fun: number
+    good: number
+  }) => {
+    const write = () =>
+      apiFetch(deckMoviePath(deckId, movie.id), {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: movie.title,
+          fun: movie.fun,
+          good: movie.good,
+        }),
+      })
+    const next = scoreWriteRef.current.then(write, write)
+    scoreWriteRef.current = next.then(() => undefined, () => undefined)
+    return next
+  }
+
   const applyScoreMove = async (positions: MoviePosition[], errorMessage: string) => {
     if (isExampleDeck) {
       return false
@@ -162,13 +183,11 @@ export function DeckScreen({
       await Promise.all(
         positions.map((position) => {
           const current = moviesRef.current.find((item) => item.id === position.id)
-          return apiFetch(deckMoviePath(deckId, position.id), {
-            method: 'PUT',
-            body: JSON.stringify({
-              title: current?.title ?? '',
-              fun: position.fun,
-              good: position.good,
-            }),
+          return putMovieScore({
+            id: position.id,
+            title: current?.title ?? '',
+            fun: position.fun,
+            good: position.good,
           })
         }),
       )
@@ -237,14 +256,7 @@ export function DeckScreen({
     }
 
     try {
-      await apiFetch(deckMoviePath(deckId, movie.id), {
-        method: 'PUT',
-        body: JSON.stringify({
-          title: movie.title,
-          fun: movie.fun,
-          good: movie.good,
-        }),
-      })
+      await putMovieScore(movie)
     } catch {
       setError('Failed to save movie positions.')
     }
@@ -276,13 +288,11 @@ export function DeckScreen({
 
     setError(null)
     try {
-      await apiFetch(deckMoviePath(deckId, movie.id), {
-        method: 'PUT',
-        body: JSON.stringify({
-          title: formattedTitle,
-          fun: movie.fun,
-          good: movie.good,
-        }),
+      await putMovieScore({
+        id: movie.id,
+        title: formattedTitle,
+        fun: movie.fun,
+        good: movie.good,
       })
       replaceMovie(movie.id, { title: formattedTitle })
     } catch {

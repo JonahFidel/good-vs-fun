@@ -1,6 +1,7 @@
 {
   "name": "good-vs-fun",
   "private": true,
+  "type": "module",
   "packageManager": "npm@12.1.0+sha512-Fyhu62pNx70YCs/5+dEmJQTFVmSKwvo5CA0qvBkGDRpob42MJ6G2RQ2tdxeKM4nYnIZDqkYAxEgqtoejn9QGtQ==",
   "scripts": {
     "dev": "npm run dev -w @good-vs-fun/web",
