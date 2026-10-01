@@ -13,8 +13,8 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.60.1",
     "@good-vs-fun/shared": "*",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-router-dom": "^7.12.0"
   },
   "devDependencies": {
