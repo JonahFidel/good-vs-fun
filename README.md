@@ -11,7 +11,7 @@ The workspace root depends on `@types/react` and `@types/react-dom` so TypeScrip
 `web/` is the Vite site, versioned on its own in `web/package.json`.
 `server/` is the Express API, versioned on its own in `server/package.json`.
 `mobile/` is the Expo app, versioned on its own in `mobile/package.json`.
-`packages/shared` is the only shared code: deck and movie types, score rules, and API paths.
+`packages/shared` is the only shared code: deck and movie types, score rules, API paths, and title casing.
 Screens, CSS, and the browser chart stay in `web/`.
 The native screens stay in `mobile/`.
 A website deploy builds only `web/`.
