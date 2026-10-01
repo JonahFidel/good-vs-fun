@@ -12,6 +12,14 @@ export const colors = {
   exampleSurface: '#dbeafe',
   exampleText: '#1d4ed8',
   exampleRow: '#f8fafc',
+  plotDot: '#dc2626',
+  plotDotRing: 'rgba(220, 38, 38, 0.5)',
+  plotSelected: '#2563eb',
+  plotSelectedRing: '#3b82f6',
+  plotSelectedText: '#eff6ff',
+  plotLabel: '#0f172a',
+  plotLabelText: '#f8fafc',
+  plotLabelBorder: '#334155',
 }
 
 export const radii = {
