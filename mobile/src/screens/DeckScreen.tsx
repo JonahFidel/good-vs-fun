@@ -322,6 +322,23 @@ export function DeckScreen({
               ghostMovies={ghost.ghostMovies}
               ghost2Movies={ghost.ghost2Movies}
               legend={plotLegend}
+              editable={!isExampleDeck}
+              onMove={(ids, nextFun, nextGood) => {
+                const idSet = new Set(ids)
+                const nextMovies = moviesRef.current.map((movie) =>
+                  idSet.has(movie.id) ? { ...movie, fun: nextFun, good: nextGood } : movie,
+                )
+                moviesRef.current = nextMovies
+                setMovies(nextMovies)
+              }}
+              onMoveEnd={(ids) => {
+                const idSet = new Set(ids)
+                for (const movie of moviesRef.current) {
+                  if (idSet.has(movie.id)) {
+                    void persistMovie(movie)
+                  }
+                }
+              }}
             />
             <GhostCompare
               decksLoaded={ghost.decksLoaded}
