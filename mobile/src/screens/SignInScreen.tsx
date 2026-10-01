@@ -62,7 +62,11 @@ export function SignInScreen() {
     setFormError(null)
     setGoogleBusy(true)
     try {
-      const { createdSessionId, authSessionResult } = await startSSOFlow({
+      const {
+        createdSessionId,
+        authSessionResult,
+        signIn: ssoSignIn,
+      } = await startSSOFlow({
         strategy: 'oauth_google',
         oidcPrompt: 'select_account',
         // A shared browser session asks the simulator to unlock saved
@@ -79,8 +83,8 @@ export function SignInScreen() {
       if (createdSessionId) {
         return
       }
-      if (signIn.status === 'needs_client_trust') {
-        const { error: sendError } = await signIn.mfa.sendEmailCode()
+      if (ssoSignIn?.status === 'needs_client_trust') {
+        const { error: sendError } = await ssoSignIn.mfa.sendEmailCode()
         if (sendError) {
           setFormError(clerkErrorMessage(sendError, 'Could not send a verification code.'))
           return
