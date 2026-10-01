@@ -52,8 +52,15 @@ type Props = {
   ghost2Movies?: Movie[]
   legend?: PlotLegend | null
   editable?: boolean
+  onMoveStart?: (ids: string[]) => void
   onMove?: (ids: string[], fun: number, good: number) => void
   onMoveEnd?: (ids: string[]) => void
+  undo?: {
+    canUndo: boolean
+    canRedo: boolean
+    onUndo: () => void
+    onRedo: () => void
+  } | null
 }
 
 export function MoviePlot({
@@ -65,8 +72,10 @@ export function MoviePlot({
   ghost2Movies = [],
   legend = null,
   editable = false,
+  onMoveStart,
   onMove,
   onMoveEnd,
+  undo = null,
 }: Props) {
   const [size, setSize] = useState(0)
   const [dragIds, setDragIds] = useState<string[] | null>(null)
@@ -98,6 +107,7 @@ export function MoviePlot({
     const ids = group.items.map((item) => item.id)
     if (editable) {
       setDragIds(ids)
+      onMoveStart?.(ids)
     }
     if (!selectedMovieId || !ids.includes(selectedMovieId)) {
       onSelect(ids[0])
@@ -126,6 +136,28 @@ export function MoviePlot({
 
   return (
     <View style={styles.card}>
+      {undo ? (
+        <View style={styles.undoRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Undo last move"
+            disabled={!undo.canUndo}
+            onPress={undo.onUndo}
+            style={[styles.undoButton, !undo.canUndo && styles.undoButtonDisabled]}
+          >
+            <Text style={styles.undoLabel}>Undo</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Redo last move"
+            disabled={!undo.canRedo}
+            onPress={undo.onRedo}
+            style={[styles.undoButton, !undo.canRedo && styles.undoButtonDisabled]}
+          >
+            <Text style={styles.undoLabel}>Redo</Text>
+          </Pressable>
+        </View>
+      ) : null}
       <View style={styles.plotRow}>
         <View style={styles.funAxisSlot}>
           <Text style={styles.funAxis}>Fun</Text>
@@ -461,6 +493,28 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  undoRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 6,
+    marginBottom: 4,
+  },
+  undoButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  undoButtonDisabled: {
+    opacity: 0.45,
+  },
+  undoLabel: {
+    color: colors.brand,
+    fontSize: 12,
+    fontWeight: '700',
   },
   plotRow: {
     flexDirection: 'row',
