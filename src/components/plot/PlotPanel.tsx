@@ -4,7 +4,6 @@ import type { MovieHover } from '../../lib/types'
 import { GhostPoints } from '../ghost/GhostPoints'
 import { GridAxes } from './GridAxes'
 import { MoviePoints } from './MoviePoints'
-import { PlotGridZoom } from './PlotGridZoom'
 
 export function PlotPanel({
   isExampleDeck,
@@ -93,21 +92,23 @@ export function PlotPanel({
         )}
         <div className="grid-axis grid-axis-y">Fun</div>
         <div className="grid-axis grid-axis-x">Good</div>
-        <PlotGridZoom ref={gridRef}>
-          <GridAxes />
-          {ghostDeckId && <GhostPoints groups={ghostGroups} variant={1} />}
-          {ghost2DeckId && <GhostPoints groups={ghost2Groups} variant={2} />}
-          <MoviePoints
-            groups={movieGroups}
-            draggingIds={draggingIds}
-            selectedMovieId={selectedMovieId}
-            hover={hover}
-            onGroupPointerDown={onGroupPointerDown}
-            onLabelPointerDown={onLabelPointerDown}
-            onHighlight={onHighlight}
-            onClearHover={onClearHover}
-          />
-        </PlotGridZoom>
+        <div className="grid-fit">
+          <div ref={gridRef} className="grid">
+            <GridAxes />
+            {ghostDeckId && <GhostPoints groups={ghostGroups} variant={1} />}
+            {ghost2DeckId && <GhostPoints groups={ghost2Groups} variant={2} />}
+            <MoviePoints
+              groups={movieGroups}
+              draggingIds={draggingIds}
+              selectedMovieId={selectedMovieId}
+              hover={hover}
+              onGroupPointerDown={onGroupPointerDown}
+              onLabelPointerDown={onLabelPointerDown}
+              onHighlight={onHighlight}
+              onClearHover={onClearHover}
+            />
+          </div>
+        </div>
       </div>
     </section>
   )

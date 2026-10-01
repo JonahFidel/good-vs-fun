@@ -11,8 +11,6 @@
   --grid-tick-outset-minor-top: calc(var(--grid-tick-outset-minor) + 5px);
   --grid-tick-outset-minor-right: calc(var(--grid-tick-outset-minor) + 5px);
   --deck-rail-width: 280px;
-  /* Square plot cap — scales with vmin, hard-stops on very large displays */
-  --plot-side-max: min(1400px, 92vmin);
   --large-monitor-width: 1800px;
   --decks-panel-max-width: calc(var(--large-monitor-width) * 2 / 3);
 }
