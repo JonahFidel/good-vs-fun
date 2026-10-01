@@ -1,5 +1,6 @@
 import { useClerk } from '@clerk/expo'
 import { ApiRoute, type Deck } from '@good-vs-fun/shared'
+import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
@@ -12,6 +13,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useApiFetch } from '@/lib/api'
+import { formatTitle } from '@/lib/formatTitle'
 import { colors, radii } from '@/theme'
 
 type DecksResponse = {
@@ -23,6 +25,7 @@ type DeckResponse = {
 }
 
 export function DecksScreen() {
+  const router = useRouter()
   const apiFetch = useApiFetch()
   const { signOut } = useClerk()
   const [decks, setDecks] = useState<Deck[]>([])
@@ -58,7 +61,7 @@ export function DecksScreen() {
     try {
       const data = (await apiFetch(ApiRoute.decks, {
         method: 'POST',
-        body: JSON.stringify({ name: trimmedName }),
+        body: JSON.stringify({ name: formatTitle(trimmedName) }),
       })) as DeckResponse | null
       if (data?.deck) {
         setDecks((current) => {
@@ -120,13 +123,18 @@ export function DecksScreen() {
           )
         }
         renderItem={({ item }) => (
-          <View style={[styles.row, item.isExample && styles.exampleRow]}>
+          <Pressable
+            style={[styles.row, item.isExample && styles.exampleRow]}
+            onPress={() =>
+              router.push({ pathname: '/deck/[deckId]', params: { deckId: item.id } })
+            }
+          >
             <View style={styles.rowTitle}>
               <Text style={styles.deckName}>{item.name}</Text>
               {item.isExample ? <Text style={styles.badge}>Example</Text> : null}
             </View>
             <Text style={styles.meta}>{(item.movieCount ?? 0).toString()} films</Text>
-          </View>
+          </Pressable>
         )}
       />
     </SafeAreaView>
