@@ -18,8 +18,8 @@ const SMALL_WORDS = new Set([
   'with',
 ])
 
-export const formatTitle = (value) => {
-  return String(value ?? '')
+export const formatTitle = (value: string) =>
+  value
     .trim()
     .toLowerCase()
     .split(/\s+/)
@@ -37,4 +37,3 @@ export const formatTitle = (value) => {
       return word[0].toUpperCase() + word.slice(1)
     })
     .join(' ')
-}

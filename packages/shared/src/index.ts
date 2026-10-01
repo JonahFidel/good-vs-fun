@@ -13,3 +13,4 @@ export {
   deckMoviesPath,
   deckMoviePath,
 } from './api.js'
+export { formatTitle } from './formatTitle.js'

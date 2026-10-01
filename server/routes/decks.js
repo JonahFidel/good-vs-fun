@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { ApiRoute } from '@good-vs-fun/shared'
+import { ApiRoute, formatTitle } from '@good-vs-fun/shared'
 import { Router } from 'express'
 import { db } from '../db.js'
 import { ensureDeckExists } from '../ensureDeck.js'
@@ -8,7 +8,6 @@ import {
   getExampleDeck,
   isExampleDeckId,
 } from '../exampleDecks/index.js'
-import { formatTitle } from '../formatTitle.js'
 import { asyncHandler, requireAuth, respondError } from '../http.js'
 
 const nowIso = () => new Date().toISOString()

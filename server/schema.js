@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { formatTitle } from '@good-vs-fun/shared'
 import { db } from './db.js'
-import { formatTitle } from './formatTitle.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
