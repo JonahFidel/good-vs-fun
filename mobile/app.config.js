@@ -75,7 +75,7 @@ module.exports = {
       foregroundImage: './assets/icon.png',
     },
   },
-  plugins: ['expo-router', 'expo-secure-store'],
+  plugins: ['expo-router', 'expo-secure-store', 'expo-web-browser'],
   extra: {
     clerkPublishableKey,
     apiBaseUrl,
