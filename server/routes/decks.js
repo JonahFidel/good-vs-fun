@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { ApiRoute, formatTitle } from '@good-vs-fun/shared'
 import { Router } from 'express'
 import { db } from '../db.js'
 import { ensureDeckExists } from '../ensureDeck.js'
@@ -7,14 +8,13 @@ import {
   getExampleDeck,
   isExampleDeckId,
 } from '../exampleDecks/index.js'
-import { formatTitle } from '../formatTitle.js'
 import { asyncHandler, requireAuth, respondError } from '../http.js'
 
 const nowIso = () => new Date().toISOString()
 
 export const decksRouter = Router()
 
-decksRouter.get('/api/decks', requireAuth, asyncHandler(async (req, res) => {
+decksRouter.get(ApiRoute.decks, requireAuth, asyncHandler(async (req, res) => {
   const ownerId = req.userId
   const result = await db.execute({
     sql: `
@@ -54,7 +54,7 @@ decksRouter.get('/api/decks', requireAuth, asyncHandler(async (req, res) => {
   res.json({ decks: [...exampleDecks, ...userDecks] })
 }))
 
-decksRouter.post('/api/decks', requireAuth, asyncHandler(async (req, res) => {
+decksRouter.post(ApiRoute.decks, requireAuth, asyncHandler(async (req, res) => {
   const ownerId = req.userId
   const name = formatTitle(
     typeof req.body?.name === 'string' ? req.body.name.trim() : '',
@@ -76,7 +76,7 @@ decksRouter.post('/api/decks', requireAuth, asyncHandler(async (req, res) => {
   })
 }))
 
-decksRouter.get('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
+decksRouter.get(ApiRoute.deck, requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
   const exampleDeck = getExampleDeck(deckId)
   if (exampleDeck) {
@@ -136,7 +136,7 @@ decksRouter.get('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res)
   })
 }))
 
-decksRouter.put('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
+decksRouter.put(ApiRoute.deck, requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
   if (isExampleDeckId(deckId)) {
     return respondError(res, 403, 'Example decks cannot be edited.')
@@ -163,7 +163,7 @@ decksRouter.put('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res)
   res.json({ deck: { id: deckId, name, updatedAt: timestamp } })
 }))
 
-decksRouter.delete('/api/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
+decksRouter.delete(ApiRoute.deck, requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
   if (isExampleDeckId(deckId)) {
     return respondError(res, 403, 'Example decks cannot be deleted.')

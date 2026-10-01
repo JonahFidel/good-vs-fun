@@ -1,39 +1,27 @@
 {
-  "name": "good-fun-movie",
+  "name": "good-vs-fun",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "packageManager": "npm@12.1.0+sha512-Fyhu62pNx70YCs/5+dEmJQTFVmSKwvo5CA0qvBkGDRpob42MJ6G2RQ2tdxeKM4nYnIZDqkYAxEgqtoejn9QGtQ==",
   "scripts": {
-    "dev": "vite",
-    "dev:client": "vite",
-    "dev:server": "npm --prefix server run dev",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@clerk/clerk-react": "^5.60.1",
-    "@clerk/express": "^1.7.70",
-    "@libsql/client": "^0.15.15",
-    "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^4.21.2",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-router-dom": "^7.12.0"
+    "dev": "npm run dev -w @good-vs-fun/web",
+    "dev:web": "npm run dev -w @good-vs-fun/web",
+    "dev:server": "npm run dev -w @good-vs-fun/server",
+    "dev:mobile": "npm run start -w @good-vs-fun/mobile",
+    "build": "npm run build -w @good-vs-fun/web",
+    "lint": "npm run lint -w @good-vs-fun/web",
+    "test": "npm run test -w @good-vs-fun/shared",
+    "preview": "npm run preview -w @good-vs-fun/web",
+    "postinstall": "npm run build -w @good-vs-fun/shared"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
-    "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.1",
-    "eslint": "^9.39.1",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
-    "globals": "^16.5.0",
-    "typescript": "~5.9.3",
-    "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
-  }
+    "@types/react-dom": "^19.2.3"
+  },
+  "workspaces": [
+    "web",
+    "server",
+    "mobile",
+    "packages/*"
+  ]
 }
