@@ -130,7 +130,10 @@
     --plot-viewport-w: calc(100vw - 0.35rem - 0.45rem - 0.25rem - 0.35rem - 1.75rem - 0.1rem);
     --plot-viewport-h: calc(100dvh - 2.6rem - 0.35rem - 0.35rem - 0.3rem - 0.35rem - 0.1rem - 1.2rem);
     --plot-side: min(var(--plot-viewport-w), var(--plot-viewport-h));
+    display: block;
     container-type: normal;
+    justify-self: center;
+    align-self: center;
     width: min(var(--plot-side), 100%);
     max-width: 100%;
     aspect-ratio: 1;
