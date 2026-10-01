@@ -1,4 +1,5 @@
 import { useCallback, type Dispatch, type SetStateAction } from 'react'
+import { deckMoviePath, deckMoviesPath } from '@good-vs-fun/shared'
 import { useApiFetch } from '../../lib/api'
 import { alertExampleDeckReadOnly } from '../../lib/exampleDeck'
 import type { Movie } from '../../lib/types'
@@ -39,7 +40,7 @@ export function useDeckMovieActions({
       try {
         await Promise.all(
           updates.map((movie) =>
-            apiFetch(`/api/decks/${deckId}/movies/${movie.id}`, {
+            apiFetch(deckMoviePath(deckId, movie.id), {
               method: 'PUT',
               body: JSON.stringify({
                 fun: override?.fun ?? movie.fun,
@@ -67,7 +68,7 @@ export function useDeckMovieActions({
 
       setError(null)
       try {
-        await apiFetch(`/api/decks/${deckId}/movies/${id}`, {
+        await apiFetch(deckMoviePath(deckId, id), {
           method: 'DELETE',
         })
         setMovies((current) => current.filter((movie) => movie.id !== id))
@@ -88,7 +89,7 @@ export function useDeckMovieActions({
       setLoading(true)
       setError(null)
       try {
-        const data = await apiFetch(`/api/decks/${deckId}/movies`, {
+        const data = await apiFetch(deckMoviesPath(deckId), {
           method: 'POST',
           body: JSON.stringify(movie),
         })

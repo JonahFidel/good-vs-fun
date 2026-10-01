@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { ApiRoute } from '@good-vs-fun/shared'
 import cors from 'cors'
 import express from 'express'
 import { clerkMiddleware } from '@clerk/express'
@@ -16,11 +17,11 @@ app.use(cors())
 app.use(express.json())
 app.use(clerkMiddleware())
 
-app.get('/api/health', (_req, res) => {
+app.get(ApiRoute.health, (_req, res) => {
   res.json({ status: 'ok', db: dbInfo() })
 })
 
-app.post('/api/admin/init', asyncHandler(async (_req, res) => {
+app.post(ApiRoute.adminInit, asyncHandler(async (_req, res) => {
   if (process.env.ENABLE_DB_INIT !== 'true') {
     return respondError(res, 403, 'Database init is disabled.')
   }

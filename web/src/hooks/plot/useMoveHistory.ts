@@ -6,6 +6,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react'
+import { deckMoviePath } from '@good-vs-fun/shared'
 import { useApiFetch } from '../../lib/api'
 import { snapScoreToStep } from '../../lib/format'
 import type { Movie } from '../../lib/types'
@@ -120,7 +121,7 @@ export function useMoveHistory({
         await Promise.all(
           positions.map((movie) => {
             const current = moviesRef.current.find((item) => item.id === movie.id)
-            return apiFetch(`/api/decks/${deckId}/movies/${movie.id}`, {
+            return apiFetch(deckMoviePath(deckId, movie.id), {
               method: 'PUT',
               body: JSON.stringify({
                 fun: movie.fun,

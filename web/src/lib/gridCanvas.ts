@@ -1,7 +1,9 @@
+import { SCORE_MAX } from '@good-vs-fun/shared'
+
 /** Margin (in score units) around the 0–10 scoring region inside the plot canvas. */
 export const GRID_MARGIN = 1
 
-export const GRID_SCORE_MAX = 10
+export const GRID_SCORE_MAX = SCORE_MAX
 
 export const GRID_CANVAS = GRID_MARGIN * 2 + GRID_SCORE_MAX
 

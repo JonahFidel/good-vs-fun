@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { deckPath } from '@good-vs-fun/shared'
 import { useApiFetch } from '../../lib/api'
 import type { Movie } from '../../lib/types'
 
@@ -38,7 +39,7 @@ export function useDeckLoad(deckId: string | null) {
 
     let isActive = true
 
-    apiFetch(`/api/decks/${deckId}`)
+    apiFetch(deckPath(deckId))
       .then((data) => {
         if (!isActive) {
           return

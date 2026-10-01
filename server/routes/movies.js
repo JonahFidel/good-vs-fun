@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { ApiRoute } from '@good-vs-fun/shared'
 import { Router } from 'express'
 import { db } from '../db.js'
 import { ensureDeckExists } from '../ensureDeck.js'
@@ -9,7 +10,7 @@ const nowIso = () => new Date().toISOString()
 
 export const moviesRouter = Router()
 
-moviesRouter.post('/api/decks/:deckId/movies', requireAuth, asyncHandler(async (req, res) => {
+moviesRouter.post(ApiRoute.deckMovies, requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params
   if (isExampleDeckId(deckId)) {
     return respondError(res, 403, 'Example decks cannot be edited.')
@@ -49,7 +50,7 @@ moviesRouter.post('/api/decks/:deckId/movies', requireAuth, asyncHandler(async (
   })
 }))
 
-moviesRouter.put('/api/decks/:deckId/movies/:movieId', requireAuth, asyncHandler(async (req, res) => {
+moviesRouter.put(ApiRoute.deckMovie, requireAuth, asyncHandler(async (req, res) => {
   const { deckId, movieId } = req.params
   if (isExampleDeckId(deckId)) {
     return respondError(res, 403, 'Example decks cannot be edited.')
@@ -81,7 +82,7 @@ moviesRouter.put('/api/decks/:deckId/movies/:movieId', requireAuth, asyncHandler
   res.json({ movie: { id: movieId, title, fun, good } })
 }))
 
-moviesRouter.delete('/api/decks/:deckId/movies/:movieId', requireAuth, asyncHandler(async (req, res) => {
+moviesRouter.delete(ApiRoute.deckMovie, requireAuth, asyncHandler(async (req, res) => {
   const { deckId, movieId } = req.params
   if (isExampleDeckId(deckId)) {
     return respondError(res, 403, 'Example decks cannot be edited.')
