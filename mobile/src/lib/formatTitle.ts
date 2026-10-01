@@ -38,3 +38,21 @@ export const formatTitle = (value: string) =>
       return word[0].toUpperCase() + word.slice(1)
     })
     .join(' ')
+
+/** Title to persist, or null when the rename should be ignored. */
+export function formattedMovieTitle(
+  currentTitle: string,
+  rawInput: string | undefined,
+): string | null {
+  const trimmed = rawInput?.trim() ?? ''
+  if (!trimmed) {
+    return null
+  }
+
+  const formatted = formatTitle(trimmed)
+  if (!formatted || formatted === currentTitle) {
+    return null
+  }
+
+  return formatted
+}
