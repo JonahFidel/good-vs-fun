@@ -10,10 +10,12 @@ Vite and Metro each get their own install root.
 The workspace root depends on `@types/react` and `@types/react-dom` so TypeScript can resolve React types for packages in the linked store.
 `web/` is the Vite site, versioned on its own in `web/package.json`.
 `server/` is the Express API, versioned on its own in `server/package.json`.
+`mobile/` is the Expo app, versioned on its own in `mobile/package.json`.
 `packages/shared` is the only shared code: deck and movie types, score rules, and API paths.
 Screens, CSS, and the browser chart stay in `web/`.
+The native screens stay in `mobile/`.
 A website deploy builds only `web/`.
-A store build will be a separate package and a separate version, so it does not republish the site.
+A store build is `mobile/`, so it does not republish the site.
 
 ## Local development
 
@@ -49,9 +51,18 @@ Start the frontend (Vite):
 npm run dev
 ```
 
+Start the Expo app:
+
+```bash
+npm run dev:mobile
+```
+
 - Frontend runs on `http://localhost:5173` (or next available port).
 - API runs on `http://localhost:3001`.
 - In dev, Vite proxies `/api/*` to `http://localhost:3001` (see `web/vite.config.ts`).
+- The Expo app calls `http://localhost:3001` directly.
+- It uses the same Clerk publishable key as the website (`VITE_CLERK_PUBLISHABLE_KEY` in the root `.env`).
+- Sign in with the email and password for an existing account.
 
 ## Production (Vercel)
 
