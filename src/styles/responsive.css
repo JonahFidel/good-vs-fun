@@ -98,6 +98,32 @@
     grid-template-rows: minmax(0, 1fr) auto;
   }
 
+  /* Toolbar takes its own row so the fitted square does not cover undo/redo.
+     Example decks have no toolbar, so they keep the two-row grid. */
+  .deck-page-layout .grid-wrapper:has(.grid-toolbar) {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .deck-page-layout .grid-toolbar {
+    position: static;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+    z-index: 4;
+    /* Top-axis labels overflow the square on a narrow chart. Keep them off the buttons. */
+    margin-bottom: 0.65rem;
+  }
+
+  .deck-page-layout .grid-wrapper:has(.grid-toolbar) .grid-axis-y,
+  .deck-page-layout .grid-wrapper:has(.grid-toolbar) .grid-fit {
+    grid-row: 2;
+  }
+
+  .deck-page-layout .grid-wrapper:has(.grid-toolbar) .grid-axis-x {
+    grid-row: 3;
+  }
+
   /* The stacked page has no definite plot height, so size the square from the
      viewport: header, layout padding, axis label, and wrapper padding. */
   .deck-page-layout .grid-fit {
