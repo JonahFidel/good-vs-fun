@@ -1,6 +1,7 @@
 import { formatScore, SCORE_MAX, type Movie } from '@good-vs-fun/shared'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
+  PanResponder,
   Pressable,
   StyleSheet,
   Text,
@@ -12,6 +13,8 @@ import {
   PLOT_MARGIN,
   PLOT_SPAN,
   scoreToPlotPercent,
+  scoresAtPlotPoint,
+  splitPlotMovies,
   type PositionGroup,
 } from '@/lib/plot'
 import { colors, radii } from '@/theme'
@@ -32,6 +35,14 @@ export type PlotLegend = {
   ghost2?: string
 }
 
+type PlotFrame = {
+  x: number
+  y: number
+  width: number
+  height: number
+  ready: boolean
+}
+
 type Props = {
   movies: Movie[]
   selectedMovieId: string | null
@@ -40,6 +51,9 @@ type Props = {
   ghostMovies?: Movie[]
   ghost2Movies?: Movie[]
   legend?: PlotLegend | null
+  editable?: boolean
+  onMove?: (ids: string[], fun: number, good: number) => void
+  onMoveEnd?: (ids: string[]) => void
 }
 
 export function MoviePlot({
@@ -50,9 +64,18 @@ export function MoviePlot({
   ghostMovies = [],
   ghost2Movies = [],
   legend = null,
+  editable = false,
+  onMove,
+  onMoveEnd,
 }: Props) {
   const [size, setSize] = useState(0)
-  const groups = useMemo(() => groupByPosition(movies), [movies])
+  const [dragIds, setDragIds] = useState<string[] | null>(null)
+  const plotRef = useRef<View>(null)
+  const frameRef = useRef<PlotFrame>({ x: 0, y: 0, width: 0, height: 0, ready: false })
+  const groups = useMemo(() => {
+    const split = splitPlotMovies(movies, dragIds)
+    return [...groupByPosition(split.resting), ...groupByPosition(split.dragged)]
+  }, [dragIds, movies])
   const ghostGroups = useMemo(() => groupByPosition(ghostMovies), [ghostMovies])
   const ghost2Groups = useMemo(() => groupByPosition(ghost2Movies), [ghost2Movies])
 
@@ -71,6 +94,36 @@ export function MoviePlot({
     onSelect(ids[0])
   }
 
+  const beginDrag = (group: PositionGroup) => {
+    const ids = group.items.map((item) => item.id)
+    if (editable) {
+      setDragIds(ids)
+    }
+    if (!selectedMovieId || !ids.includes(selectedMovieId)) {
+      onSelect(ids[0])
+    }
+  }
+
+  const finishDrag = (group: PositionGroup, wasEditable: boolean) => {
+    setDragIds(null)
+    if (!wasEditable) {
+      return
+    }
+    onMoveEnd?.(group.items.map((item) => item.id))
+  }
+
+  const captureFrame = (done: () => void) => {
+    const plot = plotRef.current
+    if (!plot) {
+      done()
+      return
+    }
+    plot.measureInWindow((x, y, width, height) => {
+      frameRef.current = { x, y, width, height, ready: width > 0 && height > 0 }
+      done()
+    })
+  }
+
   return (
     <View style={styles.card}>
       <View style={styles.plotRow}>
@@ -79,7 +132,7 @@ export function MoviePlot({
         </View>
         <View style={styles.plotSlot} onLayout={handleLayout}>
           {size > 0 ? (
-            <View style={{ width: size, height: size }}>
+            <View ref={plotRef} collapsable={false} style={{ width: size, height: size }}>
               <View style={styles.region} pointerEvents="none">
                 {GRID_LINES.map((value) => (
                   <View
@@ -124,59 +177,30 @@ export function MoviePlot({
                 style={StyleSheet.absoluteFill}
                 onPress={() => onSelect(null)}
               />
-              {groups.map((group) => {
-                const selected =
-                  selectedMovieId !== null &&
-                  group.items.some((item) => item.id === selectedMovieId)
-                const labelOnLeft = group.good >= 4
-                return (
-                  <Pressable
-                    key={group.key}
-                    accessibilityRole="button"
-                    accessibilityLabel={groupLabel(group)}
-                    hitSlop={10}
-                    onPress={() => selectGroup(group)}
-                    style={[
-                      styles.point,
-                      {
-                        left: `${scoreToPlotPercent(group.good, 'x')}%`,
-                        top: `${scoreToPlotPercent(group.fun, 'y')}%`,
-                        zIndex: selected ? 2 : 1,
-                      },
-                    ]}
-                  >
-                    <View style={[styles.dot, selected && styles.dotSelected]} />
-                    {group.items.length > 1 && !selected ? (
-                      <View style={styles.countBadge} pointerEvents="none">
-                        <Text style={styles.count}>{group.items.length}</Text>
-                      </View>
-                    ) : null}
-                    {selected ? (
-                      <View
-                        style={[
-                          styles.label,
-                          labelOnLeft ? styles.labelLeft : styles.labelRight,
-                          styles.labelSelected,
-                        ]}
-                        pointerEvents="none"
-                      >
-                        {group.items.map((item) => (
-                          <Text
-                            key={item.id}
-                            numberOfLines={1}
-                            style={[
-                              styles.labelText,
-                              item.id === selectedMovieId && styles.labelTextSelected,
-                            ]}
-                          >
-                            {item.title}
-                          </Text>
-                        ))}
-                      </View>
-                    ) : null}
-                  </Pressable>
-                )
-              })}
+              {groups.map((group) => (
+                <PlotPoint
+                  key={pointKey(group)}
+                  group={group}
+                  selected={
+                    selectedMovieId !== null &&
+                    group.items.some((item) => item.id === selectedMovieId)
+                  }
+                  selectedMovieId={selectedMovieId}
+                  editable={editable}
+                  frameRef={frameRef}
+                  captureFrame={captureFrame}
+                  onPress={selectGroup}
+                  onDragStart={beginDrag}
+                  onScores={(dragged, fun, good) => {
+                    onMove?.(
+                      dragged.items.map((item) => item.id),
+                      fun,
+                      good,
+                    )
+                  }}
+                  onDragEnd={finishDrag}
+                />
+              ))}
               {movies.length === 0 &&
               ghostMovies.length === 0 &&
               ghost2Movies.length === 0 &&
@@ -190,11 +214,188 @@ export function MoviePlot({
         </View>
       </View>
       <Text style={styles.goodAxis}>Good</Text>
+      {editable && movies.length > 0 ? (
+        <Text style={styles.hint}>Drag a dot to change Good and Fun.</Text>
+      ) : null}
       {legend ? (
         <View style={styles.legend}>
           <LegendItem color={colors.plotDot} label={legend.primary} />
           {legend.ghost ? <LegendItem color={colors.ghost1} label={legend.ghost} /> : null}
           {legend.ghost2 ? <LegendItem color={colors.ghost2} label={legend.ghost2} /> : null}
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+const DRAG_SLOP = 8
+
+function pointKey(group: PositionGroup) {
+  return group.items
+    .map((item) => item.id)
+    .sort()
+    .join('|')
+}
+
+function PlotPoint({
+  group,
+  selected,
+  selectedMovieId,
+  editable,
+  frameRef,
+  captureFrame,
+  onPress,
+  onDragStart,
+  onScores,
+  onDragEnd,
+}: {
+  group: PositionGroup
+  selected: boolean
+  selectedMovieId: string | null
+  editable: boolean
+  frameRef: { current: PlotFrame }
+  captureFrame: (done: () => void) => void
+  onPress: (group: PositionGroup) => void
+  onDragStart: (group: PositionGroup) => void
+  onScores: (group: PositionGroup, fun: number, good: number) => void
+  onDragEnd: (group: PositionGroup, wasEditable: boolean) => void
+}) {
+  const groupRef = useRef(group)
+  const editableRef = useRef(editable)
+  const onPressRef = useRef(onPress)
+  const onDragStartRef = useRef(onDragStart)
+  const onScoresRef = useRef(onScores)
+  const onDragEndRef = useRef(onDragEnd)
+  const captureFrameRef = useRef(captureFrame)
+  groupRef.current = group
+  editableRef.current = editable
+  onPressRef.current = onPress
+  onDragStartRef.current = onDragStart
+  onScoresRef.current = onScores
+  onDragEndRef.current = onDragEnd
+  captureFrameRef.current = captureFrame
+
+  const dragRef = useRef({ moved: false, ready: false })
+  const pendingRef = useRef<{ x: number; y: number } | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const labelOnLeft = group.good >= 4
+
+  const applyPagePoint = (pageX: number, pageY: number) => {
+    const frame = frameRef.current
+    if (!frame.ready || !editableRef.current) {
+      return
+    }
+    const scores = scoresAtPlotPoint(
+      pageX - frame.x,
+      pageY - frame.y,
+      frame.width,
+      frame.height,
+    )
+    onScoresRef.current(groupRef.current, scores.fun, scores.good)
+  }
+
+  const pan = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => editableRef.current,
+        onPanResponderTerminationRequest: () => !editableRef.current,
+        onShouldBlockNativeResponder: () => editableRef.current,
+        onPanResponderGrant: () => {
+          dragRef.current = { moved: false, ready: false }
+          pendingRef.current = null
+          setDragging(false)
+          captureFrameRef.current(() => {
+            dragRef.current.ready = true
+            const pending = pendingRef.current
+            if (pending && dragRef.current.moved) {
+              applyPagePoint(pending.x, pending.y)
+            }
+          })
+        },
+        onPanResponderMove: (event, gesture) => {
+          if (Math.hypot(gesture.dx, gesture.dy) < DRAG_SLOP) {
+            return
+          }
+          if (!dragRef.current.moved) {
+            dragRef.current.moved = true
+            setDragging(true)
+            onDragStartRef.current(groupRef.current)
+          }
+          const point = { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY }
+          if (!dragRef.current.ready) {
+            pendingRef.current = point
+            return
+          }
+          applyPagePoint(point.x, point.y)
+        },
+        onPanResponderRelease: () => {
+          const moved = dragRef.current.moved
+          dragRef.current = { moved: false, ready: false }
+          setDragging(false)
+          if (!moved) {
+            onPressRef.current(groupRef.current)
+            return
+          }
+          onDragEndRef.current(groupRef.current, editableRef.current)
+        },
+        onPanResponderTerminate: () => {
+          const moved = dragRef.current.moved
+          dragRef.current = { moved: false, ready: false }
+          setDragging(false)
+          if (moved) {
+            onDragEndRef.current(groupRef.current, editableRef.current)
+          }
+        },
+      }),
+    [frameRef],
+  )
+
+  return (
+    <View
+      accessibilityRole="button"
+      accessibilityLabel={groupLabel(group)}
+      accessibilityHint={editable ? 'Drag to change Good and Fun' : undefined}
+      hitSlop={10}
+      style={[
+        styles.point,
+        {
+          left: `${scoreToPlotPercent(group.good, 'x')}%`,
+          top: `${scoreToPlotPercent(group.fun, 'y')}%`,
+          zIndex: dragging ? 3 : selected ? 2 : 1,
+        },
+      ]}
+      {...pan.panHandlers}
+    >
+      <View
+        style={[styles.dot, selected && styles.dotSelected, dragging && styles.dotDragging]}
+      />
+      {group.items.length > 1 && !selected ? (
+        <View style={styles.countBadge} pointerEvents="none">
+          <Text style={styles.count}>{group.items.length}</Text>
+        </View>
+      ) : null}
+      {selected ? (
+        <View
+          style={[
+            styles.label,
+            labelOnLeft ? styles.labelLeft : styles.labelRight,
+            styles.labelSelected,
+          ]}
+          pointerEvents="none"
+        >
+          {group.items.map((item) => (
+            <Text
+              key={item.id}
+              numberOfLines={1}
+              style={[
+                styles.labelText,
+                item.id === selectedMovieId && styles.labelTextSelected,
+              ]}
+            >
+              {item.title}
+            </Text>
+          ))}
         </View>
       ) : null}
     </View>
@@ -409,6 +610,15 @@ const styles = StyleSheet.create({
     color: colors.heading,
     fontSize: 12,
     fontWeight: '700',
+  },
+  hint: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  dotDragging: {
+    transform: [{ scale: 1.35 }],
   },
   legend: {
     gap: 6,
