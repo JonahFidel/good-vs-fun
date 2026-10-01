@@ -23,12 +23,12 @@ import { GhostCompare } from '@/components/GhostCompare'
 import { MoviePlot, type PlotLegend } from '@/components/MoviePlot'
 import { ScoreSlider } from '@/components/ScoreSlider'
 import { useApiFetch } from '@/lib/api'
+import { formatTitle, formattedMovieTitle } from '@/lib/formatTitle'
 import { useGhostCompare } from '@/lib/useGhostCompare'
-import { formatTitle } from '@/lib/formatTitle'
 import { colors, radii } from '@/theme'
 
 const EXAMPLE_DECK_ALERT =
-  'Example decks are read-only. Create your own deck to add, move, or remove movies.'
+  'Example decks are read-only. Create your own deck to add, rename, move, or remove movies.'
 
 type MovieSort = 'title' | 'fun' | 'good'
 
@@ -177,6 +177,52 @@ export function DeckScreen({
     void persistMovie({ ...movie, [key]: value })
   }
 
+  const renameMovie = async (movie: Movie, nextTitle: string | undefined) => {
+    const formattedTitle = formattedMovieTitle(movie.title, nextTitle)
+    if (!formattedTitle || isExampleDeck) {
+      return
+    }
+
+    setError(null)
+    try {
+      await apiFetch(deckMoviePath(deckId, movie.id), {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: formattedTitle,
+          fun: movie.fun,
+          good: movie.good,
+        }),
+      })
+      replaceMovie(movie.id, { title: formattedTitle })
+    } catch {
+      setError('Failed to rename movie.')
+    }
+  }
+
+  const promptRename = (movie: Movie) => {
+    if (isExampleDeck) {
+      Alert.alert('Example deck', EXAMPLE_DECK_ALERT)
+      return
+    }
+
+    Alert.prompt(
+      'Rename movie',
+      undefined,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Save',
+          onPress: (value?: string) => {
+            const current = moviesRef.current.find((item) => item.id === movie.id) ?? movie
+            void renameMovie(current, value)
+          },
+        },
+      ],
+      'plain-text',
+      movie.title,
+    )
+  }
+
   const removeMovie = async (movie: Movie) => {
     if (isExampleDeck) {
       Alert.alert('Example deck', EXAMPLE_DECK_ALERT)
@@ -294,9 +340,22 @@ export function DeckScreen({
                 <Text style={styles.sectionLabel}>Selected</Text>
                 <View style={styles.selectedHeader}>
                   <Text style={styles.selectedTitle}>{selectedMovie.title}</Text>
-                  <Pressable onPress={() => void removeMovie(selectedMovie)}>
-                    <Text style={styles.deleteLabel}>Delete</Text>
-                  </Pressable>
+                  <View style={styles.selectedActions}>
+                    {isExampleDeck ? null : (
+                      <Pressable
+                        onPress={() => promptRename(selectedMovie)}
+                        accessibilityLabel={`Rename ${selectedMovie.title}`}
+                      >
+                        <Text style={styles.renameLabel}>Rename</Text>
+                      </Pressable>
+                    )}
+                    <Pressable
+                      onPress={() => void removeMovie(selectedMovie)}
+                      accessibilityLabel={`Delete ${selectedMovie.title}`}
+                    >
+                      <Text style={styles.deleteLabel}>Delete</Text>
+                    </Pressable>
+                  </View>
                 </View>
                 <View style={styles.sliderRow}>
                   <ScoreSlider
@@ -529,6 +588,15 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.heading,
     fontSize: 18,
+    fontWeight: '700',
+  },
+  selectedActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  renameLabel: {
+    color: colors.heading,
     fontWeight: '700',
   },
   deleteLabel: {
