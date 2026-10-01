@@ -48,11 +48,11 @@ export function DecksScreen() {
   const [deckSort, setDeckSort] = useState<DeckSort>('recent')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   const sortedDecks = useMemo(() => sortDecks(decks, deckSort), [decks, deckSort])
 
   const loadDecks = useCallback(async () => {
-    setLoading(true)
     setError(null)
     try {
       const data = (await apiFetch(ApiRoute.decks)) as DecksResponse | null
@@ -61,6 +61,7 @@ export function DecksScreen() {
       setError('Failed to load decks.')
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }, [apiFetch])
 
@@ -74,7 +75,6 @@ export function DecksScreen() {
       return
     }
 
-    setLoading(true)
     setError(null)
     try {
       const data = (await apiFetch(ApiRoute.decks, {
@@ -91,8 +91,6 @@ export function DecksScreen() {
       }
     } catch {
       setError('Failed to create deck.')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -102,7 +100,6 @@ export function DecksScreen() {
       return
     }
 
-    setLoading(true)
     setError(null)
     try {
       const formattedName = formatTitle(trimmedName)
@@ -123,8 +120,6 @@ export function DecksScreen() {
       )
     } catch {
       setError('Failed to rename deck.')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -155,15 +150,12 @@ export function DecksScreen() {
       return
     }
 
-    setLoading(true)
     setError(null)
     try {
       await apiFetch(deckPath(deck.id), { method: 'DELETE' })
       setDecks((current) => current.filter((item) => item.id !== deck.id))
     } catch {
       setError('Failed to delete deck.')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -200,8 +192,11 @@ export function DecksScreen() {
       <FlatList
         data={sortedDecks}
         keyExtractor={(deck) => deck.id}
-        refreshing={loading}
-        onRefresh={() => void loadDecks()}
+        refreshing={refreshing}
+        onRefresh={() => {
+          setRefreshing(true)
+          void loadDecks()
+        }}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View style={styles.intro}>
@@ -211,7 +206,6 @@ export function DecksScreen() {
               compare it with up to two others as read-only ghost overlays.
             </Text>
             {error ? <Text style={styles.error}>{error}</Text> : null}
-            {loading ? <Text style={styles.status}>Syncing changes…</Text> : null}
             <View style={styles.form}>
               <TextInput
                 value={deckName}
@@ -353,10 +347,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerSurface,
     color: colors.danger,
     fontWeight: '600',
-  },
-  status: {
-    color: colors.muted,
-    fontSize: 14,
   },
   form: {
     gap: 8,

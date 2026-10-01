@@ -103,7 +103,6 @@ export function DeckScreen({
   ])
 
   const loadDeck = useCallback(async () => {
-    setLoading(true)
     setError(null)
     try {
       const data = (await apiFetch(deckPath(deckId))) as DeckDetailResponse | null
@@ -344,7 +343,6 @@ export function DeckScreen({
       return
     }
 
-    setLoading(true)
     setError(null)
     try {
       const data = (await apiFetch(deckMoviesPath(deckId), {
@@ -363,8 +361,6 @@ export function DeckScreen({
       }
     } catch {
       setError('Failed to add movie.')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -405,7 +401,6 @@ export function DeckScreen({
         ListHeaderComponent={
           <View style={styles.intro}>
             {error ? <Text style={styles.error}>{error}</Text> : null}
-            {loading ? <Text style={styles.status}>Syncing changes…</Text> : null}
             <MoviePlot
               movies={movies}
               selectedMovieId={selectedMovieId}
@@ -659,10 +654,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerSurface,
     color: colors.danger,
     fontWeight: '600',
-  },
-  status: {
-    color: colors.muted,
-    fontSize: 14,
   },
   note: {
     color: colors.muted,

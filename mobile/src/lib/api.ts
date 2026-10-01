@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { useAuth } from '@clerk/expo'
 import { apiBaseUrl } from './config'
 
@@ -32,11 +32,11 @@ async function fetchJson(
 
 export function useApiFetch() {
   const { getToken } = useAuth()
-  return useCallback(
-    async (path: string, options: RequestInit = {}) => {
-      const token = await getToken()
-      return fetchJson(path, { ...options, token })
-    },
-    [getToken],
-  )
+  const getTokenRef = useRef(getToken)
+  getTokenRef.current = getToken
+
+  return useCallback(async (path: string, options: RequestInit = {}) => {
+    const token = await getTokenRef.current()
+    return fetchJson(path, { ...options, token })
+  }, [])
 }
