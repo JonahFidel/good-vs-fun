@@ -13,9 +13,11 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { TextPrompt } from '@/components/TextPrompt'
 import { useApiFetch } from '@/lib/api'
 import { sortDecks, type DeckSort } from '@/lib/deckOrder'
 import { formatTitle } from '@/lib/formatTitle'
+import { requestTextPrompt } from '@/lib/textPrompt'
 import { colors, radii } from '@/theme'
 
 type DecksResponse = {
@@ -49,6 +51,11 @@ export function DecksScreen() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [renamePrompt, setRenamePrompt] = useState<{
+    title: string
+    value: string
+    onSubmit: (value?: string) => void
+  } | null>(null)
 
   const sortedDecks = useMemo(() => sortDecks(decks, deckSort), [decks, deckSort])
 
@@ -128,20 +135,23 @@ export function DecksScreen() {
       return
     }
 
-    Alert.prompt(
+    requestTextPrompt(
       'Rename deck',
-      undefined,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Save',
-          onPress: (value?: string) => {
-            void renameDeck(deck, value)
-          },
-        },
-      ],
-      'plain-text',
       deck.name,
+      (value) => {
+        void renameDeck(deck, value)
+      },
+      {
+        show: (title, initialValue) => {
+          setRenamePrompt({
+            title,
+            value: initialValue,
+            onSubmit: (value) => {
+              void renameDeck(deck, value)
+            },
+          })
+        },
+      },
     )
   }
 
@@ -182,6 +192,17 @@ export function DecksScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <TextPrompt
+        visible={renamePrompt !== null}
+        title={renamePrompt?.title ?? ''}
+        initialValue={renamePrompt?.value ?? ''}
+        onCancel={() => setRenamePrompt(null)}
+        onSubmit={(value) => {
+          const submit = renamePrompt?.onSubmit
+          setRenamePrompt(null)
+          submit?.(value)
+        }}
+      />
       <View style={styles.header}>
         <Text style={styles.brand}>Good vs. Fun</Text>
         <Pressable style={styles.signOut} onPress={() => void signOut()}>

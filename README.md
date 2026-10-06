@@ -57,12 +57,24 @@ Start the Expo app:
 npm run dev:mobile
 ```
 
+On Android, from `mobile/` after the emulator is up:
+
+```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+emulator -avd Pixel_Fold_API_35 -no-snapshot -gpu auto
+npm run android
+```
+
 - Frontend runs on `http://localhost:5173` (or next available port).
 - API runs on `http://localhost:3001`.
 - In dev, Vite proxies `/api/*` to `http://localhost:3001` (see `web/vite.config.ts`).
-- The Expo app calls `http://localhost:3001` directly.
+- The Expo app reads `EXPO_PUBLIC_API_BASE_URL` from the repo root `.env`.
+- If that is unset, it falls back to `http://localhost:3001`, which the Android emulator cannot reach.
 - It uses the same Clerk publishable key as the website (`VITE_CLERK_PUBLISHABLE_KEY` in the root `.env`).
 - Sign in with an email code or Log in with Google for an existing account.
+- Rename uses the iOS alert on iPhone and an in-app field on Android, because `Alert.prompt` is iOS-only.
 
 ## Production (Vercel)
 
