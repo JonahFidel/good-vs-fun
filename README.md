@@ -31,6 +31,12 @@ npm install
 
 - `VITE_CLERK_PUBLISHABLE_KEY` – from [Clerk Dashboard](https://dashboard.clerk.com) → API Keys
 
+**Mobile** (root `.env` or `.env.local`):
+
+- `EXPO_PUBLIC_API_BASE_URL` – Android emulator: `http://10.0.2.2:3001`.
+  Physical Android device: the host machine's LAN IP, for example `http://192.168.1.10:3001`.
+  Leave unset on iOS to keep the `http://localhost:3001` fallback.
+
 **Backend** (`server/.env`):
 
 - `TURSO_DATABASE_URL`
@@ -71,7 +77,9 @@ npm run android
 - API runs on `http://localhost:3001`.
 - In dev, Vite proxies `/api/*` to `http://localhost:3001` (see `web/vite.config.ts`).
 - The Expo app reads `EXPO_PUBLIC_API_BASE_URL` from the repo root `.env`.
-- If that is unset, it falls back to `http://localhost:3001`, which the Android emulator cannot reach.
+- If that is unset, it falls back to `http://localhost:3001`, which works on iOS.
+- On the Android emulator, set `EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:3001`.
+- On a physical Android device, set it to the host machine's LAN IP, for example `http://192.168.1.10:3001`.
 - It uses the same Clerk publishable key as the website (`VITE_CLERK_PUBLISHABLE_KEY` in the root `.env`).
 - Sign in with an email code or Log in with Google for an existing account.
 - Rename uses the iOS alert on iPhone and an in-app field on Android, because `Alert.prompt` is iOS-only.
