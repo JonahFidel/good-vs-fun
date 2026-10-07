@@ -63,15 +63,9 @@ Start the Expo app:
 npm run dev:mobile
 ```
 
-On Android, from `mobile/` after the emulator is up:
-
-```bash
-export ANDROID_HOME="$HOME/Library/Android/sdk"
-export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
-export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
-emulator -avd Pixel_Fold_API_35 -no-snapshot -gpu auto
-npm run android
-```
+On Android, start an existing emulator first.
+Then run `npm run dev:mobile` once and press `a` in that same session to open the app.
+If Expo Go on the emulator still cannot connect, open the Expo URL that session printed, `exp://10.0.2.2:8081` when Metro is on the default port.
 
 - Frontend runs on `http://localhost:5173` (or next available port).
 - API runs on `http://localhost:3001`.
