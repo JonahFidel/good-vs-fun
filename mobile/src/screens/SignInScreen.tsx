@@ -1,5 +1,6 @@
 import { useSignIn, useSignUp } from '@clerk/expo'
 import { useSSO } from '@clerk/expo/experimental'
+import * as Linking from 'expo-linking'
 import { useState } from 'react'
 import {
   KeyboardAvoidingView,
@@ -12,6 +13,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { clerkErrorMessage, clerkThrownMessage } from '@/lib/clerkErrors'
+import { googleSsoStartParams, SSO_CALLBACK_PATH } from '@/lib/ssoCallback'
 import { colors, radii } from '@/theme'
 
 type Mode = 'sign-in' | 'sign-up'
@@ -66,16 +68,9 @@ export function SignInScreen() {
         createdSessionId,
         authSessionResult,
         signIn: ssoSignIn,
-      } = await startSSOFlow({
-        strategy: 'oauth_google',
-        oidcPrompt: 'select_account',
-        // A shared browser session asks the simulator to unlock saved
-        // passwords, which shows a device passcode prompt this phone
-        // cannot answer. A private session keeps the Google email field usable.
-        authSessionOptions: {
-          preferEphemeralSession: true,
-        } as { showInRecents?: boolean },
-      })
+      } = await startSSOFlow(
+        googleSsoStartParams(Linking.createURL(SSO_CALLBACK_PATH)),
+      )
       const sessionType = authSessionResult?.type
       if (sessionType === 'cancel' || sessionType === 'dismiss') {
         return
