@@ -1,6 +1,5 @@
 import { useSignIn, useSignUp } from '@clerk/expo'
 import { useSSO } from '@clerk/expo/experimental'
-import * as Linking from 'expo-linking'
 import { useState } from 'react'
 import {
   KeyboardAvoidingView,
@@ -13,7 +12,6 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { clerkErrorMessage, clerkThrownMessage } from '@/lib/clerkErrors'
-import { googleSsoStartParams, SSO_CALLBACK_PATH } from '@/lib/ssoCallback'
 import { colors, radii } from '@/theme'
 
 type Mode = 'sign-in' | 'sign-up'
@@ -68,9 +66,13 @@ export function SignInScreen() {
         createdSessionId,
         authSessionResult,
         signIn: ssoSignIn,
-      } = await startSSOFlow(
-        googleSsoStartParams(Linking.createURL(SSO_CALLBACK_PATH)),
-      )
+      } = await startSSOFlow({
+        strategy: 'oauth_google',
+        oidcPrompt: 'select_account',
+        authSessionOptions: {
+          preferEphemeralSession: true,
+        } as { showInRecents?: boolean },
+      })
       const sessionType = authSessionResult?.type
       if (sessionType === 'cancel' || sessionType === 'dismiss') {
         return
