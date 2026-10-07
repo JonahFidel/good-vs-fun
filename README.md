@@ -70,13 +70,9 @@ If Expo Go on the emulator still cannot connect, open the Expo URL that session 
 - Frontend runs on `http://localhost:5173` (or next available port).
 - API runs on `http://localhost:3001`.
 - In dev, Vite proxies `/api/*` to `http://localhost:3001` (see `web/vite.config.ts`).
-- The Expo app reads `EXPO_PUBLIC_API_BASE_URL` from the repo root `.env`.
-- If that is unset, it falls back to `http://localhost:3001`, which works on iOS.
-- On the Android emulator, set `EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:3001`.
-- On a physical Android device, set it to the host machine's LAN IP, for example `http://192.168.1.10:3001`.
+- The Expo app uses `EXPO_PUBLIC_API_BASE_URL` (see Environment variables).
 - It uses the same Clerk publishable key as the website (`VITE_CLERK_PUBLISHABLE_KEY` in the root `.env`).
 - Sign in with an email code or Log in with Google for an existing account.
-- Rename uses the iOS alert on iPhone and an in-app field on Android, because `Alert.prompt` is iOS-only.
 
 ## Production (Vercel)
 
