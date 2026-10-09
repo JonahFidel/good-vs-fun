@@ -69,6 +69,9 @@ export function SignInScreen() {
       } = await startSSOFlow({
         strategy: 'oauth_google',
         oidcPrompt: 'select_account',
+        // A shared browser session asks the simulator to unlock saved
+        // passwords, which shows a device passcode prompt this phone
+        // cannot answer. A private session keeps the Google email field usable.
         authSessionOptions: {
           preferEphemeralSession: true,
         } as { showInRecents?: boolean },

@@ -23,6 +23,9 @@ auth-wal
 *.db-wal
 *.db-shm
 
+# Disposable local Android/SDK cache used by live Test runs
+.test-runtime/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
