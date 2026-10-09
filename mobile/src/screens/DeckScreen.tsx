@@ -22,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { GhostCompare } from '@/components/GhostCompare'
 import { MoviePlot, type PlotLegend } from '@/components/MoviePlot'
 import { ScoreSlider } from '@/components/ScoreSlider'
+import { TextPrompt } from '@/components/TextPrompt'
 import { useApiFetch } from '@/lib/api'
 import { formatTitle, formattedMovieTitle } from '@/lib/formatTitle'
 import {
@@ -31,6 +32,7 @@ import {
   type MoviePosition,
   type ScoreMove,
 } from '@/lib/moveHistory'
+import { requestTextPrompt } from '@/lib/textPrompt'
 import { useGhostCompare } from '@/lib/useGhostCompare'
 import { colors, radii } from '@/theme'
 
@@ -72,6 +74,11 @@ export function DeckScreen({
   const [good, setGood] = useState(5)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [renamePrompt, setRenamePrompt] = useState<{
+    title: string
+    value: string
+    onSubmit: (value?: string) => void
+  } | null>(null)
   const moviesRef = useRef<Movie[]>([])
   moviesRef.current = movies
   const dragSnapshotRef = useRef<MoviePosition[] | null>(null)
@@ -306,21 +313,25 @@ export function DeckScreen({
       return
     }
 
-    Alert.prompt(
+    requestTextPrompt(
       'Rename movie',
-      undefined,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Save',
-          onPress: (value?: string) => {
-            const current = moviesRef.current.find((item) => item.id === movie.id) ?? movie
-            void renameMovie(current, value)
-          },
-        },
-      ],
-      'plain-text',
       movie.title,
+      (value) => {
+        const current = moviesRef.current.find((item) => item.id === movie.id) ?? movie
+        void renameMovie(current, value)
+      },
+      {
+        show: (title, initialValue) => {
+          setRenamePrompt({
+            title,
+            value: initialValue,
+            onSubmit: (value) => {
+              const current = moviesRef.current.find((item) => item.id === movie.id) ?? movie
+              void renameMovie(current, value)
+            },
+          })
+        },
+      },
     )
   }
 
@@ -376,6 +387,17 @@ export function DeckScreen({
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <TextPrompt
+        visible={renamePrompt !== null}
+        title={renamePrompt?.title ?? ''}
+        initialValue={renamePrompt?.value ?? ''}
+        onCancel={() => setRenamePrompt(null)}
+        onSubmit={(value) => {
+          const submit = renamePrompt?.onSubmit
+          setRenamePrompt(null)
+          submit?.(value)
+        }}
+      />
       <View style={styles.header}>
         <Pressable
           style={styles.back}

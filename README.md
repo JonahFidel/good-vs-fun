@@ -31,6 +31,12 @@ npm install
 
 - `VITE_CLERK_PUBLISHABLE_KEY` – from [Clerk Dashboard](https://dashboard.clerk.com) → API Keys
 
+**Mobile** (root `.env` or `.env.local`):
+
+- `EXPO_PUBLIC_API_BASE_URL` – Android emulator: `http://10.0.2.2:3001`.
+  Physical Android device: the host machine's LAN IP, for example `http://192.168.1.10:3001`.
+  Leave unset on iOS to keep the `http://localhost:3001` fallback.
+
 **Backend** (`server/.env`):
 
 - `TURSO_DATABASE_URL`
@@ -57,10 +63,14 @@ Start the Expo app:
 npm run dev:mobile
 ```
 
+On Android, start an existing emulator.
+Then press `a` in that same Expo session to open the app.
+If Expo Go on the emulator still cannot connect, open the Expo URL that session printed, `exp://10.0.2.2:8081` when Metro is on the default port.
+
 - Frontend runs on `http://localhost:5173` (or next available port).
 - API runs on `http://localhost:3001`.
 - In dev, Vite proxies `/api/*` to `http://localhost:3001` (see `web/vite.config.ts`).
-- The Expo app calls `http://localhost:3001` directly.
+- The Expo app uses `EXPO_PUBLIC_API_BASE_URL` (see Environment variables).
 - It uses the same Clerk publishable key as the website (`VITE_CLERK_PUBLISHABLE_KEY` in the root `.env`).
 - Sign in with an email code or Log in with Google for an existing account.
 
