@@ -35,7 +35,8 @@ export function useDeckSelection() {
         target.closest('input') ||
         target.closest('select') ||
         target.closest('textarea') ||
-        target.closest('a')
+        target.closest('a') ||
+        target.closest('summary')
       ) {
         return
       }

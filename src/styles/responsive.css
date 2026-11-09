@@ -119,9 +119,142 @@
     padding: 0.45rem 0.5rem;
   }
 
+  .deck-sidebar-section--header {
+    padding: 0.3rem 0.45rem;
+  }
+
+  .deck-sidebar-top {
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .deck-sidebar-title-block .eyebrow {
+    display: none;
+  }
+
+  .deck-sidebar-title-block h2 {
+    font-size: 0.92rem;
+    line-height: 1.25;
+  }
+
+  .deck-sidebar-back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.35rem 0.15rem;
+    touch-action: manipulation;
+  }
+
+  /*
+    Add-movie sliders and compare selects used to fill the ~11-16rem strip,
+    so the movie list started below the fold. Collapse them to one 44px row.
+  */
+  .deck-sidebar-collapse-summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    margin: -0.45rem -0.5rem;
+    padding: 0 0.65rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #64748b;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .deck-sidebar-section[open] > .deck-sidebar-collapse-summary {
+    margin-bottom: 0.45rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .deck-sidebar-collapse-summary::-webkit-details-marker,
+  .deck-sidebar-collapse-summary::marker {
+    display: none;
+    content: '';
+  }
+
+  .deck-sidebar-collapse-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .deck-sidebar-collapse-meta {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #334155;
+    text-align: right;
+  }
+
+  .deck-sidebar-collapse-summary::after {
+    content: '';
+    width: 0.42rem;
+    height: 0.42rem;
+    margin-left: 0.15rem;
+    border-right: 2px solid #94a3b8;
+    border-bottom: 2px solid #94a3b8;
+    transform: rotate(45deg);
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .deck-sidebar-section[open] > .deck-sidebar-collapse-summary::after {
+    transform: rotate(225deg);
+    margin-top: 0.15rem;
+  }
+
   .deck-sidebar-section--list.movie-list {
     flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    column-gap: 0.5rem;
+    row-gap: 0.3rem;
     overflow: visible;
+  }
+
+  .deck-sidebar-section--list .deck-sidebar-section__title--inline,
+  .deck-sidebar-section--list .movie-list-header {
+    margin: 0;
+  }
+
+  .movie-list-header label {
+    position: relative;
+  }
+
+  .movie-list-sort-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .movie-list-header select {
+    margin-left: 0;
+  }
+
+  .deck-sidebar-section--list.movie-list ul {
+    grid-column: 1 / -1;
   }
 
   .deck-sidebar .movie-list ul {
@@ -329,6 +462,11 @@
   .btn-rename-selected,
   .btn-delete-selected {
     touch-action: manipulation;
+  }
+
+  .movie-form--compact button,
+  .deck-sidebar .btn-swap {
+    min-height: 2.75rem;
   }
 
   .deck-form {

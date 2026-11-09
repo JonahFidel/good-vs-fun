@@ -69,7 +69,7 @@ export function MovieList({
       </h3>
       <div className="movie-list-header">
         <label>
-          Sort movies
+          <span className="movie-list-sort-label">Sort movies</span>
           <select
             value={sort}
             onChange={(event) => setSort(event.target.value as MovieSort)}

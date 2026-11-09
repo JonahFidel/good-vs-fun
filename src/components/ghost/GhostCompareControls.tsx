@@ -1,3 +1,4 @@
+import { SidebarCollapse } from '../deck/SidebarCollapse'
 import type { Deck } from '../../lib/types'
 
 type GhostCompareControlsProps = {
@@ -29,8 +30,14 @@ export function GhostCompareControls({
     return null
   }
 
+  const compareMeta = [ghostDeckName, ghost2DeckName].filter(Boolean).join(' · ')
+
   return (
-    <div className="deck-sidebar-section deck-sidebar-section--tools deck-sidebar-tools">
+    <SidebarCollapse
+      title="Compare"
+      meta={compareMeta || undefined}
+      className="deck-sidebar-section deck-sidebar-section--tools deck-sidebar-tools"
+    >
       {otherDecks.length > 0 && (
         <div className="ghost-compare-section">
           <label className="ghost-compare-label" htmlFor="ghost-deck-select">
@@ -110,6 +117,6 @@ export function GhostCompareControls({
           )}
         </div>
       )}
-    </div>
+    </SidebarCollapse>
   )
 }
