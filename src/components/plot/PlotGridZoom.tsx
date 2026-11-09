@@ -150,13 +150,16 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       return () => capturedSlot.removeEventListener('wheel', onWheel)
     }, [])
 
-    // One-finger pan on empty space; two-finger pinch-zoom on touch devices.
-    // Double-tap toggles fit vs a 2.2x zoom toward the tap (one-handed iPhone
-    // zoom, and a way back after pinch). Mouse/pen use Pointer Events. Touch
-    // uses Touch Events because iOS Safari does not deliver pointerdown for a
+    // One-finger pan; two-finger pinch-zoom on touch devices. Double-tap
+    // toggles fit vs a 2.2x zoom toward the tap (one-handed iPhone zoom, and
+    // a way back after pinch). Mouse/pen use Pointer Events and still skip
+    // pan when the cursor is on a movie so hold-to-drag can start. Touch uses
+    // Touch Events because iOS Safari does not deliver pointerdown for a
     // second finger, so pointer-only pinch never starts on iPhone. Skipping
     // pointer capture for touch also keeps the first finger from eating the
-    // rest of the gesture.
+    // rest of the gesture. Touch pan is allowed to start on a movie: moving
+    // points is mouse-only, and the ~44px hit areas would otherwise eat most
+    // of a zoomed one-finger pan.
     useEffect(() => {
       const slot = slotRef.current
       if (!slot) return
@@ -384,9 +387,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const touch = e.touches[0]
         pinchOccurredRef.current = false
         noteGestureStart(touch.clientX, touch.clientY)
-        const target = e.target as Element | null
-        if (target?.closest('.movie-point')) return
-        if (isNearMoviePoint(touch.clientX, touch.clientY)) return
+        // beginPan is a no-op at fit zoom; when zoomed it must start even if
+        // the finger landed on a movie, or the 44px targets block pan.
         beginPan(touch.identifier, touch.clientX, touch.clientY)
       }
 
@@ -404,9 +406,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           movePan(touch.identifier, touch.clientX, touch.clientY)
           return
         }
-        // Finger started on a movie; still track travel so a hold-to-drag
-        // is not mistaken for a double-tap zoom. Empty-space jitter at fit
-        // must not count, or a double-tap to zoom in never fires.
+        // At fit zoom, pan is a no-op so panRef stays null. Track travel on
+        // a movie so a sliding tap is not mistaken for a double-tap zoom.
+        // Empty-space jitter at fit must not count, or zoom-in never fires.
         const target = e.target as Element | null
         if (target?.closest('.movie-point')) {
           noteGestureMove(touch.clientX, touch.clientY)
