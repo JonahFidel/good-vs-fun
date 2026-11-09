@@ -14,6 +14,10 @@ export const MIN_SCALE = 0.3
 export const MAX_SCALE = 8
 /** Pinch past this scale before unselected mobile titles come back. */
 export const LABELS_VISIBLE_SCALE = 1.4
+/** Double-tap zoom-in; above LABELS_VISIBLE_SCALE so titles appear. */
+export const DOUBLE_TAP_SCALE = 2.2
+const FIT_SCALE_EPSILON = 0.05
+const FIT_PAN_EPSILON_PX = 8
 
 export function clampScale(scale: number): number {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale))
@@ -65,6 +69,32 @@ export function centeredTransform(
     tx: (slot.width - canvas.width * scale) / 2,
     ty: (slot.height - canvas.height * scale) / 2,
   }
+}
+
+export function isNearFit(
+  state: ZoomState,
+  fit: ZoomState,
+  scaleEpsilon = FIT_SCALE_EPSILON,
+  panEpsilon = FIT_PAN_EPSILON_PX,
+): boolean {
+  return (
+    Math.abs(state.scale - fit.scale) <= scaleEpsilon &&
+    Math.abs(state.tx - fit.tx) <= panEpsilon &&
+    Math.abs(state.ty - fit.ty) <= panEpsilon
+  )
+}
+
+/** Toggle fit vs a detail zoom aimed at `point` (slot coordinates). */
+export function doubleTapTransform(
+  state: ZoomState,
+  point: ZoomPoint,
+  fit: ZoomState,
+  detailScale = DOUBLE_TAP_SCALE,
+): ZoomState {
+  if (isNearFit(state, fit)) {
+    return zoomTowardPoint(state, point, detailScale / state.scale)
+  }
+  return fit
 }
 
 export function pointerDistance(a: ZoomPoint, b: ZoomPoint): number {

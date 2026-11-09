@@ -9,6 +9,8 @@ import {
   INITIAL_SCALE,
   LABELS_VISIBLE_SCALE,
   centeredTransform,
+  doubleTapTransform,
+  isNearFit,
   pinchTransform,
   pointerDistance,
   pointerMidpoint,
@@ -33,6 +35,9 @@ type PinchStart = {
 type PointerPos = { x: number; y: number }
 
 const PAN_DEAD_ZONE_PX = 22
+const PAN_SLOP_PX = 8
+const DOUBLE_TAP_MS = 350
+const DOUBLE_TAP_PX = 28
 
 type Props = { children: React.ReactNode }
 
@@ -46,6 +51,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const pointersRef = useRef<Map<number, PointerPos>>(new Map())
     const panRef = useRef<PanStart | null>(null)
     const pinchRef = useRef<PinchStart | null>(null)
+    const gestureStartRef = useRef<PointerPos | null>(null)
+    const gestureMovedRef = useRef(false)
+    const pinchOccurredRef = useRef(false)
+    const lastTapRef = useRef<{ t: number; x: number; y: number } | null>(null)
 
     useImperativeHandle(forwardedRef, () => gridRef.current as HTMLDivElement)
 
@@ -133,10 +142,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     }, [])
 
     // One-finger pan on empty space; two-finger pinch-zoom on touch devices.
-    // Mouse/pen use Pointer Events. Touch uses Touch Events because iOS Safari
-    // does not deliver pointerdown for a second finger, so pointer-only pinch
-    // never starts on iPhone. Skipping pointer capture for touch also keeps
-    // the first finger from eating the rest of the gesture.
+    // Double-tap toggles fit vs a 2.2x zoom toward the tap (one-handed iPhone
+    // zoom, and a way back after pinch). Mouse/pen use Pointer Events. Touch
+    // uses Touch Events because iOS Safari does not deliver pointerdown for a
+    // second finger, so pointer-only pinch never starts on iPhone. Skipping
+    // pointer capture for touch also keeps the first finger from eating the
+    // rest of the gesture.
     useEffect(() => {
       const slot = slotRef.current
       if (!slot) return
@@ -174,6 +185,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       function beginPinchFromPoints(a: PointerPos, b: PointerPos) {
         panRef.current = null
         capturedSlot.style.cursor = ''
+        pinchOccurredRef.current = true
+        gestureMovedRef.current = true
         pinchRef.current = {
           origin: { ...stateRef.current },
           originMidpoint: pointerMidpoint(a, b),
@@ -212,12 +225,67 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         capturedSlot.style.cursor = 'grabbing'
       }
 
+      function noteGestureStart(clientX: number, clientY: number) {
+        gestureStartRef.current = { x: clientX, y: clientY }
+        gestureMovedRef.current = false
+      }
+
+      function noteGestureMove(clientX: number, clientY: number) {
+        const start = gestureStartRef.current
+        if (!start || gestureMovedRef.current) return
+        if (Math.hypot(clientX - start.x, clientY - start.y) >= PAN_SLOP_PX) {
+          gestureMovedRef.current = true
+        }
+      }
+
       function movePan(id: number, clientX: number, clientY: number) {
         if (!panRef.current || panRef.current.pointerId !== id) return
+        noteGestureMove(clientX, clientY)
+        if (!gestureMovedRef.current) return
         stateRef.current.tx = panRef.current.tx + (clientX - panRef.current.x)
         stateRef.current.ty = panRef.current.ty + (clientY - panRef.current.y)
         userTransformedRef.current = true
         applyTransform()
+      }
+
+      function fitTransform(): ZoomState | null {
+        const slot = slotRef.current
+        const canvas = canvasRef.current
+        if (!slot || !canvas) return null
+        return centeredTransform(
+          { width: slot.offsetWidth, height: slot.offsetHeight },
+          { width: canvas.offsetWidth, height: canvas.offsetHeight },
+          INITIAL_SCALE,
+        )
+      }
+
+      function applyDoubleTap(point: PointerPos) {
+        const fit = fitTransform()
+        if (!fit) return
+        const next = doubleTapTransform(stateRef.current, point, fit)
+        stateRef.current = next
+        userTransformedRef.current = !isNearFit(next, fit)
+        applyTransform()
+      }
+
+      function maybeDoubleTap(clientX: number, clientY: number) {
+        if (gestureMovedRef.current || pinchOccurredRef.current) {
+          lastTapRef.current = null
+          return false
+        }
+        const now = performance.now()
+        const last = lastTapRef.current
+        if (
+          last &&
+          now - last.t <= DOUBLE_TAP_MS &&
+          Math.hypot(clientX - last.x, clientY - last.y) <= DOUBLE_TAP_PX
+        ) {
+          lastTapRef.current = null
+          applyDoubleTap(slotPoint(clientX, clientY))
+          return true
+        }
+        lastTapRef.current = { t: now, x: clientX, y: clientY }
+        return false
       }
 
       function onPointerDown(e: PointerEvent) {
@@ -225,6 +293,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (e.pointerType === 'mouse' && e.button !== 0) return
         pointersRef.current.set(e.pointerId, slotPoint(e.clientX, e.clientY))
         capturePointer(e.pointerId)
+        noteGestureStart(e.clientX, e.clientY)
 
         if (pointersRef.current.size >= 2) {
           e.preventDefault()
@@ -290,6 +359,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
         if (e.touches.length !== 1) return
         const touch = e.touches[0]
+        pinchOccurredRef.current = false
+        noteGestureStart(touch.clientX, touch.clientY)
         const target = e.target as Element | null
         if (target?.closest('.movie-point')) return
         if (isNearMoviePoint(touch.clientX, touch.clientY)) return
@@ -303,10 +374,22 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
 
-        if (!panRef.current || e.touches.length !== 1) return
-        e.preventDefault()
+        if (e.touches.length !== 1) return
         const touch = e.touches[0]
-        movePan(touch.identifier, touch.clientX, touch.clientY)
+        if (panRef.current) {
+          e.preventDefault()
+          movePan(touch.identifier, touch.clientX, touch.clientY)
+          return
+        }
+        // Finger started on a movie; still track travel so a hold-to-drag
+        // is not mistaken for a double-tap zoom.
+        noteGestureMove(touch.clientX, touch.clientY)
+      }
+
+      function endTouchGesture() {
+        pinchRef.current = null
+        panRef.current = null
+        capturedSlot.style.cursor = ''
       }
 
       function onTouchEnd(e: TouchEvent) {
@@ -314,9 +397,24 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           beginPinchFromTouches(e.touches)
           return
         }
-        pinchRef.current = null
-        panRef.current = null
-        capturedSlot.style.cursor = ''
+        if (e.touches.length === 1) {
+          endTouchGesture()
+          return
+        }
+        const ended = e.changedTouches[0]
+        if (ended) {
+          if (maybeDoubleTap(ended.clientX, ended.clientY)) {
+            e.preventDefault()
+          }
+        } else {
+          lastTapRef.current = null
+        }
+        endTouchGesture()
+      }
+
+      function onTouchCancel() {
+        lastTapRef.current = null
+        endTouchGesture()
       }
 
       function preventNativeGesture(e: Event) {
@@ -333,7 +431,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       capturedSlot.addEventListener('touchstart', onTouchStart, touchOpts)
       capturedSlot.addEventListener('touchmove', onTouchMove, touchOpts)
       capturedSlot.addEventListener('touchend', onTouchEnd, touchOpts)
-      capturedSlot.addEventListener('touchcancel', onTouchEnd, touchOpts)
+      capturedSlot.addEventListener('touchcancel', onTouchCancel, touchOpts)
       // Safari page-zoom gestures fight custom pinch unless they are cancelled.
       capturedSlot.addEventListener('gesturestart', preventNativeGesture)
       capturedSlot.addEventListener('gesturechange', preventNativeGesture)
@@ -347,7 +445,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         capturedSlot.removeEventListener('touchstart', onTouchStart, touchOpts)
         capturedSlot.removeEventListener('touchmove', onTouchMove, touchOpts)
         capturedSlot.removeEventListener('touchend', onTouchEnd, touchOpts)
-        capturedSlot.removeEventListener('touchcancel', onTouchEnd, touchOpts)
+        capturedSlot.removeEventListener('touchcancel', onTouchCancel, touchOpts)
         capturedSlot.removeEventListener('gesturestart', preventNativeGesture)
         capturedSlot.removeEventListener('gesturechange', preventNativeGesture)
         capturedSlot.removeEventListener('gestureend', preventNativeGesture)

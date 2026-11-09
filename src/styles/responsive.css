@@ -251,6 +251,11 @@
     pointer-events: auto;
   }
 
+  /* Ghost titles are decorative; leave them out of pan / double-tap hit testing. */
+  .grid-zoom-slot--zoomed .ghost-point > .movie-label {
+    pointer-events: none;
+  }
+
   .movie-point .movie-label-title {
     display: block;
     overflow: hidden;
