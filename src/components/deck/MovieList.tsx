@@ -11,6 +11,7 @@ export function MovieList({
   selectedMovieId,
   hover,
   onItemPointerDown,
+  onSelect,
   onHighlight,
   onClearHover,
   onRemove,
@@ -22,6 +23,7 @@ export function MovieList({
   onItemPointerDown: (
     id: string,
   ) => (event: React.PointerEvent<HTMLLIElement>) => void
+  onSelect: (id: string) => void
   onHighlight: (id: string) => void
   onClearHover: () => void
   onRemove: (id: string) => void
@@ -94,6 +96,13 @@ export function MovieList({
                 .join(' ') || undefined
             }
             onPointerDown={onItemPointerDown(movie.id)}
+            onClick={(event) => {
+              const target = event.target as HTMLElement | null
+              if (target?.closest('button')) {
+                return
+              }
+              onSelect(movie.id)
+            }}
             onMouseEnter={() => onHighlight(movie.id)}
             onMouseLeave={onClearHover}
           >

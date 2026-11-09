@@ -176,6 +176,7 @@ export function DeckPage() {
           onGoodChange={handleSelectedGoodChange}
           onScoreCommit={() => void handleSelectedScoreCommit()}
           onMoviePointerDown={handleMovieListPointerDown}
+          onSelectMovie={selectMovie}
           onHighlightFromList={highlightFromList}
           onClearHover={clearHoverLink}
           onRemoveMovie={(id) => void removeMovie(id)}

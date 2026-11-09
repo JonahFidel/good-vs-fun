@@ -23,6 +23,7 @@ export function DeckSidebar({
   onGoodChange,
   onScoreCommit,
   onMoviePointerDown,
+  onSelectMovie,
   onHighlightFromList,
   onClearHover,
   onRemoveMovie,
@@ -46,6 +47,7 @@ export function DeckSidebar({
   onMoviePointerDown: (
     id: string,
   ) => (event: React.PointerEvent<HTMLLIElement>) => void
+  onSelectMovie: (id: string) => void
   onHighlightFromList: (id: string) => void
   onClearHover: () => void
   onRemoveMovie: (id: string) => void
@@ -129,6 +131,7 @@ export function DeckSidebar({
         selectedMovieId={selectedMovieId}
         hover={hover}
         onItemPointerDown={onMoviePointerDown}
+        onSelect={onSelectMovie}
         onHighlight={onHighlightFromList}
         onClearHover={onClearHover}
         onRemove={onRemoveMovie}
