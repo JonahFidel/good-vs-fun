@@ -68,6 +68,12 @@
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.1);
 }
 
+.ghost-point--label-start > span {
+  left: 0;
+  right: auto;
+  transform: translate(calc(-100% - 7px), -50%);
+}
+
 .ghost-point--1 > span {
   background: rgba(245, 243, 255, 0.96);
   color: #5b21b6;

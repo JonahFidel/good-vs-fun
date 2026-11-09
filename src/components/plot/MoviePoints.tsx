@@ -3,6 +3,9 @@ import type { MovieHover } from '../../lib/types'
 import { scoreToPlotPercent } from '../../lib/gridCanvas'
 import type { PositionGroup } from '../../lib/groupByPosition'
 
+/** Put the title on the right when the point sits in the left of the 0–10 region. */
+const LABEL_FLIP_GOOD = 3
+
 export function MoviePoints({
   groups,
   draggingIds,
@@ -40,6 +43,7 @@ export function MoviePoints({
         const isGridHighlighted = hover?.from === 'list' && ids.includes(hover.id)
         const isGridSelected = selectedMovieId !== null && ids.includes(selectedMovieId)
         const onlyItem = group.items.length === 1 ? group.items[0] : null
+        const labelOnRight = group.good < LABEL_FLIP_GOOD
 
         return (
           <div
@@ -49,6 +53,7 @@ export function MoviePoints({
               isDragging ? 'dragging' : '',
               isGridSelected ? 'movie-point--selected' : '',
               isGridHighlighted ? 'movie-point--highlighted' : '',
+              labelOnRight ? 'movie-point--label-end' : '',
             ]
               .filter(Boolean)
               .join(' ')}

@@ -42,6 +42,13 @@
   z-index: 1;
 }
 
+/* Keep titles inside the scoring region when the point is near x=0. */
+.movie-point--label-end > span {
+  left: auto;
+  right: 0;
+  transform: translate(calc(100% + 7px), -50%);
+}
+
 .movie-point::after {
   content: '';
   position: absolute;
@@ -116,7 +123,8 @@
 }
 
 .movie-point:hover .movie-point-score,
-.movie-point.dragging .movie-point-score {
+.movie-point.dragging .movie-point-score,
+.movie-point--selected .movie-point-score {
   opacity: 1;
   transform: translateX(-50%) translateY(-2px);
 }

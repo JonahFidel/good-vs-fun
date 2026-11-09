@@ -52,7 +52,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       const canvas = canvasRef.current
       if (!canvas) return
       const { scale, tx, ty } = stateRef.current
-      canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`
+      canvas.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${scale})`
     }
 
     function centerIfPristine() {

@@ -36,6 +36,10 @@
     overflow: hidden;
     height: 100%;
     overscroll-behavior: none;
+    /* Disable Safari double-tap page-zoom; the plot handles pinch itself. */
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   #root:has(.deck-page-layout) {
@@ -191,6 +195,17 @@
   .grid {
     text-size-adjust: 100%;
     -webkit-text-size-adjust: 100%;
+    -webkit-touch-callout: none;
+  }
+
+  /*
+    A ~370px square makes 0.1-interval subticks ~3px apart, and four axes of
+    numbers fight movie titles. Keep left/bottom majors only.
+  */
+  .grid-subtick,
+  .grid-tick-x-top,
+  .grid-tick-y-right {
+    display: none;
   }
 
   .grid-tick {
@@ -206,6 +221,38 @@
     font-size: 0.8rem;
     padding: 0.14rem 0.42rem;
     transform: translate(calc(-100% - 9px), -50%);
+    max-width: 7.25rem;
+    overflow: hidden;
+  }
+
+  .movie-point .movie-label-title {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Keep right-side labels on the right; the rule above would pull them left. */
+  .movie-point--label-end > span,
+  .ghost-point > span {
+    transform: translate(calc(100% + 9px), -50%);
+  }
+
+  .ghost-point--label-start > span {
+    transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  .movie-point--selected > span,
+  .movie-point.dragging > span,
+  .movie-point--highlighted > span {
+    max-width: min(14rem, 70vw);
+    overflow: visible;
+  }
+
+  .movie-point--selected .movie-label-title,
+  .movie-point.dragging .movie-label-title,
+  .movie-point--highlighted .movie-label-title {
+    overflow: visible;
+    text-overflow: unset;
   }
 
   .movie-point .movie-point-score {

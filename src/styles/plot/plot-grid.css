@@ -51,6 +51,7 @@
   inset: 0;
   transform-origin: 0 0;
   min-width: 700px;
+  will-change: transform;
 }
 
 .grid {
