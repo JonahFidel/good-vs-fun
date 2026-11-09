@@ -24,8 +24,9 @@
   z-index: 3;
 }
 
-/* Always-visible title label — dark pill so it reads clearly off the grid */
-.movie-point > span {
+/* Always-visible title label - dark pill so it reads clearly off the grid.
+   Target .movie-label, not > span: the score pill is also a direct child span. */
+.movie-point > .movie-label {
   position: absolute;
   left: 0;
   top: 50%;
@@ -48,7 +49,7 @@
 }
 
 /* Keep titles inside the scoring region when the point is near x=0. */
-.movie-point--label-end > span {
+.movie-point--label-end > .movie-label {
   left: auto;
   right: 0;
   transform: translate(calc(100% + 7px), -50%);

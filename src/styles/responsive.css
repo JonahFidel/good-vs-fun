@@ -441,19 +441,16 @@
     border-radius: 999px;
   }
 
-  .movie-point > span {
-    font-size: 0.8rem;
-    padding: 0.14rem 0.42rem;
-    transform: translate(calc(-100% - 9px), -50%);
-    max-width: 7.25rem;
-    overflow: hidden;
-  }
-
   /*
     30+ truncated pills on a ~370px square hide the grid. Keep dots at fit
     zoom; show the selected title, then restore all titles after a pinch-in.
   */
   .movie-point > .movie-label {
+    font-size: 0.8rem;
+    padding: 0.14rem 0.42rem;
+    transform: translate(calc(-100% - 9px), -50%);
+    max-width: 7.25rem;
+    overflow: hidden;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.12s ease;
@@ -478,19 +475,23 @@
     text-overflow: ellipsis;
   }
 
-  /* Keep right-side labels on the right; the rule above would pull them left. */
-  .movie-point--label-end > span,
-  .ghost-point > span {
+  /*
+    Keep right-side titles on the right; the rule above would pull them left.
+    .movie-label only - the score pill is also a child span and must stay
+    above the point, or a tap on Good < 3 stacks title and score together.
+  */
+  .movie-point--label-end > .movie-label,
+  .ghost-point > .movie-label {
     transform: translate(calc(100% + 9px), -50%);
   }
 
-  .ghost-point--label-start > span {
+  .ghost-point--label-start > .movie-label {
     transform: translate(calc(-100% - 9px), -50%);
   }
 
-  .movie-point--selected > span,
-  .movie-point.dragging > span,
-  .movie-point--highlighted > span {
+  .movie-point--selected > .movie-label,
+  .movie-point.dragging > .movie-label,
+  .movie-point--highlighted > .movie-label {
     max-width: min(14rem, 70vw);
     overflow: visible;
   }
