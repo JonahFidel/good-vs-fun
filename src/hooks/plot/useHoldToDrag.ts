@@ -82,12 +82,19 @@ export function useHoldToDrag({
       setPendingPointer(null)
     }
 
+    const handleSecondPointer = () => {
+      // A second finger means pinch-zoom, not a movie drag.
+      setPendingPointer(null)
+    }
+
     window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerdown', handleSecondPointer)
     window.addEventListener('pointerup', handlePointerUp, { once: true })
     window.addEventListener('pointercancel', handlePointerUp, { once: true })
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerdown', handleSecondPointer)
       window.removeEventListener('pointerup', handlePointerUp)
       window.removeEventListener('pointercancel', handlePointerUp)
     }
