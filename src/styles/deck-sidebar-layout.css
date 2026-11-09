@@ -58,7 +58,19 @@
   word-break: break-word;
 }
 
+.deck-sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.deck-sidebar-history {
+  display: none;
+}
+
 .deck-sidebar-back {
+  position: relative;
   flex-shrink: 0;
   font-size: 0.82rem;
   line-height: 1.35;

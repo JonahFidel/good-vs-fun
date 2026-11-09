@@ -14,6 +14,10 @@ export function DeckSidebar({
   movies,
   selectedMovieId,
   hover,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   onBackgroundPointerDown,
   onAddMovie,
   onRenameSelected,
@@ -36,6 +40,10 @@ export function DeckSidebar({
   movies: Movie[]
   selectedMovieId: string | null
   hover: MovieHover | null
+  canUndo: boolean
+  canRedo: boolean
+  onUndo: () => void
+  onRedo: () => void
   onBackgroundPointerDown: (event: React.PointerEvent<HTMLElement>) => void
   onAddMovie: (movie: { title: string; fun: number; good: number }) => Promise<boolean>
   onRenameSelected: () => void
@@ -89,9 +97,35 @@ export function DeckSidebar({
               {isExampleDeck && <span className="deck-example-badge">Example</span>}
             </h2>
           </div>
-          <Link className="deck-sidebar-back" to="/decks">
-            ← Back to decks
-          </Link>
+          <div className="deck-sidebar-header-actions">
+            {!isExampleDeck && (
+              <div className="deck-sidebar-history">
+                <button
+                  type="button"
+                  className="btn-undo"
+                  onClick={() => void onUndo()}
+                  disabled={!canUndo}
+                  title="Undo last move (⌘Z)"
+                  aria-label="Undo last move"
+                >
+                  ↩
+                </button>
+                <button
+                  type="button"
+                  className="btn-undo"
+                  onClick={() => void onRedo()}
+                  disabled={!canRedo}
+                  title="Redo last move (⌘⇧Z)"
+                  aria-label="Redo last move"
+                >
+                  ↪
+                </button>
+              </div>
+            )}
+            <Link className="deck-sidebar-back" to="/decks">
+              ← <span className="deck-sidebar-back-text">Back to decks</span>
+            </Link>
+          </div>
         </div>
       </div>
 

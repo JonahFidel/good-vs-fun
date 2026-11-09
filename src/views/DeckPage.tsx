@@ -167,6 +167,10 @@ export function DeckPage() {
           movies={deckMovies}
           selectedMovieId={selectedMovieId}
           hover={hoverLink}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={undo}
+          onRedo={redo}
           onBackgroundPointerDown={handleSidebarBackgroundPointerDown}
           onAddMovie={handleAddMovie}
           onRenameSelected={() => void handleRenameSelected()}
