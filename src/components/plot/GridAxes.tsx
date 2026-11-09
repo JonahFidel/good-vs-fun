@@ -23,6 +23,7 @@ export function GridAxes() {
         <span
           key={`tick-x-${value}`}
           className={`grid-tick grid-tick-x${value === 10 ? ' grid-tick-end-x' : ''}`}
+          data-tick={value}
           style={{ left: pct(value) }}
           aria-hidden="true"
         >
@@ -33,6 +34,7 @@ export function GridAxes() {
         <span
           key={`tick-y-${value}`}
           className="grid-tick grid-tick-y"
+          data-tick={value}
           style={{ top: pctInv(value) }}
           aria-hidden="true"
         >
@@ -64,6 +66,7 @@ export function GridAxes() {
         <span
           key={`tick-x-top-${value}`}
           className="grid-tick grid-tick-x grid-tick-x-top"
+          data-tick={value}
           style={{ left: pct(value) }}
           aria-hidden="true"
         >
@@ -76,6 +79,7 @@ export function GridAxes() {
           className={`grid-tick grid-tick-y grid-tick-y-right${
             value === 10 ? ' grid-tick-end-y-right' : ''
           }`}
+          data-tick={value}
           style={{ top: pctInv(value) }}
           aria-hidden="true"
         >

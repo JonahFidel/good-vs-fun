@@ -469,18 +469,78 @@
   /*
     Desktop ticks are #9ca3af on white (~2.5:1). On a ~370px phone square
     those numbers ARE the 0-10 scale, so they need to read as text.
+    Body line-height 1.5 made 0.85rem labels ~20px tall plus a 10px outset,
+    which is larger than the 1-unit margin on SE and any landscape plot,
+    so overflow:hidden clipped Good-axis numbers at default zoom.
   */
   .grid-tick,
   .grid-wrapper--example .grid-tick {
     font-size: 0.85rem;
+    line-height: 1;
     color: #4b5563;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 2px;
+    padding: 0 0.08rem;
+  }
+
+  /*
+    Sit labels just inside the axes. The 1-unit margin is ~13-31px on phone
+    squares; even with line-height 1, "10" plus a 10px outset still clips
+    on SE landscape (~160-180px).
+  */
+  .grid-tick-x,
+  .grid-tick-end-x {
+    transform: translate(-50%, calc(-100% - 6px));
+  }
+
+  .grid-tick-y {
+    transform: translate(6px, -50%);
   }
 
   .grid-tick-x::before,
   .grid-tick-y::before,
   .grid-wrapper--example .grid-tick-x::before,
   .grid-wrapper--example .grid-tick-y::before {
-    background: #6b7280;
+    display: none;
+  }
+
+  /*
+    1-10 along a ~160-280px axis collides and crowds the scoring region
+    once labels sit inside. Keep 2/4/5/6/8/10 at fit zoom; restore 1/3/7/9
+    after pinch so a zoomed corner still has unit precision.
+  */
+  .grid-tick[data-tick='1'],
+  .grid-tick[data-tick='3'],
+  .grid-tick[data-tick='7'],
+  .grid-tick[data-tick='9'] {
+    display: none;
+  }
+
+  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='1'],
+  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='3'],
+  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='7'],
+  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='9'],
+  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='1'],
+  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='3'],
+  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='7'],
+  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='9'] {
+    display: block;
+  }
+
+  /*
+    #e5e7eb lines on white are decoration on desktop and the whole scale
+    on a phone. Example decks also faded ::before to 0.55. Darken both.
+  */
+  .deck-page-layout .grid::before,
+  .deck-page-layout .grid-wrapper--example .grid::before {
+    opacity: 1;
+    border-color: #111827;
+    background-image: linear-gradient(#94a3b8 1px, transparent 1px),
+      linear-gradient(90deg, #94a3b8 1px, transparent 1px);
+  }
+
+  .deck-page-layout .grid-wrapper--example .grid-axis {
+    color: #111827;
   }
 
   .movie-point {
