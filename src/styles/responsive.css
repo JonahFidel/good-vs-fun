@@ -398,7 +398,9 @@
     height: auto;
     max-height: none;
     align-self: stretch;
-    grid-template-rows: minmax(0, 1fr) auto;
+    /* auto, not 1fr: an indefinite-height 1fr row with min-height: 0
+       lets the aspect-ratio slot collapse instead of becoming a square. */
+    grid-template-rows: auto auto;
   }
 
   /*
@@ -422,15 +424,27 @@
     max-width: 100%;
     height: auto;
     aspect-ratio: 1;
-    min-height: 0;
+    /* Keep aspect-ratio as the used height; min-height: 0 lets the square collapse. */
+    min-height: auto;
     max-height: var(--max-plot);
-    /* cqw caps selected pills to half the square so they cannot cover the grid. */
-    container-type: size;
+    /*
+      inline-size is enough for cqw pill caps. container-type: size also
+      contains block size, and with height: auto that can zero the square
+      on iOS Safari before aspect-ratio transfers.
+    */
+    container-type: inline-size;
   }
 
+  /*
+    Desktop leaves inset: auto and an explicit --plot-side square inside a
+    taller slot. On the phone the slot IS that square, so pin every edge.
+    height: 100% against an aspect-ratio parent is unreliable in WebKit.
+  */
   .deck-page-layout .grid-zoom-canvas {
-    width: 100%;
-    height: 100%;
+    inset: 0;
+    width: auto;
+    height: auto;
+    min-width: 0;
   }
 
   /* Keep labels and ticks readable at the default (fit-to-width) zoom. */
@@ -790,7 +804,7 @@
     align-self: center;
     padding: 0.25rem;
     grid-template-columns: 1.65rem minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
   }
 
   .deck-page-layout .grid-zoom-slot {
