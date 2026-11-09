@@ -74,10 +74,17 @@
   bottom: calc(100% * var(--grid-margin) / var(--grid-canvas));
   width: calc(100% * var(--grid-score-max) / var(--grid-canvas));
   height: calc(100% * var(--grid-score-max) / var(--grid-canvas));
-  border-left: 4px solid #111827;
-  border-bottom: 4px solid #111827;
-  border-right: 2px solid #111827;
-  border-top: 2px solid #111827;
+  /*
+    Axis strokes live on the scaled canvas. Inverse-scale keeps Fun=0 /
+    Good=0 at screen thickness so pinch and double-tap do not bury movies
+    on those edges. Keep content-box so changing the border does not
+    resize the scoring region (universal * does not match ::before).
+  */
+  box-sizing: content-box;
+  border-left: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
+  border-bottom: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
+  border-right: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
+  border-top: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
   background-image: linear-gradient(#e5e7eb 1px, transparent 1px),
     linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
   /* 10% of ::before width = 1 scoring unit */
