@@ -20,18 +20,22 @@
   color: #9ca3af;
   pointer-events: none;
   z-index: 0;
+  /* Shrink toward the number's center so canvas zoom does not explode labels. */
+  transform-origin: center;
 }
 
 /* Bottom axis labels — anchored on y=0, shifted into the margin below */
 .grid-tick-x {
   bottom: calc(100% * var(--grid-margin) / var(--grid-canvas));
-  transform: translate(-50%, calc(100% + var(--grid-tick-outset-major)));
+  transform: translate(-50%, calc(100% + var(--grid-tick-outset-major)))
+    scale(var(--plot-inverse-scale, 1));
 }
 
 /* Left axis labels — anchored on x=0, shifted into the margin left */
 .grid-tick-y {
   left: calc(100% * var(--grid-margin) / var(--grid-canvas));
-  transform: translate(calc(-100% - var(--grid-tick-outset-major)), -50%);
+  transform: translate(calc(-100% - var(--grid-tick-outset-major)), -50%)
+    scale(var(--plot-inverse-scale, 1));
 }
 
 /* Tick notch points toward the axis line it labels */
@@ -94,7 +98,8 @@
 .grid-tick-x-top {
   bottom: auto;
   top: calc(100% * var(--grid-margin) / var(--grid-canvas));
-  transform: translate(-50%, calc(-100% - var(--grid-tick-outset-top)));
+  transform: translate(-50%, calc(-100% - var(--grid-tick-outset-top)))
+    scale(var(--plot-inverse-scale, 1));
 }
 
 /* Tick notch points downward toward y=10 */
@@ -114,7 +119,8 @@
 .grid-tick-y-right {
   left: auto;
   right: calc(100% * var(--grid-margin) / var(--grid-canvas));
-  transform: translate(calc(100% + var(--grid-tick-outset-right)), -50%);
+  transform: translate(calc(100% + var(--grid-tick-outset-right)), -50%)
+    scale(var(--plot-inverse-scale, 1));
 }
 
 /* Tick notch points leftward toward x=10 */
@@ -132,12 +138,14 @@
 
 /* Bottom axis "10" — keep centered on x=10 like other ticks (aligns with subtick) */
 .grid-tick-end-x {
-  transform: translate(-50%, calc(100% + var(--grid-tick-outset-major)));
+  transform: translate(-50%, calc(100% + var(--grid-tick-outset-major)))
+    scale(var(--plot-inverse-scale, 1));
 }
 
 /* Right axis "10" shifts slightly down to avoid the top-right corner */
 .grid-tick-end-y-right {
-  transform: translate(calc(100% + var(--grid-tick-outset-right)), calc(-50% + 3px));
+  transform: translate(calc(100% + var(--grid-tick-outset-right)), calc(-50% + 3px))
+    scale(var(--plot-inverse-scale, 1));
 }
 
 .grid-axis-y {

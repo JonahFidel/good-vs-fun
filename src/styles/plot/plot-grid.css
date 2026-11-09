@@ -52,6 +52,8 @@
   transform-origin: 0 0;
   min-width: 700px;
   will-change: transform;
+  /* Ticks live on the scaled canvas; inverse-scale keeps them screen-sized. */
+  --plot-inverse-scale: calc(1 / var(--plot-scale, 1));
 }
 
 .grid {
