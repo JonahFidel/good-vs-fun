@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { GRID_CANVAS, GRID_MARGIN } from '../../lib/gridCanvas'
 
-// Canvas spans –margin..(scoreMax + margin). Ticks use the same math as .grid::before.
+// Canvas spans –margin..(scoreMax + margin). Ticks use the same math as the scoring region.
 
 const MAJOR_TICKS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 

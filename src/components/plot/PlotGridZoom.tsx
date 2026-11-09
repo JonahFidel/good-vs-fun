@@ -5,6 +5,7 @@ import {
   useLayoutEffect,
   useRef,
 } from 'react'
+import { scoringRegionScreenRect } from '../../lib/gridCanvas'
 import {
   INITIAL_SCALE,
   LABELS_VISIBLE_SCALE,
@@ -47,6 +48,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
   function PlotGridZoom({ children }, forwardedRef) {
     const slotRef = useRef<HTMLDivElement | null>(null)
     const canvasRef = useRef<HTMLDivElement | null>(null)
+    const overlayRef = useRef<HTMLDivElement | null>(null)
     const gridRef = useRef<HTMLDivElement | null>(null)
     const stateRef = useRef<ZoomState>({ scale: INITIAL_SCALE, tx: 0, ty: 0 })
     const userTransformedRef = useRef(false)
@@ -78,6 +80,22 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         'grid-zoom-slot--zoomed',
         scale >= LABELS_VISIBLE_SCALE,
       )
+      // Grid lines live on this unscaled overlay so 1px strokes stay 1px
+      // while the canvas pinch-scales. Inverse-scaling a 1px background on
+      // .grid::before rounded away on WebKit once zoom passed ~1.4x.
+      const overlay = overlayRef.current
+      if (overlay && canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
+        const region = scoringRegionScreenRect(
+          scale,
+          tx,
+          ty,
+          canvas.offsetWidth,
+          canvas.offsetHeight,
+        )
+        overlay.style.transform = `translate3d(${region.left}px, ${region.top}px, 0)`
+        overlay.style.width = `${region.width}px`
+        overlay.style.height = `${region.height}px`
+      }
     }
 
     function centerIfPristine() {
@@ -486,6 +504,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
     return (
       <div ref={slotRef} className="grid-zoom-slot">
+        <div ref={overlayRef} className="grid-line-overlay" aria-hidden="true" />
         <div ref={canvasRef} className="grid-zoom-canvas">
           <div ref={gridRef} className="grid">
             {children}
