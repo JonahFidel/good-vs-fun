@@ -501,8 +501,7 @@
 
   /*
     Keep right-side titles on the right; the rule above would pull them left.
-    .movie-label only - the score pill is also a child span and must stay
-    above the point, or a tap on Good < 3 stacks title and score together.
+    .movie-label only - the floating score pill is also a child span.
   */
   .movie-point--label-end > .movie-label,
   .ghost-point > .movie-label {
@@ -511,6 +510,18 @@
 
   .ghost-point--label-start > .movie-label {
     transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  /*
+    A centered two-line title+score is ~37px tall. At Fun 9–10 that hangs into
+    the ~31px (or smaller) top margin and clips. Grow the pill down instead.
+  */
+  .movie-point--label-south > .movie-label {
+    transform: translate(calc(-100% - 9px), 6px);
+  }
+
+  .movie-point--label-south.movie-point--label-end > .movie-label {
+    transform: translate(calc(100% + 9px), 6px);
   }
 
   .movie-point--selected > .movie-label,
@@ -527,8 +538,25 @@
     text-overflow: unset;
   }
 
+  /*
+    The hover score pill is centered above the dot, so on a ~370px square it
+    clips at Good 0/10 (needs ~60px, margin is ~31px) and at Fun 10 on
+    landscape. Fold Good/Fun into the selected title, which already flips
+    off the near edge.
+  */
   .movie-point .movie-point-score {
+    display: none;
+  }
+
+  .movie-point--selected .movie-label-score,
+  .movie-point.dragging .movie-label-score,
+  .movie-point--highlighted .movie-label-score {
+    display: block;
     font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    opacity: 0.92;
   }
 
   .btn-undo {

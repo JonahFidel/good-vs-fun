@@ -5,6 +5,8 @@ import type { PositionGroup } from '../../lib/groupByPosition'
 
 /** Put the title on the right when the point sits in the left of the 0–10 region. */
 const LABEL_FLIP_GOOD = 3
+/** Grow the selected pill down so a two-line title+score stays on-canvas at Fun 9–10. */
+const LABEL_SOUTH_FUN = 9
 
 export function MoviePoints({
   groups,
@@ -44,6 +46,7 @@ export function MoviePoints({
         const isGridSelected = selectedMovieId !== null && ids.includes(selectedMovieId)
         const onlyItem = group.items.length === 1 ? group.items[0] : null
         const labelOnRight = group.good < LABEL_FLIP_GOOD
+        const labelBelow = group.fun >= LABEL_SOUTH_FUN
 
         return (
           <div
@@ -54,6 +57,7 @@ export function MoviePoints({
               isGridSelected ? 'movie-point--selected' : '',
               isGridHighlighted ? 'movie-point--highlighted' : '',
               labelOnRight ? 'movie-point--label-end' : '',
+              labelBelow ? 'movie-point--label-south' : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -93,6 +97,9 @@ export function MoviePoints({
                   </span>
                 </span>
               ))}
+              <span className="movie-label-score">
+                Good {formatScore(group.good)} · Fun {formatScore(group.fun)}
+              </span>
             </span>
             <span className="movie-point-score" aria-hidden="true">
               Good {formatScore(group.good)} · Fun {formatScore(group.fun)}

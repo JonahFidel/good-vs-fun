@@ -152,6 +152,11 @@
   display: inline-block;
 }
 
+/* Desktop keeps the floating hover pill; mobile folds this into the title. */
+.movie-label-score {
+  display: none;
+}
+
 .movie-delete {
   border: none;
   background: transparent;
