@@ -7,6 +7,7 @@ import { useDeckKeyboard } from '../hooks/deck/useDeckKeyboard'
 import { useDeckLoad } from '../hooks/deck/useDeckLoad'
 import { useDeckMovieActions } from '../hooks/deck/useDeckMovieActions'
 import { useDeckSelection } from '../hooks/deck/useDeckSelection'
+import { useDisableIosPageZoom } from '../hooks/deck/useDisableIosPageZoom'
 import { useSelectedMovieActions } from '../hooks/deck/useSelectedMovieActions'
 import { useVisualViewportInset } from '../hooks/deck/useVisualViewportInset'
 import { useGhostCompare } from '../hooks/ghost/useGhostCompare'
@@ -18,6 +19,7 @@ export function DeckPage() {
   const { deckId } = useParams()
   const resolvedDeckId = typeof deckId === 'string' ? deckId : null
   useVisualViewportInset()
+  useDisableIosPageZoom()
 
   const {
     deckName,

@@ -159,11 +159,14 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // pointer capture for touch also keeps the first finger from eating the
     // rest of the gesture. Touch pan is allowed to start on a movie: moving
     // points is mouse-only, and the ~44px hit areas would otherwise eat most
-    // of a zoomed one-finger pan.
+    // of a zoomed one-finger pan. Touch listeners sit on the plot card so a
+    // pinch that starts on a Fun/Good axis still zooms the grid.
     useEffect(() => {
       const slot = slotRef.current
       if (!slot) return
       const capturedSlot = slot
+      const wrapper = capturedSlot.closest('.grid-wrapper')
+      const gestureRoot = wrapper instanceof HTMLElement ? wrapper : capturedSlot
 
       function slotPoint(clientX: number, clientY: number): PointerPos {
         const rect = capturedSlot.getBoundingClientRect()
@@ -457,27 +460,27 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       capturedSlot.addEventListener('pointermove', onPointerMove)
       capturedSlot.addEventListener('pointerup', onPointerUp)
       capturedSlot.addEventListener('pointercancel', onPointerUp)
-      capturedSlot.addEventListener('touchstart', onTouchStart, touchOpts)
-      capturedSlot.addEventListener('touchmove', onTouchMove, touchOpts)
-      capturedSlot.addEventListener('touchend', onTouchEnd, touchOpts)
-      capturedSlot.addEventListener('touchcancel', onTouchCancel, touchOpts)
+      gestureRoot.addEventListener('touchstart', onTouchStart, touchOpts)
+      gestureRoot.addEventListener('touchmove', onTouchMove, touchOpts)
+      gestureRoot.addEventListener('touchend', onTouchEnd, touchOpts)
+      gestureRoot.addEventListener('touchcancel', onTouchCancel, touchOpts)
       // Safari page-zoom gestures fight custom pinch unless they are cancelled.
-      capturedSlot.addEventListener('gesturestart', preventNativeGesture)
-      capturedSlot.addEventListener('gesturechange', preventNativeGesture)
-      capturedSlot.addEventListener('gestureend', preventNativeGesture)
+      gestureRoot.addEventListener('gesturestart', preventNativeGesture)
+      gestureRoot.addEventListener('gesturechange', preventNativeGesture)
+      gestureRoot.addEventListener('gestureend', preventNativeGesture)
 
       return () => {
         capturedSlot.removeEventListener('pointerdown', onPointerDown, { capture: true })
         capturedSlot.removeEventListener('pointermove', onPointerMove)
         capturedSlot.removeEventListener('pointerup', onPointerUp)
         capturedSlot.removeEventListener('pointercancel', onPointerUp)
-        capturedSlot.removeEventListener('touchstart', onTouchStart, touchOpts)
-        capturedSlot.removeEventListener('touchmove', onTouchMove, touchOpts)
-        capturedSlot.removeEventListener('touchend', onTouchEnd, touchOpts)
-        capturedSlot.removeEventListener('touchcancel', onTouchCancel, touchOpts)
-        capturedSlot.removeEventListener('gesturestart', preventNativeGesture)
-        capturedSlot.removeEventListener('gesturechange', preventNativeGesture)
-        capturedSlot.removeEventListener('gestureend', preventNativeGesture)
+        gestureRoot.removeEventListener('touchstart', onTouchStart, touchOpts)
+        gestureRoot.removeEventListener('touchmove', onTouchMove, touchOpts)
+        gestureRoot.removeEventListener('touchend', onTouchEnd, touchOpts)
+        gestureRoot.removeEventListener('touchcancel', onTouchCancel, touchOpts)
+        gestureRoot.removeEventListener('gesturestart', preventNativeGesture)
+        gestureRoot.removeEventListener('gesturechange', preventNativeGesture)
+        gestureRoot.removeEventListener('gestureend', preventNativeGesture)
       }
     }, [])
 

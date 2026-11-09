@@ -42,10 +42,28 @@
     overflow: hidden;
     height: 100%;
     overscroll-behavior: none;
-    /* Disable Safari double-tap page-zoom; the plot handles pinch itself. */
-    touch-action: manipulation;
+    /* pan-y: scrolling only. manipulation still allows Safari page pinch-zoom. */
+    touch-action: pan-y;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+  }
+
+  #root:has(.deck-page-layout),
+  .app:has(.deck-page-layout),
+  .app:has(.deck-page-layout) > .header,
+  .app:has(.deck-page-layout) > .layout,
+  .deck-page-layout {
+    touch-action: pan-y;
+  }
+
+  /*
+    Pinch on the plot card, including Fun/Good axis chrome, must not fall
+    through to Safari page-zoom. The slot already has touch-action: none.
+  */
+  .deck-page-layout .grid-panel,
+  .deck-page-layout .grid-wrapper,
+  .deck-page-layout .grid-axis {
+    touch-action: none;
   }
 
   #root:has(.deck-page-layout) {
@@ -636,6 +654,23 @@
     border-radius: 50%;
     background: #111827;
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+  }
+
+  /*
+    Later rules in this query set touch-action: manipulation for tap delay.
+    That value still allows Safari page pinch-zoom, so pinching a nav link
+    or collapse row would zoom the locked page. Keep pan-y only.
+  */
+  .app:has(.deck-page-layout) .nav-link,
+  .app:has(.deck-page-layout) button,
+  .deck-page-layout .movie-form--compact button,
+  .deck-page-layout .btn-swap,
+  .deck-page-layout .deck-sidebar-collapse-summary,
+  .deck-page-layout .deck-sidebar-back,
+  .deck-page-layout .btn-undo,
+  .deck-page-layout .btn-rename-selected,
+  .deck-page-layout .btn-delete-selected {
+    touch-action: pan-y;
   }
 }
 
