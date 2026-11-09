@@ -424,6 +424,8 @@
     aspect-ratio: 1;
     min-height: 0;
     max-height: var(--max-plot);
+    /* cqw caps selected pills to half the square so they cannot cover the grid. */
+    container-type: size;
   }
 
   .deck-page-layout .grid-zoom-canvas {
@@ -474,6 +476,7 @@
     padding: 0.14rem 0.42rem;
     transform: translate(calc(-100% - 9px), -50%);
     max-width: 7.25rem;
+    max-width: min(7.25rem, calc(50cqw - 16px));
     overflow: hidden;
     opacity: 0;
     pointer-events: none;
@@ -513,8 +516,8 @@
   }
 
   /*
-    A centered two-line title+score is ~37px tall. At Fun 9–10 that hangs into
-    the ~31px (or smaller) top margin and clips. Grow the pill down instead.
+    A stacked title+score is taller than the 1-unit margin. Grow down at
+    Fun 9–10 and up at Fun 0–1 so the pill stays inside the square.
   */
   .movie-point--label-south > .movie-label {
     transform: translate(calc(-100% - 9px), 6px);
@@ -524,25 +527,47 @@
     transform: translate(calc(100% + 9px), 6px);
   }
 
+  .movie-point--label-north > .movie-label {
+    transform: translate(calc(-100% - 9px), calc(-100% - 6px));
+  }
+
+  .movie-point--label-north.movie-point--label-end > .movie-label {
+    transform: translate(calc(100% + 9px), calc(-100% - 6px));
+  }
+
+  /*
+    A nowrap 70vw title paints past max-width (overflow: visible) and clips
+    on the slot. Wrap inside half the square so a tap keeps the 0–10 grid
+    readable and the full title on-canvas.
+  */
   .movie-point--selected > .movie-label,
   .movie-point.dragging > .movie-label,
   .movie-point--highlighted > .movie-label {
-    max-width: min(14rem, 70vw);
-    overflow: visible;
+    max-width: 8.25rem;
+    max-width: min(8.25rem, calc(50cqw - 16px));
+    overflow: hidden;
+    white-space: normal;
+  }
+
+  .movie-point--selected .movie-label-line,
+  .movie-point.dragging .movie-label-line,
+  .movie-point--highlighted .movie-label-line {
+    white-space: normal;
   }
 
   .movie-point--selected .movie-label-title,
   .movie-point.dragging .movie-label-title,
   .movie-point--highlighted .movie-label-title {
-    overflow: visible;
+    display: block;
+    white-space: normal;
+    overflow-wrap: anywhere;
     text-overflow: unset;
   }
 
   /*
     The hover score pill is centered above the dot, so on a ~370px square it
     clips at Good 0/10 (needs ~60px, margin is ~31px) and at Fun 10 on
-    landscape. Fold Good/Fun into the selected title, which already flips
-    off the near edge.
+    landscape. Fold Good/Fun into the selected title as two short lines.
   */
   .movie-point .movie-point-score {
     display: none;
@@ -551,7 +576,9 @@
   .movie-point--selected .movie-label-score,
   .movie-point.dragging .movie-label-score,
   .movie-point--highlighted .movie-label-score {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: 0.02rem;
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.01em;

@@ -3,10 +3,12 @@ import type { MovieHover } from '../../lib/types'
 import { scoreToPlotPercent } from '../../lib/gridCanvas'
 import type { PositionGroup } from '../../lib/groupByPosition'
 
-/** Put the title on the right when the point sits in the left of the 0–10 region. */
-const LABEL_FLIP_GOOD = 3
-/** Grow the selected pill down so a two-line title+score stays on-canvas at Fun 9–10. */
+/** Put the title on the roomier side so a selected pill stays inside the square. */
+const LABEL_FLIP_GOOD = 5
+/** Grow the selected pill down so a stacked title+score stays on-canvas at Fun 9–10. */
 const LABEL_SOUTH_FUN = 9
+/** Grow the selected pill up so a stacked title+score stays on-canvas at Fun 0–1. */
+const LABEL_NORTH_FUN = 1
 
 export function MoviePoints({
   groups,
@@ -47,6 +49,7 @@ export function MoviePoints({
         const onlyItem = group.items.length === 1 ? group.items[0] : null
         const labelOnRight = group.good < LABEL_FLIP_GOOD
         const labelBelow = group.fun >= LABEL_SOUTH_FUN
+        const labelAbove = !labelBelow && group.fun <= LABEL_NORTH_FUN
 
         return (
           <div
@@ -58,6 +61,7 @@ export function MoviePoints({
               isGridHighlighted ? 'movie-point--highlighted' : '',
               labelOnRight ? 'movie-point--label-end' : '',
               labelBelow ? 'movie-point--label-south' : '',
+              labelAbove ? 'movie-point--label-north' : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -98,7 +102,8 @@ export function MoviePoints({
                 </span>
               ))}
               <span className="movie-label-score">
-                Good {formatScore(group.good)} · Fun {formatScore(group.fun)}
+                <span>Good {formatScore(group.good)}</span>
+                <span>Fun {formatScore(group.fun)}</span>
               </span>
             </span>
             <span className="movie-point-score" aria-hidden="true">
