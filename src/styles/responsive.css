@@ -547,16 +547,6 @@
     flex-wrap: wrap;
   }
 
-  .deck-form button,
-  .deck-actions button {
-    min-height: 2.5rem;
-  }
-
-  .deck-select {
-    flex-wrap: wrap;
-    align-items: flex-start;
-  }
-
   /*
     Native range height is 0.9rem (~14px), so iPhone cannot grab Fun/Good.
     Expand the hit box to 44px, keep a thin centered track, and a 28px thumb.
@@ -746,5 +736,63 @@
   .score-sliders--selected {
     grid-template-columns: 1fr;
     gap: 0.4rem;
+  }
+}
+
+/*
+  Decks list tap targets: iPhone Pro Max landscape is ~932px, so the 900px
+  block misses it. pointer: coarse covers every iPhone; max-width covers a
+  narrow desktop window.
+*/
+@media (max-width: 900px), (pointer: coarse) {
+  .deck-form input,
+  .deck-toolbar select {
+    font-size: 16px;
+  }
+
+  .deck-form button {
+    min-height: 2.75rem;
+    padding: 0.55rem 1.1rem;
+  }
+
+  /*
+    HTML5 drag on every row delays or steals taps on the deck link, and a
+    finger on a title cannot pan-y. Reorder stays a mouse gesture; Sort
+    still covers order on iPhone.
+  */
+  .decks-panel .subhead {
+    display: none;
+  }
+
+  .deck-toolbar select {
+    min-height: 2.75rem;
+    padding: 0.45rem 0.7rem;
+  }
+
+  .deck-list li {
+    cursor: default;
+    touch-action: pan-y;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .deck-select {
+    flex-wrap: wrap;
+    align-items: center;
+    min-height: 2.75rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .deck-actions {
+    width: 100%;
+  }
+
+  .deck-actions button {
+    flex: 1;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
   }
 }

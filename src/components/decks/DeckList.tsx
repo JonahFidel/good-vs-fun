@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useFinePointer } from '../../hooks/deck/useWideLayout'
 import { alertExampleDeckReadOnly } from '../../lib/exampleDeck'
 import type { Deck } from '../../lib/types'
 
@@ -18,6 +19,7 @@ export function DeckList({
   onRename: (deck: Deck) => void
   onDelete: (deck: Deck) => void
 }) {
+  const canDragToReorder = useFinePointer()
   const [draggingDeckId, setDraggingDeckId] = useState<string | null>(null)
   const [deckDragOverId, setDeckDragOverId] = useState<string | null>(null)
 
@@ -30,11 +32,16 @@ export function DeckList({
             deck.id === selectedDeckId ? 'active' : '',
             deckDragOverId === deck.id ? 'drag-over' : '',
             deck.isExample ? 'deck-list-item--example' : '',
+            canDragToReorder ? 'deck-list-item--reorderable' : '',
           ]
             .filter(Boolean)
             .join(' ')}
-          draggable
+          draggable={canDragToReorder}
           onDragStart={(event) => {
+            if (!canDragToReorder) {
+              event.preventDefault()
+              return
+            }
             if (deck.isExample) {
               event.preventDefault()
               alertExampleDeckReadOnly()
