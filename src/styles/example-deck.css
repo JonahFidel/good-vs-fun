@@ -46,7 +46,7 @@
   color: #cbd5e1;
 }
 
-.grid-wrapper--example .grid-tick::before,
+.grid-wrapper--example .grid-tick-label::before,
 .grid-wrapper--example .grid-subtick {
   background: #cbd5e1;
 }

@@ -478,30 +478,25 @@
     font-size: 0.85rem;
     line-height: 1;
     color: #4b5563;
+    /* 4px keeps 0.85rem "10" inside the portrait ~31px 1-unit margin. */
+    --grid-tick-outset-major: 4px;
+  }
+
+  /*
+    Keep 0-10 numbers in the 1-unit margin so they do not cover Fun≈0 /
+    Good≈0 movies at default zoom. The label child holds this offset so
+    pinch inverse-scale does not drift numbers off the axes.
+  */
+  .grid-tick-label {
     background: rgba(255, 255, 255, 0.92);
     border-radius: 2px;
     padding: 0 0.08rem;
   }
 
-  /*
-    Keep 0-10 numbers in the 1-unit margin so they do not cover Fun≈0 /
-    Good≈0 movies at default zoom. Inverse-scale so pinch/double-tap does
-    not blow the numbers up over movies. Landscape uses a smaller label
-    below so a ~13px SE margin can still fit "10".
-  */
-  .grid-tick-x,
-  .grid-tick-end-x {
-    transform: translate(-50%, calc(100% + 4px)) scale(var(--plot-inverse-scale, 1));
-  }
-
-  .grid-tick-y {
-    transform: translate(calc(-100% - 4px), -50%) scale(var(--plot-inverse-scale, 1));
-  }
-
-  .grid-tick-x::before,
-  .grid-tick-y::before,
-  .grid-wrapper--example .grid-tick-x::before,
-  .grid-wrapper--example .grid-tick-y::before {
+  .grid-tick-x > .grid-tick-label::before,
+  .grid-tick-y > .grid-tick-label::before,
+  .grid-wrapper--example .grid-tick-x > .grid-tick-label::before,
+  .grid-wrapper--example .grid-tick-y > .grid-tick-label::before {
     display: none;
   }
 
@@ -923,15 +918,8 @@
   .grid-tick,
   .grid-wrapper--example .grid-tick {
     font-size: 0.7rem;
-  }
-
-  .grid-tick-x,
-  .grid-tick-end-x {
-    transform: translate(-50%, calc(100% + 2px)) scale(var(--plot-inverse-scale, 1));
-  }
-
-  .grid-tick-y {
-    transform: translate(calc(-100% - 2px), -50%) scale(var(--plot-inverse-scale, 1));
+    /* 2px plus 0.7rem "10" fits the ~13px SE-floor landscape margin. */
+    --grid-tick-outset-major: 2px;
   }
 
   .deck-rail {
