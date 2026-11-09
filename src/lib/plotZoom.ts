@@ -12,6 +12,8 @@ export type ZoomPoint = {
 export const INITIAL_SCALE = 1
 export const MIN_SCALE = 0.3
 export const MAX_SCALE = 8
+/** Pinch past this scale before unselected mobile titles come back. */
+export const LABELS_VISIBLE_SCALE = 1.4
 
 export function clampScale(scale: number): number {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale))

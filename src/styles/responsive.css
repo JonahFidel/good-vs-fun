@@ -233,6 +233,24 @@
     overflow: hidden;
   }
 
+  /*
+    30+ truncated pills on a ~370px square hide the grid. Keep dots at fit
+    zoom; show the selected title, then restore all titles after a pinch-in.
+  */
+  .movie-point > .movie-label {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+  }
+
+  .movie-point--selected > .movie-label,
+  .movie-point.dragging > .movie-label,
+  .movie-point--highlighted > .movie-label,
+  .grid-zoom-slot--zoomed .movie-point > .movie-label {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .movie-point .movie-label-title {
     display: block;
     overflow: hidden;

@@ -5,9 +5,14 @@
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  transform: translate(-50%, -50%);
+  /* Inverse-scale so pinch-zoom spreads points without exploding titles. */
+  transform: translate(-50%, -50%) scale(calc(1 / var(--plot-scale, 1)));
+  transform-origin: center;
   cursor: grab;
   z-index: 1;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .movie-point.dragging {

@@ -7,6 +7,7 @@ import {
 } from 'react'
 import {
   INITIAL_SCALE,
+  LABELS_VISIBLE_SCALE,
   centeredTransform,
   pinchTransform,
   pointerDistance,
@@ -50,9 +51,15 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
     function applyTransform() {
       const canvas = canvasRef.current
+      const slot = slotRef.current
       if (!canvas) return
       const { scale, tx, ty } = stateRef.current
       canvas.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${scale})`
+      canvas.style.setProperty('--plot-scale', String(scale))
+      slot?.classList.toggle(
+        'grid-zoom-slot--zoomed',
+        scale >= LABELS_VISIBLE_SCALE,
+      )
     }
 
     function centerIfPristine() {
