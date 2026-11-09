@@ -334,6 +334,91 @@
     flex-wrap: wrap;
     align-items: flex-start;
   }
+
+  /*
+    Native range height is 0.9rem (~14px), so iPhone cannot grab Fun/Good.
+    Expand the hit box to 44px, keep a thin centered track, and a 28px thumb.
+  */
+  .score-slider {
+    gap: 0.25rem;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .score-slider-label,
+  .score-slider-value {
+    font-size: 0.8rem;
+  }
+
+  .score-slider-input {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 2.75rem;
+    min-height: 44px;
+    padding: 0;
+    background:
+      linear-gradient(#111827, #111827) no-repeat left center,
+      linear-gradient(#d1d5db, #d1d5db) no-repeat center;
+    background-size:
+      var(--score-percent) 0.5rem,
+      100% 0.5rem;
+    touch-action: none;
+  }
+
+  .score-slider-input:focus {
+    outline: none;
+  }
+
+  .score-slider-input:focus-visible {
+    outline: 2px solid #111827;
+    outline-offset: 2px;
+  }
+
+  .score-slider-input::-webkit-slider-runnable-track {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 2.75rem;
+    background: transparent;
+    border: none;
+  }
+
+  .score-slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    width: 1.75rem;
+    height: 1.75rem;
+    margin-top: calc((2.75rem - 1.75rem) / 2);
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: #111827;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+  }
+
+  .score-slider-input::-moz-range-track {
+    height: 0.5rem;
+    background: #d1d5db;
+    border: none;
+    border-radius: 999px;
+  }
+
+  .score-slider-input::-moz-range-progress {
+    height: 0.5rem;
+    background: #111827;
+    border: none;
+    border-radius: 999px;
+  }
+
+  .score-slider-input::-moz-range-thumb {
+    box-sizing: border-box;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: #111827;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+  }
 }
 
 /*
@@ -432,5 +517,12 @@
   .deck-sidebar {
     padding: 0.3rem 0.3rem max(0.3rem, env(safe-area-inset-bottom), var(--keyboard-inset, 0px));
     gap: 0.35rem;
+  }
+
+  /* Landscape sidebar is ~12-15rem; two 44px sliders would have ~90px tracks. */
+  .score-sliders--add,
+  .score-sliders--selected {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
   }
 }

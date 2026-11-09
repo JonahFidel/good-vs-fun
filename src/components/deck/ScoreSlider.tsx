@@ -1,4 +1,5 @@
-import { formatScore, POSITION_STEP } from '../../lib/format'
+import type { CSSProperties } from 'react'
+import { clampPercent, formatScore, POSITION_STEP } from '../../lib/format'
 
 type Props = {
   label: string
@@ -31,6 +32,9 @@ export function ScoreSlider({
         step={POSITION_STEP}
         value={value}
         disabled={disabled}
+        style={
+          { '--score-percent': `${clampPercent(value * 10)}%` } as CSSProperties
+        }
         onChange={(event) => onChange(Number(event.target.value))}
         onPointerDown={onAdjustStart}
         onPointerUp={onCommit}
