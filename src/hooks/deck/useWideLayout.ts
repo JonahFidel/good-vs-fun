@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from 'react'
 
-const WIDE_QUERY = '(min-width: 901px)'
+/* Keep in sync with the mobile queries in src/styles/responsive.css. */
+const NARROW_QUERY = '(max-width: 900px)'
+const COARSE_PHONE_QUERY = '(pointer: coarse) and (max-width: 1023px)'
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)'
 
 function subscribeQuery(query: string, onStoreChange: () => void) {
@@ -10,7 +12,12 @@ function subscribeQuery(query: string, onStoreChange: () => void) {
 }
 
 function subscribeWide(onStoreChange: () => void) {
-  return subscribeQuery(WIDE_QUERY, onStoreChange)
+  const unsubNarrow = subscribeQuery(NARROW_QUERY, onStoreChange)
+  const unsubCoarsePhone = subscribeQuery(COARSE_PHONE_QUERY, onStoreChange)
+  return () => {
+    unsubNarrow()
+    unsubCoarsePhone()
+  }
 }
 
 function subscribeFinePointer(onStoreChange: () => void) {
@@ -18,7 +25,10 @@ function subscribeFinePointer(onStoreChange: () => void) {
 }
 
 function getWideSnapshot() {
-  return window.matchMedia(WIDE_QUERY).matches
+  return (
+    !window.matchMedia(NARROW_QUERY).matches &&
+    !window.matchMedia(COARSE_PHONE_QUERY).matches
+  )
 }
 
 function getFinePointerSnapshot() {
@@ -29,7 +39,11 @@ function getServerSnapshot() {
   return false
 }
 
-/** True at the desktop deck breakpoint (wider than the 900px mobile layout). */
+/**
+ * True on the desktop deck layout. Inverse of the mobile CSS queries:
+ * max-width 900px, or a coarse pointer up to 1023px so iPhone Pro Max
+ * landscape (~932-956px) still gets collapsed sidebar sections.
+ */
 export function useWideLayout() {
   return useSyncExternalStore(subscribeWide, getWideSnapshot, getServerSnapshot)
 }
