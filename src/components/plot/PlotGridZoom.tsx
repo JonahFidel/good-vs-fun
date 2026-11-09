@@ -8,7 +8,9 @@ import {
 import {
   INITIAL_SCALE,
   LABELS_VISIBLE_SCALE,
+  canPan,
   centeredTransform,
+  clampToSlot,
   doubleTapTransform,
   isNearFit,
   pinchTransform,
@@ -62,6 +64,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       const canvas = canvasRef.current
       const slot = slotRef.current
       if (!canvas) return
+      if (slot) {
+        stateRef.current = clampToSlot(
+          stateRef.current,
+          { width: slot.offsetWidth, height: slot.offsetHeight },
+          { width: canvas.offsetWidth, height: canvas.offsetHeight },
+        )
+      }
       const { scale, tx, ty } = stateRef.current
       canvas.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${scale})`
       canvas.style.setProperty('--plot-scale', String(scale))
@@ -214,7 +223,21 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         applyTransform()
       }
 
+      function viewSizes() {
+        const canvas = canvasRef.current
+        if (!canvas) return null
+        return {
+          slot: {
+            width: capturedSlot.offsetWidth,
+            height: capturedSlot.offsetHeight,
+          },
+          canvas: { width: canvas.offsetWidth, height: canvas.offsetHeight },
+        }
+      }
+
       function beginPan(id: number, clientX: number, clientY: number) {
+        const sizes = viewSizes()
+        if (!sizes || !canPan(stateRef.current, sizes.slot, sizes.canvas)) return
         panRef.current = {
           pointerId: id,
           x: clientX,
@@ -382,8 +405,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
         // Finger started on a movie; still track travel so a hold-to-drag
-        // is not mistaken for a double-tap zoom.
-        noteGestureMove(touch.clientX, touch.clientY)
+        // is not mistaken for a double-tap zoom. Empty-space jitter at fit
+        // must not count, or a double-tap to zoom in never fires.
+        const target = e.target as Element | null
+        if (target?.closest('.movie-point')) {
+          noteGestureMove(touch.clientX, touch.clientY)
+        }
       }
 
       function endTouchGesture() {

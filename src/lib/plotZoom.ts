@@ -9,6 +9,11 @@ export type ZoomPoint = {
   y: number
 }
 
+export type ViewSize = {
+  width: number
+  height: number
+}
+
 export const INITIAL_SCALE = 1
 export const MIN_SCALE = 0.3
 export const MAX_SCALE = 8
@@ -60,8 +65,8 @@ export function pinchTransform(
 }
 
 export function centeredTransform(
-  slot: { width: number; height: number },
-  canvas: { width: number; height: number },
+  slot: ViewSize,
+  canvas: ViewSize,
   scale: number,
 ): ZoomState {
   return {
@@ -69,6 +74,48 @@ export function centeredTransform(
     tx: (slot.width - canvas.width * scale) / 2,
     ty: (slot.height - canvas.height * scale) / 2,
   }
+}
+
+function clampAxis(translate: number, slotSize: number, scaledSize: number): number {
+  if (scaledSize <= slotSize) {
+    return (slotSize - scaledSize) / 2
+  }
+  const min = slotSize - scaledSize
+  return Math.min(0, Math.max(min, translate))
+}
+
+/**
+ * Keep the canvas covering the slot: no empty gutters while zoomed in, and
+ * centered while the scaled canvas is smaller than the slot (including fit).
+ */
+export function clampToSlot(
+  state: ZoomState,
+  slot: ViewSize,
+  canvas: ViewSize,
+): ZoomState {
+  if (slot.width <= 0 || slot.height <= 0 || canvas.width <= 0 || canvas.height <= 0) {
+    return state
+  }
+  return {
+    scale: state.scale,
+    tx: clampAxis(state.tx, slot.width, canvas.width * state.scale),
+    ty: clampAxis(state.ty, slot.height, canvas.height * state.scale),
+  }
+}
+
+/** True when a one-finger pan can actually move the canvas. */
+export function canPan(
+  state: ZoomState,
+  slot: ViewSize,
+  canvas: ViewSize,
+): boolean {
+  if (slot.width <= 0 || slot.height <= 0 || canvas.width <= 0 || canvas.height <= 0) {
+    return false
+  }
+  return (
+    canvas.width * state.scale > slot.width + 0.5 ||
+    canvas.height * state.scale > slot.height + 0.5
+  )
 }
 
 export function isNearFit(
