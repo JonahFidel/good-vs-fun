@@ -8,6 +8,7 @@ import { useDeckLoad } from '../hooks/deck/useDeckLoad'
 import { useDeckMovieActions } from '../hooks/deck/useDeckMovieActions'
 import { useDeckSelection } from '../hooks/deck/useDeckSelection'
 import { useSelectedMovieActions } from '../hooks/deck/useSelectedMovieActions'
+import { useVisualViewportInset } from '../hooks/deck/useVisualViewportInset'
 import { useGhostCompare } from '../hooks/ghost/useGhostCompare'
 import { useMoveHistory } from '../hooks/plot/useMoveHistory'
 import { usePlotDrag } from '../hooks/plot/usePlotDrag'
@@ -16,6 +17,7 @@ import { groupByPosition } from '../lib/groupByPosition'
 export function DeckPage() {
   const { deckId } = useParams()
   const resolvedDeckId = typeof deckId === 'string' ? deckId : null
+  useVisualViewportInset()
 
   const {
     deckName,

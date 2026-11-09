@@ -1,4 +1,4 @@
-/* Narrow layout: the deck page stacks and the page scrolls again. */
+/* Narrow layout: compact chrome, readable plot, 16px form controls. */
 
 @media (max-width: 900px) {
   #root {
@@ -6,38 +6,75 @@
       max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
   }
 
+  .header {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    padding-top: max(0.3rem, env(safe-area-inset-top));
+    padding-left: max(0.6rem, env(safe-area-inset-left));
+    padding-right: max(0.6rem, env(safe-area-inset-right));
+  }
+
+  .header-brand {
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+  }
+
+  .nav-links {
+    flex-wrap: nowrap;
+  }
+
+  .nav-link {
+    min-height: 2.25rem;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.78rem;
+    touch-action: manipulation;
+  }
+
+  /* Deck page: lock the viewport so plot pan does not fight page scroll. */
   html:has(.deck-page-layout),
   html:has(.deck-page-layout) body {
-    overflow: auto;
-    height: auto;
-    min-height: 100%;
+    overflow: hidden;
+    height: 100%;
+    overscroll-behavior: none;
   }
 
   #root:has(.deck-page-layout) {
-    height: auto;
-    min-height: 100dvh;
-    overflow: visible;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: 0;
+    overflow: hidden;
   }
 
   .app:has(.deck-page-layout) {
-    height: auto;
-    min-height: 100dvh;
-    overflow: visible;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app:has(.deck-page-layout) > .header {
+    padding: 0.25rem 0.55rem;
+    padding-top: max(0.25rem, env(safe-area-inset-top));
+    padding-left: max(0.55rem, env(safe-area-inset-left));
+    padding-right: max(0.55rem, env(safe-area-inset-right));
   }
 
   .app:has(.deck-page-layout) > .layout {
     display: flex;
     flex-direction: column;
-    overflow: visible;
-    flex: none;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+    padding: 0.25rem 0.35rem 0;
+    gap: 0.25rem;
   }
 
   .deck-page-layout {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    flex: none;
-    overflow: visible;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .deck-page-layout .grid-panel {
@@ -45,7 +82,7 @@
     grid-row: auto;
     flex: 0 0 auto;
     height: auto;
-    overflow: visible;
+    overflow: hidden;
     container-type: normal;
     align-items: stretch;
   }
@@ -53,19 +90,29 @@
   .deck-rail {
     grid-column: auto;
     grid-row: auto;
-    flex: 0 0 auto;
+    flex: 1 1 0;
     height: auto;
     min-height: 0;
     max-height: none;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .deck-sidebar {
-    flex: 0 0 auto;
-    height: auto;
-    min-height: auto;
+    flex: 1 1 0;
+    height: 100%;
+    min-height: 0;
     max-height: none;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    gap: 0.45rem;
+    padding: 0.4rem 0.4rem max(0.4rem, env(safe-area-inset-bottom), var(--keyboard-inset, 0px));
+  }
+
+  .deck-sidebar-section {
+    padding: 0.45rem 0.5rem;
   }
 
   .deck-sidebar-section--list.movie-list {
@@ -80,10 +127,20 @@
     mask-image: none;
   }
 
+  .deck-sidebar .ghost-compare-hint {
+    display: none;
+  }
+
+  .movie-list li {
+    min-height: 2.75rem;
+    padding: 0.5rem 0.6rem;
+    touch-action: manipulation;
+  }
+
   .grid-wrapper {
     grid-template-columns: 2rem 1fr;
     grid-template-rows: 1fr 1.5rem;
-    padding: 0.4rem;
+    padding: 0.35rem;
     gap: 0.1rem;
   }
 
@@ -92,29 +149,42 @@
   }
 
   .deck-page-layout .grid-wrapper {
+    --plot-chrome-y: 2.35rem;
     flex: none;
     height: auto;
     max-height: none;
     align-self: stretch;
     grid-template-rows: minmax(0, 1fr) auto;
-    --plot-chrome-y: 2.65rem;
   }
 
-  /* Square plot — viewport-based sizing so the page can scroll naturally */
+  /*
+    Square plot from the slot's real width, capped so a sidebar strip stays
+    on screen. Avoid 100vw estimates, which oversize the canvas and clip.
+  */
   .deck-page-layout .grid-zoom-slot {
-    --plot-viewport-w: calc(100vw - 1.5rem - var(--plot-chrome-x));
-    --plot-viewport-h: min(var(--plot-viewport-w), 72dvh);
-    --plot-side: min(var(--plot-viewport-w), var(--plot-viewport-h), var(--plot-side-max));
-    width: 100%;
-    height: var(--plot-viewport-h);
+    --mobile-header: calc(env(safe-area-inset-top, 0px) + 2.75rem);
+    --mobile-frame: 0.6rem;
+    --mobile-sidebar-min: 11rem;
+    --max-plot: max(
+      12rem,
+      calc(
+        100dvh - var(--mobile-header) - var(--mobile-frame) - var(--mobile-sidebar-min) -
+          var(--plot-chrome-y)
+      )
+    );
+    --plot-side: min(100%, var(--max-plot), var(--plot-side-max));
+    justify-self: center;
+    width: min(100%, var(--max-plot));
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 1;
     min-height: 0;
-    max-height: none;
+    max-height: var(--max-plot);
   }
 
-  .header {
-    padding-top: max(0.35rem, env(safe-area-inset-top));
-    padding-left: max(0.75rem, env(safe-area-inset-left));
-    padding-right: max(0.75rem, env(safe-area-inset-right));
+  .deck-page-layout .grid-zoom-canvas {
+    width: 100%;
+    height: 100%;
   }
 
   /* Keep labels and ticks readable at the default (fit-to-width) zoom. */
@@ -142,10 +212,48 @@
     font-size: 0.72rem;
   }
 
-  /* iOS Safari zooms the whole page when focusing inputs smaller than 16px. */
+  .btn-undo {
+    min-height: 2.25rem;
+    touch-action: manipulation;
+  }
+
+  /*
+    iOS Safari zooms the whole page when focusing inputs smaller than 16px.
+    Beat component rules that set 0.8rem / 0.95rem on the same elements.
+  */
   input,
   select,
-  textarea {
+  textarea,
+  .movie-form--compact .field input,
+  .movie-list-header select,
+  .ghost-compare-row select,
+  .deck-sidebar .ghost-compare-row select,
+  .deck-form input,
+  .deck-toolbar select {
     font-size: 16px;
+  }
+
+  button,
+  .movie-form--compact button,
+  .deck-form button,
+  .deck-actions button,
+  .btn-swap,
+  .btn-rename-selected,
+  .btn-delete-selected {
+    touch-action: manipulation;
+  }
+
+  .deck-form {
+    flex-wrap: wrap;
+  }
+
+  .deck-form button,
+  .deck-actions button {
+    min-height: 2.5rem;
+  }
+
+  .deck-select {
+    flex-wrap: wrap;
+    align-items: flex-start;
   }
 }
