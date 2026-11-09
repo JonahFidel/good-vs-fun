@@ -87,14 +87,23 @@ export function useHoldToDrag({
       setPendingPointer(null)
     }
 
+    const handleSecondTouch = (event: TouchEvent) => {
+      // iOS Safari does not fire pointerdown for the second finger.
+      if (event.touches.length >= 2) {
+        setPendingPointer(null)
+      }
+    }
+
     window.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerdown', handleSecondPointer)
+    window.addEventListener('touchstart', handleSecondTouch, { passive: true })
     window.addEventListener('pointerup', handlePointerUp, { once: true })
     window.addEventListener('pointercancel', handlePointerUp, { once: true })
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerdown', handleSecondPointer)
+      window.removeEventListener('touchstart', handleSecondTouch)
       window.removeEventListener('pointerup', handlePointerUp)
       window.removeEventListener('pointercancel', handlePointerUp)
     }

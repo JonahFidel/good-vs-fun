@@ -217,6 +217,14 @@
     height: 11px;
   }
 
+  /* Invisible ~44px tap target around the 11px marker. */
+  .movie-point::before {
+    content: '';
+    position: absolute;
+    inset: -16px;
+    border-radius: 999px;
+  }
+
   .movie-point > span {
     font-size: 0.8rem;
     padding: 0.14rem 0.42rem;

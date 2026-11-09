@@ -126,6 +126,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     }, [])
 
     // One-finger pan on empty space; two-finger pinch-zoom on touch devices.
+    // Mouse/pen use Pointer Events. Touch uses Touch Events because iOS Safari
+    // does not deliver pointerdown for a second finger, so pointer-only pinch
+    // never starts on iPhone. Skipping pointer capture for touch also keeps
+    // the first finger from eating the rest of the gesture.
     useEffect(() => {
       const slot = slotRef.current
       if (!slot) return
@@ -160,26 +164,64 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         }
       }
 
-      function beginPinch() {
-        const pair = activePair()
-        if (!pair) return
+      function beginPinchFromPoints(a: PointerPos, b: PointerPos) {
         panRef.current = null
         capturedSlot.style.cursor = ''
         pinchRef.current = {
           origin: { ...stateRef.current },
-          originMidpoint: pointerMidpoint(pair[0], pair[1]),
-          originDistance: pointerDistance(pair[0], pair[1]),
+          originMidpoint: pointerMidpoint(a, b),
+          originDistance: pointerDistance(a, b),
         }
       }
 
+      function beginPinchFromPointers() {
+        const pair = activePair()
+        if (!pair) return
+        beginPinchFromPoints(pair[0], pair[1])
+      }
+
+      function applyPinch(currentA: PointerPos, currentB: PointerPos) {
+        const pinch = pinchRef.current
+        if (!pinch) return
+        stateRef.current = pinchTransform(
+          pinch.origin,
+          pinch.originMidpoint,
+          pinch.originDistance,
+          pointerMidpoint(currentA, currentB),
+          pointerDistance(currentA, currentB),
+        )
+        userTransformedRef.current = true
+        applyTransform()
+      }
+
+      function beginPan(id: number, clientX: number, clientY: number) {
+        panRef.current = {
+          pointerId: id,
+          x: clientX,
+          y: clientY,
+          tx: stateRef.current.tx,
+          ty: stateRef.current.ty,
+        }
+        capturedSlot.style.cursor = 'grabbing'
+      }
+
+      function movePan(id: number, clientX: number, clientY: number) {
+        if (!panRef.current || panRef.current.pointerId !== id) return
+        stateRef.current.tx = panRef.current.tx + (clientX - panRef.current.x)
+        stateRef.current.ty = panRef.current.ty + (clientY - panRef.current.y)
+        userTransformedRef.current = true
+        applyTransform()
+      }
+
       function onPointerDown(e: PointerEvent) {
+        if (e.pointerType === 'touch') return
         if (e.pointerType === 'mouse' && e.button !== 0) return
         pointersRef.current.set(e.pointerId, slotPoint(e.clientX, e.clientY))
         capturePointer(e.pointerId)
 
         if (pointersRef.current.size >= 2) {
           e.preventDefault()
-          beginPinch()
+          beginPinchFromPointers()
           return
         }
 
@@ -187,17 +229,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (target?.closest('.movie-point')) return
         if (isNearMoviePoint(e.clientX, e.clientY)) return
 
-        panRef.current = {
-          pointerId: e.pointerId,
-          x: e.clientX,
-          y: e.clientY,
-          tx: stateRef.current.tx,
-          ty: stateRef.current.ty,
-        }
-        capturedSlot.style.cursor = 'grabbing'
+        beginPan(e.pointerId, e.clientX, e.clientY)
       }
 
       function onPointerMove(e: PointerEvent) {
+        if (e.pointerType === 'touch') return
         if (!pointersRef.current.has(e.pointerId)) return
         pointersRef.current.set(e.pointerId, slotPoint(e.clientX, e.clientY))
 
@@ -205,29 +241,15 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           e.preventDefault()
           const pair = activePair()
           if (!pair) return
-          const pinch = pinchRef.current
-          stateRef.current = pinchTransform(
-            pinch.origin,
-            pinch.originMidpoint,
-            pinch.originDistance,
-            pointerMidpoint(pair[0], pair[1]),
-            pointerDistance(pair[0], pair[1]),
-          )
-          userTransformedRef.current = true
-          applyTransform()
+          applyPinch(pair[0], pair[1])
           return
         }
 
-        if (!panRef.current || panRef.current.pointerId !== e.pointerId) return
-        const dx = e.clientX - panRef.current.x
-        const dy = e.clientY - panRef.current.y
-        stateRef.current.tx = panRef.current.tx + dx
-        stateRef.current.ty = panRef.current.ty + dy
-        userTransformedRef.current = true
-        applyTransform()
+        movePan(e.pointerId, e.clientX, e.clientY)
       }
 
       function onPointerUp(e: PointerEvent) {
+        if (e.pointerType === 'touch') return
         if (!pointersRef.current.has(e.pointerId)) return
         pointersRef.current.delete(e.pointerId)
         if (panRef.current?.pointerId === e.pointerId) {
@@ -236,22 +258,75 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         }
         if (pinchRef.current) {
           if (pointersRef.current.size >= 2) {
-            beginPinch()
+            beginPinchFromPointers()
           } else {
             pinchRef.current = null
           }
         }
       }
 
+      function touchPoint(touch: Touch): PointerPos {
+        return slotPoint(touch.clientX, touch.clientY)
+      }
+
+      function beginPinchFromTouches(touches: TouchList) {
+        if (touches.length < 2) return
+        beginPinchFromPoints(touchPoint(touches[0]), touchPoint(touches[1]))
+      }
+
+      function onTouchStart(e: TouchEvent) {
+        if (e.touches.length >= 2) {
+          e.preventDefault()
+          beginPinchFromTouches(e.touches)
+          return
+        }
+
+        if (e.touches.length !== 1) return
+        const touch = e.touches[0]
+        const target = e.target as Element | null
+        if (target?.closest('.movie-point')) return
+        if (isNearMoviePoint(touch.clientX, touch.clientY)) return
+        beginPan(touch.identifier, touch.clientX, touch.clientY)
+      }
+
+      function onTouchMove(e: TouchEvent) {
+        if (pinchRef.current && e.touches.length >= 2) {
+          e.preventDefault()
+          applyPinch(touchPoint(e.touches[0]), touchPoint(e.touches[1]))
+          return
+        }
+
+        if (!panRef.current || e.touches.length !== 1) return
+        e.preventDefault()
+        const touch = e.touches[0]
+        movePan(touch.identifier, touch.clientX, touch.clientY)
+      }
+
+      function onTouchEnd(e: TouchEvent) {
+        if (e.touches.length >= 2) {
+          beginPinchFromTouches(e.touches)
+          return
+        }
+        pinchRef.current = null
+        panRef.current = null
+        capturedSlot.style.cursor = ''
+      }
+
       function preventNativeGesture(e: Event) {
         e.preventDefault()
       }
+
+      const touchOpts: AddEventListenerOptions = { passive: false, capture: true }
 
       // Capture phase so a finger on a movie label still counts toward pinch.
       capturedSlot.addEventListener('pointerdown', onPointerDown, { capture: true })
       capturedSlot.addEventListener('pointermove', onPointerMove)
       capturedSlot.addEventListener('pointerup', onPointerUp)
       capturedSlot.addEventListener('pointercancel', onPointerUp)
+      capturedSlot.addEventListener('touchstart', onTouchStart, touchOpts)
+      capturedSlot.addEventListener('touchmove', onTouchMove, touchOpts)
+      capturedSlot.addEventListener('touchend', onTouchEnd, touchOpts)
+      capturedSlot.addEventListener('touchcancel', onTouchEnd, touchOpts)
       // Safari page-zoom gestures fight custom pinch unless they are cancelled.
       capturedSlot.addEventListener('gesturestart', preventNativeGesture)
       capturedSlot.addEventListener('gesturechange', preventNativeGesture)
@@ -262,6 +337,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         capturedSlot.removeEventListener('pointermove', onPointerMove)
         capturedSlot.removeEventListener('pointerup', onPointerUp)
         capturedSlot.removeEventListener('pointercancel', onPointerUp)
+        capturedSlot.removeEventListener('touchstart', onTouchStart, touchOpts)
+        capturedSlot.removeEventListener('touchmove', onTouchMove, touchOpts)
+        capturedSlot.removeEventListener('touchend', onTouchEnd, touchOpts)
+        capturedSlot.removeEventListener('touchcancel', onTouchEnd, touchOpts)
         capturedSlot.removeEventListener('gesturestart', preventNativeGesture)
         capturedSlot.removeEventListener('gesturechange', preventNativeGesture)
         capturedSlot.removeEventListener('gestureend', preventNativeGesture)
