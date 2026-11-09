@@ -41,6 +41,7 @@
   html:has(.deck-page-layout) body {
     overflow: hidden;
     height: 100%;
+    height: var(--deck-viewport-h);
     overscroll-behavior: none;
     /* pan-y: scrolling only. manipulation still allows Safari page pinch-zoom. */
     touch-action: pan-y;
@@ -67,8 +68,8 @@
   }
 
   #root:has(.deck-page-layout) {
-    height: 100dvh;
-    max-height: 100dvh;
+    height: var(--deck-viewport-h);
+    max-height: var(--deck-viewport-h);
     padding: 0;
     overflow: hidden;
   }
@@ -414,7 +415,8 @@
     --max-plot: max(
       12rem,
       calc(
-        100dvh - var(--mobile-header) - var(--mobile-frame) - var(--mobile-sidebar-min) -
+        var(--deck-viewport-h) - var(--mobile-header) - var(--mobile-frame) -
+          var(--mobile-sidebar-min) -
           var(--plot-chrome-y)
       )
     );
@@ -464,8 +466,21 @@
     display: none;
   }
 
-  .grid-tick {
-    font-size: 0.8rem;
+  /*
+    Desktop ticks are #9ca3af on white (~2.5:1). On a ~370px phone square
+    those numbers ARE the 0-10 scale, so they need to read as text.
+  */
+  .grid-tick,
+  .grid-wrapper--example .grid-tick {
+    font-size: 0.85rem;
+    color: #4b5563;
+  }
+
+  .grid-tick-x::before,
+  .grid-tick-y::before,
+  .grid-wrapper--example .grid-tick-x::before,
+  .grid-wrapper--example .grid-tick-y::before {
+    background: #6b7280;
   }
 
   .movie-point {
@@ -817,7 +832,8 @@
       max(
         10rem,
         calc(
-          100dvh - env(safe-area-inset-top, 0px) - var(--landscape-header) -
+          var(--deck-viewport-h) - env(safe-area-inset-top, 0px) -
+            var(--landscape-header) -
             var(--landscape-pad-y) - var(--plot-chrome-y)
         )
       ),

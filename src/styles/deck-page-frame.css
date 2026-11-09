@@ -8,7 +8,7 @@ html:has(.deck-page-layout) body {
 }
 
 #root:has(.deck-page-layout) {
-  height: 100dvh;
+  height: var(--deck-viewport-h);
   box-sizing: border-box;
   padding: 0;
   overflow: hidden;
