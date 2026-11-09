@@ -30,7 +30,7 @@ export function useDeckSelection() {
       const target = event.target as Element
       if (
         target.closest('.movie-list li') ||
-        target.closest('.movie-selection-bar') ||
+        target.closest('.movie-selection-panel') ||
         target.closest('button') ||
         target.closest('input') ||
         target.closest('select') ||

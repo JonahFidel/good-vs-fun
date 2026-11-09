@@ -1,5 +1,7 @@
-import { ScoreSlider } from './ScoreSlider'
+import { formatScore } from '../../lib/format'
 import type { Movie } from '../../lib/types'
+import { ScoreSlider } from './ScoreSlider'
+import { SidebarCollapse } from './SidebarCollapse'
 
 export function MovieSelectionPanel({
   movie,
@@ -20,8 +22,14 @@ export function MovieSelectionPanel({
   onGoodChange: (value: number) => void
   onScoreCommit: () => void
 }) {
+  const scoreMeta = `${formatScore(movie.fun)} / ${formatScore(movie.good)}`
+
   return (
-    <div className="deck-sidebar-section movie-selection-panel">
+    <SidebarCollapse
+      title="Selected"
+      meta={`${movie.title} · ${scoreMeta}`}
+      className="deck-sidebar-section movie-selection-panel"
+    >
       <div className="movie-selection-bar">
         <div className="movie-selection-info">
           <span className="movie-selection-label">Selected</span>
@@ -58,6 +66,6 @@ export function MovieSelectionPanel({
           onCommit={onScoreCommit}
         />
       </div>
-    </div>
+    </SidebarCollapse>
   )
 }

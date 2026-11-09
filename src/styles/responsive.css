@@ -175,6 +175,31 @@
     border-bottom: 1px solid #e2e8f0;
   }
 
+  .movie-selection-panel[open] > .deck-sidebar-collapse-summary {
+    border-bottom-color: #bfdbfe;
+  }
+
+  /*
+    Tapping a grid point used to inject two 44px sliders into the 11-16rem
+    strip, burying the list again. Keep Selected collapsed; the summary
+    already has the title and scores.
+  */
+  .movie-selection-info {
+    display: none;
+  }
+
+  .movie-selection-actions {
+    width: 100%;
+  }
+
+  .btn-rename-selected,
+  .btn-delete-selected {
+    flex: 1;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    touch-action: manipulation;
+  }
+
   .deck-sidebar-collapse-summary::-webkit-details-marker,
   .deck-sidebar-collapse-summary::marker {
     display: none;
