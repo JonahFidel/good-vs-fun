@@ -484,18 +484,18 @@
   }
 
   /*
-    Sit labels just inside the axes. The 1-unit margin is ~13-31px on phone
-    squares; even with line-height 1, "10" plus a 10px outset still clips
-    on SE landscape (~160-180px). Inverse-scale so pinch/double-tap does
-    not blow these in-grid numbers up over movies.
+    Keep 0-10 numbers in the 1-unit margin so they do not cover Fun≈0 /
+    Good≈0 movies at default zoom. Inverse-scale so pinch/double-tap does
+    not blow the numbers up over movies. Landscape uses a smaller label
+    below so a ~13px SE margin can still fit "10".
   */
   .grid-tick-x,
   .grid-tick-end-x {
-    transform: translate(-50%, calc(-100% - 6px)) scale(var(--plot-inverse-scale, 1));
+    transform: translate(-50%, calc(100% + 4px)) scale(var(--plot-inverse-scale, 1));
   }
 
   .grid-tick-y {
-    transform: translate(6px, -50%) scale(var(--plot-inverse-scale, 1));
+    transform: translate(calc(-100% - 4px), -50%) scale(var(--plot-inverse-scale, 1));
   }
 
   .grid-tick-x::before,
@@ -506,9 +506,9 @@
   }
 
   /*
-    1-10 along a ~160-280px axis collides and crowds the scoring region
-    once labels sit inside. Keep 2/4/5/6/8/10 at fit zoom; restore 1/3/7/9
-    after pinch so a zoomed corner still has unit precision.
+    1-10 along a ~160-280px axis collides in the gutter. Keep 2/4/5/6/8/10
+    at fit zoom; restore 1/3/7/9 after pinch so a zoomed corner still has
+    unit precision.
   */
   .grid-tick[data-tick='1'],
   .grid-tick[data-tick='3'],
@@ -825,24 +825,6 @@
 }
 
 /*
-  Portrait squares have ~31px of 1-unit margin, enough for 0.85rem labels
-  with line-height 1. Keep numbers in that margin so they do not cover
-  movies on the Good=0 / Fun=0 edges at default zoom. Landscape margin is
-  ~13px, too tight for "10", so those stay inside (rule above).
-*/
-@media (max-width: 900px) and (orientation: portrait),
-  (pointer: coarse) and (max-width: 1023px) and (orientation: portrait) {
-  .grid-tick-x,
-  .grid-tick-end-x {
-    transform: translate(-50%, calc(100% + 4px)) scale(var(--plot-inverse-scale, 1));
-  }
-
-  .grid-tick-y {
-    transform: translate(calc(-100% - 4px), -50%) scale(var(--plot-inverse-scale, 1));
-  }
-}
-
-/*
   iPhone landscape: the portrait stack sizes a square from remaining height
   after an 11rem sidebar strip, so the plot collapses to ~12rem. Put plot and
   sidebar side by side and size the square from the short viewport edge.
@@ -929,6 +911,27 @@
     aspect-ratio: auto;
     justify-self: start;
     align-self: start;
+  }
+
+  /*
+    A 10rem-floor landscape square has only ~13px of 1-unit margin, too
+    tight for the 0.85rem in-axis "10". Those labels covered Fun≈0 /
+    Good≈0 at default zoom. 0.7rem plus a 2px outset fits in that margin
+    so the 0-10 grid stays clear. Taller landscape plots still use this
+    size so the numbers stay in the gutter instead of on movies.
+  */
+  .grid-tick,
+  .grid-wrapper--example .grid-tick {
+    font-size: 0.7rem;
+  }
+
+  .grid-tick-x,
+  .grid-tick-end-x {
+    transform: translate(-50%, calc(100% + 2px)) scale(var(--plot-inverse-scale, 1));
+  }
+
+  .grid-tick-y {
+    transform: translate(calc(-100% - 2px), -50%) scale(var(--plot-inverse-scale, 1));
   }
 
   .deck-rail {
