@@ -335,3 +335,102 @@
     align-items: flex-start;
   }
 }
+
+/*
+  iPhone landscape: the portrait stack sizes a square from remaining height
+  after an 11rem sidebar strip, so the plot collapses to ~12rem. Put plot and
+  sidebar side by side and size the square from the short viewport edge.
+*/
+@media (max-width: 900px) and (orientation: landscape) {
+  .app:has(.deck-page-layout) > .header {
+    padding: 0.12rem 0.5rem;
+    padding-top: max(0.12rem, env(safe-area-inset-top));
+    padding-left: max(0.5rem, env(safe-area-inset-left));
+    padding-right: max(0.5rem, env(safe-area-inset-right));
+  }
+
+  .app:has(.deck-page-layout) > .header .header-brand {
+    font-size: 0.72rem;
+  }
+
+  .app:has(.deck-page-layout) > .header .nav-link {
+    min-height: 1.75rem;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.72rem;
+  }
+
+  .app:has(.deck-page-layout) > .layout {
+    padding: 0.12rem max(0.25rem, env(safe-area-inset-right))
+      max(0.12rem, env(safe-area-inset-bottom)) max(0.25rem, env(safe-area-inset-left));
+    gap: 0.25rem;
+  }
+
+  .deck-page-layout {
+    flex-direction: row;
+    gap: 0.25rem;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .deck-page-layout .grid-panel {
+    flex: 0 0 auto;
+    width: auto;
+    height: auto;
+    max-height: 100%;
+    align-self: center;
+  }
+
+  .deck-page-layout .grid-wrapper {
+    --plot-chrome-y: 2.1rem;
+    width: auto;
+    max-width: none;
+    height: auto;
+    max-height: 100%;
+    align-self: center;
+    padding: 0.25rem;
+    grid-template-columns: 1.65rem minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .deck-page-layout .grid-zoom-slot {
+    --landscape-header: 2.35rem;
+    --landscape-pad-y: calc(0.12rem + max(0.12rem, env(safe-area-inset-bottom, 0px)));
+    /* Sidebar min plus Fun-axis chrome, wrapper padding, and the row gap. */
+    --landscape-sidebar-min: 15.5rem;
+    --max-plot: min(
+      var(--plot-side-max),
+      max(
+        10rem,
+        calc(
+          100dvh - env(safe-area-inset-top, 0px) - var(--landscape-header) -
+            var(--landscape-pad-y) - var(--plot-chrome-y)
+        )
+      ),
+      calc(
+        100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) -
+          var(--landscape-sidebar-min)
+      )
+    );
+    --plot-side: var(--max-plot);
+    width: var(--max-plot);
+    height: var(--max-plot);
+    max-width: var(--max-plot);
+    max-height: var(--max-plot);
+    aspect-ratio: auto;
+    justify-self: start;
+    align-self: start;
+  }
+
+  .deck-rail {
+    flex: 1 1 0;
+    min-width: 12rem;
+    height: auto;
+    max-height: 100%;
+    align-self: stretch;
+  }
+
+  .deck-sidebar {
+    padding: 0.3rem 0.3rem max(0.3rem, env(safe-area-inset-bottom), var(--keyboard-inset, 0px));
+    gap: 0.35rem;
+  }
+}
