@@ -488,7 +488,12 @@
   .movie-point--highlighted > .movie-label,
   .grid-zoom-slot--zoomed .movie-point > .movie-label {
     opacity: 1;
-    pointer-events: auto;
+    /*
+      A selected wrapping pill is up to half the square. Capturing taps would
+      hide nearby movies and empty-space deselect at fit zoom. The 44px
+      marker still selects.
+    */
+    pointer-events: none;
   }
 
   /* Ghost titles are decorative; leave them out of pan / double-tap hit testing. */
