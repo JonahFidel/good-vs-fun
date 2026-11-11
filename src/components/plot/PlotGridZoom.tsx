@@ -728,7 +728,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
         if (e.touches.length === 1) {
-          endTouchGesture()
+          // 2→1 must keep the remaining finger as a pan. Ending the whole
+          // gesture here left pinch-then-slide dead until a lift and retouch,
+          // so a zoomed iPhone grid could not be dragged with the finger
+          // that was still down.
+          pinchRef.current = null
+          const touch = e.touches[0]
+          beginPan(touch.identifier, touch.clientX, touch.clientY)
           return
         }
         const ended = e.changedTouches[0]
