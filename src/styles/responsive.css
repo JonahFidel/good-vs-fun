@@ -1793,6 +1793,33 @@
   }
 
   /*
+    Primary 7-line titles at labels-visible already grow into the Fun
+    10 / Fun 0 gutter. Overlay names wait for ghost-label zoom and
+    stayed vertically centered, so a 7-line compare pill like Pirates
+    (9.55 / 9.83) still covers a 1-unit Fun neighbor such as Kill
+    Bill V1 (8.67 / 9.25) on the same label side. Grow unstacked
+    overlays into that same gutter. Coincident north/south keep
+    their interior slot so they do not restack on the primary that
+    already moved into the gutter. Stacked overlays stay one-line
+    and do not need this.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10 > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0 > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
     Stacked groups put every title in one pill. Keep only the active line
     until 2.2x so cycling changes the compact title; the count chip is
     already hidden on the selected marker. At 2.2x stacks list every

@@ -10,6 +10,10 @@ const EDGE_GOOD_LOW = 1
 const EDGE_GOOD_HIGH = 9
 /** When staying on the primary's side, sit toward Fun 0 in the upper half. */
 const OFFSET_SOUTH_FUN = 5
+/** Matches MoviePoints: grow into the Fun 10 gutter at ghost-label zoom. */
+const LABEL_SOUTH_FUN = 9
+/** Matches MoviePoints: grow into the Fun 0 gutter at ghost-label zoom. */
+const LABEL_NORTH_FUN = 1
 
 function overlayLabelPlacement({
   good,
@@ -110,6 +114,17 @@ export function GhostPoints({
           coincident,
           sharedSlot: siblingKeys.has(group.key),
         })
+        // Coincident north/south already occupies a vertical slot next
+        // to the primary. Growing those into the Fun 10 / Fun 0 gutter
+        // would restack on the primary that already moved there.
+        // Centered overlays at Fun 9-10 / Fun 0-1 still cover 1-unit
+        // neighbors, so only those grow into the gutter.
+        const hasVerticalSlot =
+          labelBelow || labelAbove || labelFarBelow || labelFarAbove
+        const gutterIntoFun10 =
+          !hasVerticalSlot && group.fun >= LABEL_SOUTH_FUN
+        const gutterIntoFun0 =
+          !hasVerticalSlot && !gutterIntoFun10 && group.fun <= LABEL_NORTH_FUN
 
         return (
           <div
@@ -124,6 +139,8 @@ export function GhostPoints({
               labelAbove ? 'ghost-point--label-north' : '',
               labelFarBelow ? 'ghost-point--label-south-far' : '',
               labelFarAbove ? 'ghost-point--label-north-far' : '',
+              gutterIntoFun10 ? 'ghost-point--gutter-fun-10' : '',
+              gutterIntoFun0 ? 'ghost-point--gutter-fun-0' : '',
               underSelected ? 'ghost-point--under-selected' : '',
             ]
               .filter(Boolean)
