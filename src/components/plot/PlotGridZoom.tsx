@@ -167,8 +167,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const inertiaRafRef = useRef<number | null>(null)
     const zoomAnimRafRef = useRef<number | null>(null)
     // Destination of the in-flight (or last) zoom ease. Catching a
-    // double-tap zoom-in must land here instead of the interpolated
-    // ~1.1x leftover, or lift would settle back to the locked square.
+    // double-tap zoom-in (one finger or a two-finger plant) must land
+    // here instead of the interpolated ~1.1x leftover, or lift would
+    // settle back to the locked square.
     const lastZoomTargetRef = useRef<ZoomState | null>(null)
     // A tap that stops inertia or a zoom ease should not deselect.
     const caughtMotionRef = useRef(false)
@@ -419,8 +420,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // and does not hide the selected title. Catching a zoom-out ease
     // (or a leftover ~1.1x) still eases home on lift so covering pan
     // cannot unlock for a few pixels of overflow. Catching a zoom-in
-    // ease completes that zoom before pan, so a double-tap then
-    // immediate drag is not left at ~1.1x and snapped back to fit.
+    // ease completes that zoom before pan or pinch, so a double-tap then
+    // immediate drag or two-finger plant is not left at ~1.1x and snapped
+    // back to fit.
     // Mouse pan, like wheel and Touch Events, sits on the
     // plot card so a drag that starts on a Fun/Good axis still pans the
     // zoomed grid. Safari GestureEvents listen on window capture because
@@ -650,7 +652,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       function beginPinchFromPoints(a: PointerPos, b: PointerPos) {
-        stopTransientMotion()
+        // Same zoom-in catch as one-finger pan: two fingers can land in
+        // one touchstart, which never ran the 1-finger commit. Pinching
+        // from the interpolated ~1.1x leftover would settle back to fit
+        // on a light pinch-out.
+        catchInterruptedZoomIn()
         resetPanVelocity()
         panRef.current = null
         setPanCursor(false)
@@ -812,6 +818,19 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const fit = fitTransform()
         userTransformedRef.current = !fit || !isNearFit(target, fit)
         applyTransform()
+        // Pinch/pan origin must be this clamped view. A stale
+        // unconstrained leftover from before the ease would snap the
+        // first 1→2 / 2-finger move back to the interpolated ~1.1x.
+        pinchUnconstrainedRef.current = { ...stateRef.current }
+      }
+
+      // User-gesture interrupt only. animateTo also stops the rAF after
+      // writing lastZoomTarget; committing there would jump to `next`
+      // and skip the ease.
+      function catchInterruptedZoomIn() {
+        const catchingZoom = zoomAnimRafRef.current != null
+        stopTransientMotion()
+        if (catchingZoom) commitZoomInIfCaught()
       }
 
       function applyDoubleTap(point: PointerPos) {
@@ -1067,14 +1086,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
         if (fingers.length !== 1) return
         const touch = fingers[0]
-        // Check before stopTransientMotion clears the rAF ids. A finger
+        // Check before catchInterruptedZoomIn clears the rAF ids. A finger
         // that stops a flicked coast (or in-flight ease) is a catch, not
         // an empty-grid tap.
         caughtMotionRef.current =
           inertiaRafRef.current != null || zoomAnimRafRef.current != null
-        const catchingZoom = zoomAnimRafRef.current != null
-        stopTransientMotion()
-        if (catchingZoom) commitZoomInIfCaught()
+        catchInterruptedZoomIn()
         pinchOccurredRef.current = false
         // A follow-up finger may be the second half of a double-tap or a
         // pan. Cancel the pending empty-tap deselect without clearing
