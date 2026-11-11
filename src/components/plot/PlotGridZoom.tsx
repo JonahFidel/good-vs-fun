@@ -200,9 +200,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       return () => capturedSlot.removeEventListener('wheel', onWheel)
     }, [])
 
-    // One-finger pan; two-finger pinch-zoom on touch devices. Double-tap
-    // toggles fit vs a 2.2x zoom toward the tap (one-handed iPhone zoom, and
-    // a way back after pinch). Mouse/pen use Pointer Events and still skip
+    // One-finger pan; two-finger pinch-zoom on touch devices. Double-tap on
+    // empty grid toggles fit vs a 2.2x zoom toward the tap (one-handed
+    // iPhone zoom, and a way back after pinch). Taps on movies select.
+    // Mouse/pen use Pointer Events and still skip
     // pan when the cursor is on a movie so hold-to-drag can start. Touch uses
     // Touch Events because iOS Safari does not deliver pointerdown for a
     // second finger, so pointer-only pinch never starts on iPhone. Skipping
@@ -354,25 +355,16 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         applyTransform()
       }
 
-      function isStackedMovieTouch(target: EventTarget | null) {
-        if (!(target instanceof Element)) return false
-        const point = target.closest('.movie-point:not(.ghost-point)')
-        if (!point) return false
-        return point.querySelectorAll('[data-movie-id]').length > 1
-      }
-
-      function maybeDoubleTap(
-        clientX: number,
-        clientY: number,
-        target: EventTarget | null,
-      ) {
+      function maybeDoubleTap(clientX: number, clientY: number) {
         if (gestureMovedRef.current || pinchOccurredRef.current) {
           lastTapRef.current = null
           return false
         }
-        // Stacked markers cycle titles on tap. Counting those toward
-        // double-tap would zoom on the second title instead of advancing.
-        if (isStackedMovieTouch(target)) {
+        // Marker taps select (and stacked markers cycle). On a fitted
+        // ~370px square many movies sit inside DOUBLE_TAP_PX of each
+        // other, so tap-A-then-tap-B would jump to 2.2x instead of
+        // switching the title. Empty-space double-tap still zooms.
+        if (isNearMoviePoint(clientX, clientY)) {
           lastTapRef.current = null
           return false
         }
@@ -517,7 +509,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         }
         const ended = e.changedTouches[0]
         if (ended) {
-          if (maybeDoubleTap(ended.clientX, ended.clientY, e.target)) {
+          if (maybeDoubleTap(ended.clientX, ended.clientY)) {
             e.preventDefault()
           }
         } else {
