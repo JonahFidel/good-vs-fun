@@ -1346,6 +1346,9 @@
     selected/highlighted so the ring you are looking at still paints.
     GhostPoints also flips that coincident title to the other side
     of the primary, so both names read without sharing a pill.
+    At Good <= 1 / Good >= 9 that other side is off-canvas (the
+    namesake Good 9-10 corner especially), so those stay on the
+    primary's side and shift north/south toward the scoring region.
   */
   .grid-zoom-slot--ghost-labels .ghost-point {
     opacity: 1;
@@ -1382,6 +1385,22 @@
 
   .ghost-point--label-start > .movie-label {
     transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  .ghost-point.ghost-point--label-south > .movie-label {
+    transform: translate(calc(100% + 9px), calc(50% + 4px));
+  }
+
+  .ghost-point.ghost-point--label-south.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), calc(50% + 4px));
+  }
+
+  .ghost-point.ghost-point--label-north > .movie-label {
+    transform: translate(calc(100% + 9px), calc(-150% - 4px));
+  }
+
+  .ghost-point.ghost-point--label-north.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), calc(-150% - 4px));
   }
 
   /*

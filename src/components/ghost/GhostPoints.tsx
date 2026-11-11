@@ -5,6 +5,11 @@ import type { PositionGroup } from '../../lib/groupByPosition'
 const LABEL_FLIP_GOOD = 7
 /** Matches MoviePoints: primary titles sit on the right below this Good score. */
 const PRIMARY_LABEL_FLIP_GOOD = 5
+/** Opposite-side coincident titles clip off the square at Good 0 / Good 10. */
+const EDGE_GOOD_LOW = 1
+const EDGE_GOOD_HIGH = 9
+/** When staying on the primary's side, sit toward Fun 0 in the upper half. */
+const OFFSET_SOUTH_FUN = 5
 
 export function GhostPoints({
   groups,
@@ -26,10 +31,24 @@ export function GhostPoints({
         const coincident = primaryKeys.has(group.key)
         const underSelected = raisedPrimaryKeys.has(group.key)
         // Same-score overlay titles share a side at Good < 5 and Good > 7.
-        // Put them on the other side of the primary so both names read.
-        const labelOnLeft = coincident
-          ? group.good < PRIMARY_LABEL_FLIP_GOOD
-          : group.good > LABEL_FLIP_GOOD
+        // Put them on the other side of the primary so both names read,
+        // except at Good 0 / Good 10 where that other side is off-canvas.
+        let labelOnLeft = group.good > LABEL_FLIP_GOOD
+        let labelBelow = false
+        let labelAbove = false
+        if (coincident) {
+          const primaryOnRight = group.good < PRIMARY_LABEL_FLIP_GOOD
+          const oppositeWouldClip = primaryOnRight
+            ? group.good <= EDGE_GOOD_LOW
+            : group.good >= EDGE_GOOD_HIGH
+          if (oppositeWouldClip) {
+            labelOnLeft = !primaryOnRight
+            labelBelow = group.fun >= OFFSET_SOUTH_FUN
+            labelAbove = !labelBelow
+          } else {
+            labelOnLeft = primaryOnRight
+          }
+        }
 
         return (
           <div
@@ -39,6 +58,8 @@ export function GhostPoints({
               'ghost-point',
               variantClass,
               labelOnLeft ? 'ghost-point--label-start' : '',
+              labelBelow ? 'ghost-point--label-south' : '',
+              labelAbove ? 'ghost-point--label-north' : '',
               underSelected ? 'ghost-point--under-selected' : '',
             ]
               .filter(Boolean)

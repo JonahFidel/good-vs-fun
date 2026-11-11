@@ -74,6 +74,28 @@
   transform: translate(calc(-100% - 7px), -50%);
 }
 
+/*
+  Coincident overlays at Good 0 / Good 10 stay on the primary's side so
+  the title does not leave the square. Sit fully below/above the
+  centered primary pill (same height, 4px gap) toward the scoring
+  region: south toward Fun 0, north toward Fun 10.
+*/
+.ghost-point.ghost-point--label-south > .movie-label {
+  transform: translate(calc(100% + 7px), calc(50% + 4px));
+}
+
+.ghost-point.ghost-point--label-south.ghost-point--label-start > .movie-label {
+  transform: translate(calc(-100% - 7px), calc(50% + 4px));
+}
+
+.ghost-point.ghost-point--label-north > .movie-label {
+  transform: translate(calc(100% + 7px), calc(-150% - 4px));
+}
+
+.ghost-point.ghost-point--label-north.ghost-point--label-start > .movie-label {
+  transform: translate(calc(-100% - 7px), calc(-150% - 4px));
+}
+
 .ghost-point--1 > .movie-label {
   background: rgba(245, 243, 255, 0.96);
   color: #5b21b6;
