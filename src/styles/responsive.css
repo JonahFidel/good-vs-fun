@@ -1305,7 +1305,8 @@
   .ghost-compare-row select,
   .deck-sidebar .ghost-compare-row select,
   .deck-form input,
-  .deck-toolbar select {
+  .deck-toolbar select,
+  .deck-rename-input {
     font-size: 16px;
   }
 
@@ -1351,9 +1352,10 @@
   /*
     Inline rename replaces window.prompt, which is a tiny native field on
     iPhone. Same 16px / 44px padding-box as Add Movie so Safari does not
-    page-zoom, and the caret is a real tap target in the sheet body.
+    page-zoom, and the caret is a real tap target in the sheet or list row.
   */
-  .movie-selection-rename-input {
+  .movie-selection-rename-input,
+  .deck-rename-input {
     min-height: 2.75rem;
     padding: 0.55rem 0.7rem;
     font-size: 16px;
@@ -1748,7 +1750,8 @@
   }
 
   .deck-form input,
-  .deck-toolbar select {
+  .deck-toolbar select,
+  .deck-rename-input {
     font-size: 16px;
     min-height: 2.75rem;
     padding: 0.55rem 0.7rem;
@@ -1774,6 +1777,17 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+  }
+
+  .deck-list li.deck-list-item--renaming {
+    cursor: text;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  .deck-rename-input {
+    touch-action: manipulation;
+    -webkit-touch-callout: default;
   }
 
   .deck-select {
