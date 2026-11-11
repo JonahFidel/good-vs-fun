@@ -22,12 +22,12 @@ export function MovieSelectionPanel({
   onGoodChange: (value: number) => void
   onScoreCommit: () => void
 }) {
-  const scoreMeta = `${formatScore(movie.fun)} / ${formatScore(movie.good)}`
+  const scoreMeta = `F ${formatScore(movie.fun)} · G ${formatScore(movie.good)}`
 
   return (
     <SidebarCollapse
-      title="Selected"
-      meta={`${movie.title} · ${scoreMeta}`}
+      title={movie.title}
+      meta={scoreMeta}
       className="deck-sidebar-section movie-selection-panel"
     >
       <div className="movie-selection-bar">

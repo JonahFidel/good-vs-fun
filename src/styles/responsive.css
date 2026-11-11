@@ -438,6 +438,28 @@
     text-align: right;
   }
 
+  /*
+    Fit-zoom Good/Fun live in this bar, not on the canvas. The summary
+    used to be "Selected" plus "title · scores" in one ellipsizing meta
+    string, so a tap on Pirates of the Caribbean (Fun 9.55 / Good 9.83)
+    hid the only default-zoom score readout. Title can ellipsize; F/G
+    stay. Undo the uppercase summary so the movie name stays readable.
+  */
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 0.8rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #1e3a8a;
+  }
+
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta {
+    flex: 0 0 auto;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
   .deck-sidebar-collapse-summary::after {
     content: '';
     width: 0.42rem;
