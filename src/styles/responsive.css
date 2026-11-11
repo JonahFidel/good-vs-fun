@@ -851,6 +851,19 @@
   }
 
   /*
+    The chip shares the south/west flip with selected titles. Example
+    stacks sit at Fun 9.05 (chip below) and a tap then grows the title
+    down or parks a compact landscape name on that same corner, so the
+    "2" covers the only default-zoom readout. Once selected, cycling
+    the marker and the Selected bar already show it is a stack.
+  */
+  .movie-point--selected > .movie-point-count,
+  .movie-point.dragging > .movie-point-count,
+  .movie-point--highlighted > .movie-point-count {
+    display: none;
+  }
+
+  /*
     30+ truncated pills on a ~370px square hide the grid. Keep dots at fit
     zoom and through light pinch; show the selected title, then restore all
     titles at double-tap zoom (2.2x) when a cell is ~68px, not at 1.4x (~43px).
