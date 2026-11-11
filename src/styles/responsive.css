@@ -716,13 +716,25 @@
   /*
     Fun 10 must stay on the left axis so the fitted scale reads 0-10 as
     one column. Parking it in the top gutter made typical iPhone plots
-    look like Fun ended at 8, with a stray 10 at Good=10. 0.85rem "10"
-    plus the 4px outset needs ~23px (~17.5rem square). Real phones are
-    ~320px and already fit; only the 12rem floor is too narrow, so the
-    top-gutter fallback is a container query, not the default.
-    right: auto, or left+right on a 0-size anchor would collapse the box.
+    look like Fun ended at 8, with a stray 10 at Good=10.
+
+    0.85rem "10" plus the 4px outset needs ~23px (~17.5rem square).
+    SE landscape with the URL bar is ~278-289px, which hit that query
+    and moved 10 even though a slightly smaller left-axis "10" still
+    fits. Shrink just that two-digit label so 0-10 stays one column
+    down to the 12rem floor. Only the 10rem landscape floor (~13px
+    gutter) is tighter than 0.7rem "10"; that last resort still uses
+    the top gutter. right: auto, or left+right on a 0-size anchor
+    would collapse the box.
   */
   @container (max-width: 17.5rem) {
+    .grid-tick-y:not(.grid-tick-y-right)[data-tick='10'] {
+      font-size: 0.7rem;
+      --grid-tick-outset-major: 2px;
+    }
+  }
+
+  @container (max-width: 12rem) {
     .grid-tick-y:not(.grid-tick-y-right)[data-tick='10'] > .grid-tick-label {
       right: auto;
       left: 0;
@@ -1312,14 +1324,15 @@
     typical iPhone squares to ~280-360px, the same size as portrait, so
     those numbers can stay the readable 0.85rem / 4px gutter. Keep the
     compact ticks only on the 10rem-floor square, where 0.85rem still clips.
-    Fun 10 placement then follows the portrait 17.5rem top-gutter fallback
-    instead of a landscape undo that assumed 0.7rem would always fit left.
+    Fun 10 stays on the left with a 0.7rem label below 17.5rem; only the
+    12rem/10rem floors still use the top-gutter last resort.
   */
   @container (max-width: 14rem) {
     .grid-tick,
     .grid-wrapper--example .grid-tick {
       font-size: 0.7rem;
-      /* 2px plus 0.7rem "10" fits the ~13px SE-floor landscape margin. */
+      /* 2px plus 0.7rem "10" fits a 14rem gutter; the 10rem floor
+         still uses the 12rem Fun 10 top-gutter last resort. */
       --grid-tick-outset-major: 2px;
     }
   }
