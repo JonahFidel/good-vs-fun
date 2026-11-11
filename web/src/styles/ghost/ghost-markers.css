@@ -60,7 +60,7 @@
 }
 
 /* Ghost labels appear on the right to minimise overlap with primary labels */
-.ghost-point > span {
+.ghost-point > .movie-label {
   left: auto;
   right: 0;
   transform: translate(calc(100% + 7px), -50%);
@@ -68,13 +68,64 @@
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.1);
 }
 
-.ghost-point--1 > span {
+.ghost-point--label-start > .movie-label {
+  left: 0;
+  right: auto;
+  transform: translate(calc(-100% - 7px), -50%);
+}
+
+/*
+  Coincident overlays at Good 0 / Good 10 stay on the primary's side so
+  the title does not leave the square. Sit fully below/above the
+  centered primary pill (same height, 4px gap) toward the scoring
+  region: south toward Fun 0, north toward Fun 10.
+
+  A second overlay at that same score takes the next opening in the
+  same direction so purple and teal do not share one pill.
+
+  With no primary, both overlays still share the default overlay
+  side. The second takes the other side, or north/south of the
+  centered first title at Good 0 / Good 10.
+*/
+.ghost-point.ghost-point--label-south > .movie-label {
+  transform: translate(calc(100% + 7px), calc(50% + 4px));
+}
+
+.ghost-point.ghost-point--label-south.ghost-point--label-start > .movie-label {
+  transform: translate(calc(-100% - 7px), calc(50% + 4px));
+}
+
+.ghost-point.ghost-point--label-north > .movie-label {
+  transform: translate(calc(100% + 7px), calc(-150% - 4px));
+}
+
+.ghost-point.ghost-point--label-north.ghost-point--label-start > .movie-label {
+  transform: translate(calc(-100% - 7px), calc(-150% - 4px));
+}
+
+.ghost-point.ghost-point--label-south-far > .movie-label {
+  transform: translate(calc(100% + 7px), calc(150% + 8px));
+}
+
+.ghost-point.ghost-point--label-south-far.ghost-point--label-start > .movie-label {
+  transform: translate(calc(-100% - 7px), calc(150% + 8px));
+}
+
+.ghost-point.ghost-point--label-north-far > .movie-label {
+  transform: translate(calc(100% + 7px), calc(-250% - 8px));
+}
+
+.ghost-point.ghost-point--label-north-far.ghost-point--label-start > .movie-label {
+  transform: translate(calc(-100% - 7px), calc(-250% - 8px));
+}
+
+.ghost-point--1 > .movie-label {
   background: rgba(245, 243, 255, 0.96);
   color: #5b21b6;
   border: 1px solid #c4b5fd;
 }
 
-.ghost-point--2 > span {
+.ghost-point--2 > .movie-label {
   background: rgba(240, 253, 250, 0.96);
   color: #0f766e;
   border: 1px solid #99f6e4;

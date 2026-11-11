@@ -23,6 +23,10 @@ export function useDeckSelection() {
 
   const clearSelection = useCallback(() => {
     setSelectedMovieId(null)
+    // iOS can leave a tap stuck as hover with no mouseleave. Empty-grid
+    // deselect must drop that too, or a list tap's title+score pill stays
+    // on the fitted 0-10 square after the selection is gone.
+    setHoverLink(null)
   }, [])
 
   const handleSidebarBackgroundPointerDown = useCallback(
@@ -30,12 +34,16 @@ export function useDeckSelection() {
       const target = event.target as Element
       if (
         target.closest('.movie-list li') ||
-        target.closest('.movie-selection-bar') ||
+        target.closest('.movie-selection-panel') ||
         target.closest('button') ||
         target.closest('input') ||
         target.closest('select') ||
         target.closest('textarea') ||
-        target.closest('a')
+        target.closest('a') ||
+        target.closest('summary') ||
+        // Rename unmounts the field when selection clears. Keep the
+        // panel mounted so blur can commit instead of dropping the edit.
+        event.currentTarget.querySelector('.movie-selection-panel--renaming')
       ) {
         return
       }

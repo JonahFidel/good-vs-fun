@@ -1,42 +1,114 @@
-/* Narrow layout: the deck page stacks and the page scrolls again. */
+/*
+  Phone layout: compact chrome, readable plot, 16px form controls.
+  iPhone Pro Max landscape is ~932px CSS (16 Pro Max ~956px), so
+  max-width 900px misses it. (pointer: coarse) and (max-width: 1023px)
+  covers every current iPhone without pulling iPad Mini landscape
+  (1024px) into this stacked deck layout.
+*/
 
-@media (max-width: 900px) {
+@media (max-width: 900px), (pointer: coarse) and (max-width: 1023px) {
   #root {
-    padding: 0.5rem 0.75rem 0.75rem;
+    padding: 0.5rem max(0.75rem, env(safe-area-inset-right))
+      max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
   }
 
+  .header {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    padding-top: max(0.3rem, env(safe-area-inset-top));
+    padding-left: max(0.6rem, env(safe-area-inset-left));
+    padding-right: max(0.6rem, env(safe-area-inset-right));
+  }
+
+  .header-brand {
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+  }
+
+  .nav-links {
+    flex-wrap: nowrap;
+  }
+
+  .nav-link {
+    min-height: 2.75rem;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.78rem;
+    touch-action: manipulation;
+  }
+
+  /* Deck page: lock the viewport so plot pan does not fight page scroll. */
   html:has(.deck-page-layout),
   html:has(.deck-page-layout) body {
-    overflow: auto;
-    height: auto;
-    min-height: 100%;
+    overflow: hidden;
+    height: 100%;
+    height: var(--deck-viewport-h);
+    overscroll-behavior: none;
+    /* pan-y: scrolling only. manipulation still allows Safari page pinch-zoom. */
+    touch-action: pan-y;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  #root:has(.deck-page-layout),
+  .app:has(.deck-page-layout),
+  .app:has(.deck-page-layout) > .header,
+  .app:has(.deck-page-layout) > .layout,
+  .deck-page-layout {
+    touch-action: pan-y;
+  }
+
+  /*
+    Pinch on the plot card, including Fun/Good axis chrome, must not fall
+    through to Safari page-zoom. The slot already has touch-action: none.
+  */
+  .deck-page-layout .grid-panel,
+  .deck-page-layout .grid-wrapper,
+  .deck-page-layout .grid-axis {
+    touch-action: none;
   }
 
   #root:has(.deck-page-layout) {
-    height: auto;
-    min-height: 100dvh;
-    overflow: visible;
+    height: var(--deck-viewport-h);
+    max-height: var(--deck-viewport-h);
+    padding: 0;
+    overflow: hidden;
   }
 
   .app:has(.deck-page-layout) {
-    height: auto;
-    min-height: 100dvh;
-    overflow: visible;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /*
+    Brand / Decks / account are redundant with the sidebar back control
+    and steal a row from the leftover movie list. Landscape already hid
+    this so the short-side square could grow; portrait is width-capped
+    so the same hide gives the 11rem SE sidebar those ~2.75rem instead.
+    Account stays on /decks. Layout padding now owns the notch.
+  */
+  .app:has(.deck-page-layout) > .header {
+    display: none;
   }
 
   .app:has(.deck-page-layout) > .layout {
     display: flex;
     flex-direction: column;
-    overflow: visible;
-    flex: none;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+    padding: max(0.25rem, env(safe-area-inset-top)) max(0.35rem, env(safe-area-inset-right))
+      0 max(0.35rem, env(safe-area-inset-left));
+    gap: 0.25rem;
   }
 
   .deck-page-layout {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    flex: none;
-    overflow: visible;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .deck-page-layout .grid-panel {
@@ -44,7 +116,7 @@
     grid-row: auto;
     flex: 0 0 auto;
     height: auto;
-    overflow: visible;
+    overflow: hidden;
     container-type: normal;
     align-items: stretch;
   }
@@ -52,37 +124,731 @@
   .deck-rail {
     grid-column: auto;
     grid-row: auto;
-    flex: 0 0 auto;
+    flex: 1 1 0;
     height: auto;
     min-height: 0;
     max-height: none;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .deck-sidebar {
-    flex: 0 0 auto;
-    height: auto;
-    min-height: auto;
+    position: relative;
+    flex: 1 1 0;
+    height: 100%;
+    min-height: 0;
     max-height: none;
+    overflow: hidden;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    gap: 0.45rem;
+    padding: 0.4rem 0.4rem max(0.4rem, env(safe-area-inset-bottom), var(--keyboard-inset, 0px));
+  }
+
+  .deck-sidebar-section {
+    padding: 0.45rem 0.5rem;
+  }
+
+  .deck-sidebar-section--header {
+    padding: 0.3rem 0.45rem;
+  }
+
+  .deck-sidebar-top {
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .deck-sidebar-title-block .eyebrow {
+    display: none;
+  }
+
+  .deck-sidebar-title-block h2 {
+    font-size: 0.92rem;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .deck-sidebar-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0.35rem 0.45rem;
+    touch-action: manipulation;
+  }
+
+  /* Keep the header on one row so undo/redo can live here instead of the plot. */
+  .deck-sidebar-back-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .deck-sidebar-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .deck-sidebar-history {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .deck-sidebar-history .btn-undo {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0.35rem;
+    font-size: 1.05rem;
+    line-height: 1;
+    touch-action: manipulation;
+  }
+
+  /*
+    Overlay Undo/Redo sits on the top-right of the square, covering Fun≈10
+    / Good≈7–10 - the corner the grid is named for. Keep history in the
+    sidebar so those points stay tappable at default zoom.
+  */
+  .deck-page-layout .grid-toolbar {
+    display: none;
+  }
+
+  /*
+    Collapsed Add and Compare were each a 44px section, so an 11rem SE
+    sidebar had ~20px left for movies. Sit them in one row while closed,
+    and let the list (not the whole sidebar) scroll the leftover height.
+  */
+  .deck-sidebar-tools-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    flex-shrink: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .deck-sidebar-tools-row:not(:has([open])) > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  /*
+    Opening Add or Compare used to stack both full-width in the flex
+    column. The add form is ~16rem of 44px fields, taller than an SE
+    leftover strip, and sidebar overflow is hidden - so the list went
+    to 0px and the submit button could sit off-screen with no scroll.
+    Keep the list at least one title tall, scroll the open panel, and
+    hide the closed sibling so it does not add another 44px.
+  */
+  .deck-sidebar > .deck-sidebar-tools-row:has([open]) {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .deck-sidebar-tools-row:has([open]) > :not([open]) {
+    display: none;
+  }
+
+  .deck-sidebar-tools-row:has([open]) > [open] {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Same overflow-parent steal as Selected: the open Add sheet scrolls. */
+  .deck-sidebar-tools-row:has([open]) .score-sliders--add {
+    touch-action: none;
+  }
+
+  .deck-sidebar:has(.deck-sidebar-tools-row [open]) .deck-sidebar-section--list.movie-list {
+    flex: 1 1 5.5rem;
+    min-height: 5.5rem;
+  }
+
+  .deck-sidebar-tools-row > .deck-sidebar-section--add {
+    order: 1;
+  }
+
+  .deck-sidebar-tools-row > .deck-sidebar-section--tools {
+    order: 2;
+  }
+
+  /*
+    Add-movie sliders and compare selects used to fill the ~11-16rem strip,
+    so the movie list started below the fold. Collapse them to one 44px row.
+  */
+  .deck-sidebar-collapse-summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    margin: -0.45rem -0.5rem;
+    padding: 0 0.65rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #64748b;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .deck-sidebar-section[open] > .deck-sidebar-collapse-summary {
+    margin-bottom: 0.45rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .movie-selection-panel[open] > .deck-sidebar-collapse-summary {
+    border-bottom-color: #bfdbfe;
+  }
+
+  /*
+    Tapping a grid point used to inject two 44px sliders into the 11-16rem
+    strip, burying the list again. Keep Selected collapsed; the summary
+    already has the title and scores.
+  */
+  .movie-selection-info {
+    display: none;
+  }
+
+  /*
+    Pairing Add/Compare still left Selected as a third flex row. On a
+    typical iPhone the leftover list is ~1 title; tapping a movie then
+    zeros it. Dock Selected over the bottom of the list so that tap
+    keeps titles on screen. The containing block is the padding box, so
+    insets have to repeat the sidebar padding or the bar sits on the
+    home indicator.
+  */
+  .deck-sidebar .movie-selection-panel {
+    position: absolute;
+    z-index: 3;
+    left: 0.4rem;
+    right: 0.4rem;
+    bottom: max(0.4rem, env(safe-area-inset-bottom), var(--keyboard-inset, 0px));
+    margin: 0;
+    max-height: calc(100% - 5.5rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.12);
+  }
+
+  /*
+    Collapsed Selected is a 44px bar, so the 5.5rem list reservation keeps
+    titles visible above it. Expanding to edit Fun/Good (the only iPhone
+    way to move a point) still used that cap: on an 11rem leftover that
+    is ~88px, and DOM order puts 44px Rename/Delete first, so the sliders
+    sat below the fold. Grow to the sidebar and put Fun/Good first so the
+    editor actually fits. Desktop order is unchanged (this query only).
+
+    Growing to calc(100% - 0.5rem) also covered the sidebar header, so
+    Undo/Redo (moved off the plot so Fun≈10 stays tappable) were under
+    the sheet while dragging those sliders. Keep the 44px header row
+    clear: 0.4rem padding + 3.35rem header + 0.45rem gap. Never shrink
+    below summary+sliders on the 11rem floor, where 4.5rem reserved
+    would clip Fun/Good again.
+  */
+  .deck-sidebar .movie-selection-panel[open] {
+    max-height: max(9rem, calc(100% - 4.5rem));
+  }
+
+  .deck-sidebar .movie-selection-panel[open] > .score-sliders--selected {
+    order: 1;
+    /*
+      The open sheet is overflow:auto so Rename/Delete can scroll on a
+      9rem floor. iOS still pans that parent from a range input even with
+      touch-action:none on the thumb, which steals the only way to move a
+      point. Lock the sliders block; scroll from the summary or actions.
+    */
+    touch-action: none;
+  }
+
+  .deck-sidebar .movie-selection-panel[open] > .movie-selection-bar {
+    order: 2;
+  }
+
+  /*
+    Keep the summary stuck so the sheet can be closed without scrolling
+    back to the top.
+
+    The collapsed bar is a 4.25rem stacked title + F/G so a grid tap
+    can read a long name. That same summary stayed sticky when open, so
+    on the 9rem SE floor (~144px) the extra ~24px plus the open
+    border-bottom clipped Fun/Good - the only iPhone way to move a
+    point. Collapse the open summary to a title row; the sliders
+    below already show live Fun/Good. Portrait folds compact 44px
+    Aa/× into that row so they are not below the fold, then wraps
+    three lines so the narrower leftover still reaches Black Pearl.
+    Landscape keeps the full-width labeled row under stacked sliders.
+  */
+  .deck-sidebar .movie-selection-panel[open] > .deck-sidebar-collapse-summary {
+    position: sticky;
+    top: -0.45rem;
+    z-index: 1;
+    background: #eff6ff;
+    grid-template-rows: auto;
+    min-height: 2.75rem;
+    padding: 0 0.65rem;
+    align-content: center;
+  }
+
+  .deck-sidebar .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta {
+    display: none;
+  }
+
+  .deck-sidebar:has(.movie-selection-panel) .deck-sidebar-section--list.movie-list ul {
+    padding-bottom: 4.25rem;
+  }
+
+  /*
+    The stacked 4.25rem Selected bar plus Add/Compare and Movies/Sort
+    covers the leftover list on a short portrait sidebar. SE 2/3 with
+    the Safari URL bar height-caps the square (~11-13rem leftover);
+    header + tools + list chrome + overlay then leaves 0px of titles,
+    the same bury-the-list failure iteration 56 docked Selected to
+    avoid. While a movie is selected, drop those two chrome rows so
+    the strip still shows at least one title above the bar.
+
+    Keep Add/Compare if either sheet is open (Compare already hides
+    Selected, but :has(.movie-selection-panel) still matches a
+    display:none node). Landscape leftover is the short-side height
+    beside the square, so tools can stay. Empty-grid tap deselects
+    and brings Add/Compare/Sort back.
+  */
+  @media (orientation: portrait) {
+    .deck-sidebar:has(.movie-selection-panel):not(
+      :has(.deck-sidebar-tools-row [open])
+    ) .deck-sidebar-tools-row {
+      display: none;
+    }
+
+    .deck-sidebar:has(.movie-selection-panel):not(
+      :has(.deck-sidebar-tools-row [open])
+    ) .deck-sidebar-section--list.movie-list {
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .deck-sidebar:has(.movie-selection-panel):not(
+      :has(.deck-sidebar-tools-row [open])
+    ) .deck-sidebar-section--list .deck-sidebar-section__title--inline,
+    .deck-sidebar:has(.movie-selection-panel):not(
+      :has(.deck-sidebar-tools-row [open])
+    ) .movie-list-header {
+      display: none;
+    }
+
+    /*
+      On an 11rem leftover the 9rem floor fits 44px summary + side-by-side
+      Fun/Good, so Rename/Delete sat below the fold. After the list × was
+      hidden, that scroll is the only phone remove path. Fold those 44px
+      actions into the open summary (F/G is already hidden there) so the
+      editor can rename/delete without scrolling. Wordy Rename/Delete
+      in that row leave ~14 characters on SE, so keep 44px icon hits
+      (Aa / ×, matching Undo). Two lines then last-clip Pirates (~50)
+      and Alexander (~59) on that ~18-22 character leftover: last-two-
+      lines hid Pirates / Alexander and showed only Curse of the /
+      Black Pearl. Three line-heights (1.25) fit those. Collapsed
+      portrait keeps two lines because that row is ~33-44 characters
+      without Aa/×. Three title lines are ~48px; side-by-side Fun/Good
+      plus that row still fit the 9rem SE floor. Landscape leftover is
+      tall, so it keeps the full-width labeled row under the stacked
+      sliders; those same words in a 12rem summary would still clip
+      the title.
+    */
+    .movie-selection-panel[open] > .movie-selection-bar {
+      display: none;
+    }
+
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
+      max-height: 3.75em;
+    }
+
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .movie-selection-actions {
+      display: flex;
+      width: auto;
+      flex: none;
+      grid-column: 2;
+      grid-row: 1;
+      align-items: center;
+      gap: 0.3rem;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary::after {
+      grid-column: 3;
+      grid-row: 1;
+    }
+
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .movie-selection-actions--compact > .btn-rename-selected,
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .movie-selection-actions--compact > .btn-delete-selected {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      width: 2.75rem;
+      min-width: 2.75rem;
+      padding: 0;
+      font-size: 0.95rem;
+      line-height: 1;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+  }
+
+  .movie-selection-actions {
+    width: 100%;
+  }
+
+  /*
+    Actions also live in the summary so portrait can show them in the
+    44px open row. Hide that copy until [open], or the collapsed 2-line
+    title + F/G readout loses width the same way the list × did.
+  */
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .movie-selection-actions {
+    display: none;
+  }
+
+  /*
+    Add Movie types in the sheet body, not the summary. Keep rename on
+    that same path: hide the disclosure row so iOS is focusing a normal
+    16px field instead of an input jammed into <summary>, which is what
+    dropped the keyboard in 107-108. Sliders stay hidden because the
+    live grid is already gone for this session.
+  */
+  .deck-sidebar .movie-selection-panel--renaming > .deck-sidebar-collapse-summary,
+  .deck-sidebar .movie-selection-panel--renaming[open] > .deck-sidebar-collapse-summary,
+  .deck-sidebar .movie-selection-panel--renaming[open] > .score-sliders--selected,
+  .deck-sidebar .movie-selection-panel--renaming[open] > .movie-selection-bar {
+    display: none;
+  }
+
+  .movie-selection-panel--renaming > .movie-selection-rename-input {
+    min-width: 0;
+    width: 100%;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #1e3a8a;
+    touch-action: manipulation;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  .btn-rename-selected,
+  .btn-delete-selected {
+    flex: 1;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    touch-action: manipulation;
+  }
+
+  .deck-sidebar-collapse-summary::-webkit-details-marker,
+  .deck-sidebar-collapse-summary::marker {
+    display: none;
+    content: '';
+  }
+
+  .deck-sidebar-collapse-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /*
+    Nested text node so Selected can clip to the last two wrapped
+    lines (inner flex-none block plus outer flex-end). Inherit
+    nowrap ellipsis here so Add/Compare summaries stay one line.
+  */
+  .deck-sidebar-collapse-title-text {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: inherit;
+  }
+
+  .deck-sidebar-collapse-meta {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #334155;
+    text-align: right;
+  }
+
+  /*
+    Fit-zoom Good/Fun live in this bar, not on the canvas. Title beside
+    F/G still truncates the namesake-corner title even with 2-line wrap:
+    0.8rem "F 9.55 · G 9.83" leaves ~16-18 characters per line on a
+    375px phone, so Pirates of the Caribbean: Curse of the Black Pearl
+    reads as "Pirates of the Carribean: Curs…". Stack F/G under the
+    title (chevron stays on the name row) so the name uses the bar
+    minus the disclosure control. Taller overlay is the same height
+    tradeoff landscape already made; list padding is 4.25rem so the
+    last title is not under the bar.
+
+    Portrait list rows keep title beside F/G: stacking every row would
+    cost visible movies on the leftover strip. This overlay is one bar.
+  */
+  .movie-selection-panel > .deck-sidebar-collapse-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    align-content: center;
+    column-gap: 0.35rem;
+    row-gap: 0.08rem;
+    min-height: 2.75rem;
+    padding: 0.25rem 0.65rem;
+  }
+
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    font-size: 0.8rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #1e3a8a;
+    white-space: normal;
+    overflow-wrap: break-word;
+    line-height: 1.25;
+    /*
+      Line-clamp paints the first two wrapped lines, so the namesake-
+      corner title that justified this wrap (Pirates of the Carribean:
+      Curse of the Black Pearl) still never reached Black Pearl on the
+      ~12-15.5rem landscape rail: ~20-24 characters per line is three
+      wraps, and the 32cqw canvas pill already clips to the last four.
+      Same column flex-end plus overflow as that pill and 3.2x overlay
+      names. Two line-heights (1.25); height stays auto so Heat does
+      not sit in an empty two-line box. The inner text must keep its
+      content height so flex-end can hide the start.
+    */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    max-height: 2.5em;
+    overflow: hidden;
+  }
+
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title > .deck-sidebar-collapse-title-text {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
     overflow: visible;
+    text-overflow: unset;
+    flex: none;
+  }
+
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    text-align: left;
+    flex: none;
+    overflow: visible;
+    text-overflow: unset;
+    /*
+      The summary is 0.68rem uppercase for Add/Compare labels. F/G is the
+      only default-zoom score readout after the canvas dropped Good/Fun,
+      so it needs the same 0.8rem as the title above it, not that chrome
+      size. tabular-nums keeps 9.55 / 10 from shifting as you drag the
+      Selected sliders.
+    */
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    color: #1e3a8a;
+  }
+
+  .movie-selection-panel > .deck-sidebar-collapse-summary::after {
+    grid-column: 2;
+    grid-row: 1;
+    margin-left: 0;
+  }
+
+  .deck-sidebar-collapse-summary::after {
+    content: '';
+    width: 0.42rem;
+    height: 0.42rem;
+    margin-left: 0.15rem;
+    border-right: 2px solid #94a3b8;
+    border-bottom: 2px solid #94a3b8;
+    transform: rotate(45deg);
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .deck-sidebar-section[open] > .deck-sidebar-collapse-summary::after {
+    transform: rotate(225deg);
+    margin-top: 0.15rem;
   }
 
   .deck-sidebar-section--list.movie-list {
-    flex: 0 0 auto;
-    overflow: visible;
+    flex: 1 1 0;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
+    column-gap: 0.5rem;
+    row-gap: 0.3rem;
+    overflow: hidden;
+  }
+
+  .deck-sidebar-section--list .deck-sidebar-section__title--inline,
+  .deck-sidebar-section--list .movie-list-header {
+    margin: 0;
+    align-self: center;
+  }
+
+  .movie-list-header label {
+    position: relative;
+  }
+
+  .movie-list-sort-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .movie-list-header select {
+    margin-left: 0;
+  }
+
+  .deck-sidebar-section--list.movie-list ul {
+    grid-column: 1 / -1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    mask-image: linear-gradient(
+      to bottom,
+      black 0,
+      black calc(100% - 8px),
+      transparent 100%
+    );
   }
 
   .deck-sidebar .movie-list ul {
     flex: none;
     max-height: none;
-    overflow-y: visible;
-    mask-image: none;
+  }
+
+  .deck-sidebar .ghost-compare-hint {
+    display: none;
+  }
+
+  .movie-list li {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0.35rem 0.45rem 0.35rem 0.6rem;
+    /* pan-y so a finger on a row still scrolls the list. */
+    touch-action: pan-y;
+  }
+
+  .movie-list-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /*
+    Fit-zoom hides unselected on-canvas names, so this list is how you
+    read titles before a tap. Per-row × still stole ~44px (and fat-
+    fingered deletes while scrolling); Selected already has a 44px
+    Delete.
+
+    Line-clamp paints the first wrapped lines, so last-N-lines (column
+    flex-end plus overflow) is the same clip as the Selected bar and
+    32cqw canvas pill. Portrait keeps title beside Fun/Good so the
+    leftover strip still shows a 44px row; that title column is only
+    ~24-29 characters (~200-215px after "F 9.55 · G 9.83"). Two lines
+    already fit Pirates (~50). Alexander and the Terrible, Horrible,
+    No Good, Very Bad Day (~59) is three wraps there ("Alexander and
+    the Terrible," / "Horrible, No Good, Very Bad" / "Day"), so last-
+    two-lines hid Alexander and showed only Horrible… / Day. Three
+    line-heights (1.25) fit those. Short names still shrink-to-fit;
+    only the long wrap grows past the 44px min, so the SE one-title
+    leftover stays a 44px row for Heat. Collapsed portrait Selected
+    stays two lines: that bar stacks F/G under the title and already
+    has ~33-44 characters per line. Landscape already uses three
+    lines on the ~20-24 character rail.
+  */
+  .movie-list-title strong {
+    white-space: normal;
+    overflow-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    max-height: 3.75em;
+    overflow: hidden;
+  }
+
+  .movie-list-title-text {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: unset;
+    flex: none;
+  }
+
+  .movie-list-scores {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    color: #4b5563;
+  }
+
+  .movie-list .movie-delete {
+    display: none;
   }
 
   .grid-wrapper {
     grid-template-columns: 2rem 1fr;
     grid-template-rows: 1fr 1.5rem;
-    padding: 0.4rem;
+    padding: 0.35rem;
     gap: 0.1rem;
   }
 
@@ -91,58 +857,2469 @@
   }
 
   .deck-page-layout .grid-wrapper {
+    --plot-chrome-y: 2.35rem;
     flex: none;
     height: auto;
     max-height: none;
     align-self: stretch;
-    grid-template-rows: minmax(0, 1fr) auto;
+    /* auto, not 1fr: an indefinite-height 1fr row with min-height: 0
+       lets the aspect-ratio slot collapse instead of becoming a square. */
+    grid-template-rows: auto auto;
   }
 
-  /* Toolbar takes its own row so the fitted square does not cover undo/redo.
-     Example decks have no toolbar, so they keep the two-row grid. */
-  .deck-page-layout .grid-wrapper:has(.grid-toolbar) {
-    grid-template-rows: auto minmax(0, 1fr) auto;
-  }
-
-  .deck-page-layout .grid-toolbar {
-    position: static;
-    grid-column: 1 / -1;
-    grid-row: 1;
-    justify-self: end;
-    align-self: center;
-    z-index: 4;
-    /* Top-axis labels overflow the square on a narrow chart. Keep them off the buttons. */
-    margin-bottom: 0.65rem;
-  }
-
-  .deck-page-layout .grid-wrapper:has(.grid-toolbar) .grid-axis-y,
-  .deck-page-layout .grid-wrapper:has(.grid-toolbar) .grid-fit {
-    grid-row: 2;
-  }
-
-  .deck-page-layout .grid-wrapper:has(.grid-toolbar) .grid-axis-x {
-    grid-row: 3;
-  }
-
-  /* The stacked page has no definite plot height, so size the square from the
-     viewport: header, layout padding, axis label, and wrapper padding. */
-  .deck-page-layout .grid-fit {
-    --plot-viewport-w: calc(100vw - 0.35rem - 0.45rem - 0.25rem - 0.35rem - 1.75rem - 0.1rem);
-    --plot-viewport-h: calc(100dvh - 2.6rem - 0.35rem - 0.35rem - 0.3rem - 0.35rem - 0.1rem - 1.2rem);
-    --plot-side: min(var(--plot-viewport-w), var(--plot-viewport-h));
-    display: block;
-    container-type: normal;
+  /*
+    Square plot from the slot's real width, capped so a sidebar strip stays
+    on screen. Avoid 100vw estimates, which oversize the canvas and clip.
+  */
+  .deck-page-layout .grid-zoom-slot {
+    /* Header is hidden; layout padding now holds the notch. */
+    --mobile-safe-top: max(0.25rem, env(safe-area-inset-top, 0px));
+    --mobile-frame: 0.6rem;
+    --mobile-sidebar-min: 11rem;
+    --max-plot: max(
+      12rem,
+      calc(
+        var(--deck-viewport-h) - var(--mobile-safe-top) - var(--mobile-frame) -
+          var(--mobile-sidebar-min) -
+          var(--plot-chrome-y)
+      )
+    );
+    --plot-side: min(100%, var(--max-plot), var(--plot-side-max));
     justify-self: center;
-    align-self: center;
-    width: min(var(--plot-side), 100%);
+    width: min(100%, var(--max-plot));
     max-width: 100%;
-    aspect-ratio: 1;
     height: auto;
+    aspect-ratio: 1;
+    /* Keep aspect-ratio as the used height; min-height: 0 lets the square collapse. */
+    min-height: auto;
+    max-height: var(--max-plot);
+    /*
+      inline-size is enough for cqw pill caps. container-type: size also
+      contains block size, and with height: auto that can zero the square
+      on iOS Safari before aspect-ratio transfers.
+    */
+    container-type: inline-size;
+  }
+
+  /*
+    Desktop leaves inset: auto and an explicit --plot-side square inside a
+    taller slot. On the phone the slot IS that square, so pin every edge.
+    height: 100% against an aspect-ratio parent is unreliable in WebKit.
+  */
+  .deck-page-layout .grid-zoom-canvas {
+    inset: 0;
+    width: auto;
+    height: auto;
+    min-width: 0;
+  }
+
+  /*
+    The plot is flex-none above the leftover sidebar, so the iOS keyboard
+    covers that strip. --keyboard-inset padding cannot lift fields above a
+    keyboard taller than the sidebar, and the 12rem plot floor also blocks
+    shrinking enough room.
+
+    Hide the plot while Add Movie is open (not only while the title is
+    focused). Title :focus hid the grid for typing, then a tap on Fun/Good
+    (range, no keyboard) brought the square back and crushed the rest of
+    the form - sliders and submit sat under the plot again. Desktop Add
+    is a div, so [open] is a no-op there. Selected score sliders live in
+    a different panel and still keep the grid on screen.
+
+    Selected rename is the exception: that 16px field needs the same
+    leftover Add already uses. Hide for the whole --renaming session, not
+    :focus: focusing the new field used to display:none the square, iOS
+    blurred the caret on that layout shift, and blur committed the title
+    with the grid already gone. Range sliders still keep the grid.
+  */
+  .deck-page-layout:has(.deck-sidebar-section--add[open]) .grid-panel,
+  .deck-page-layout:has(.movie-selection-panel--renaming) .grid-panel {
+    display: none;
+  }
+
+  /*
+    Hiding the plot is not enough: Selected stays a bottom overlay with
+    Fun/Good still open, so the 16px field sits under the keyboard the
+    same way Add did before it lived at the top of the leftover. Take
+    Selected out of that overlay, hide the list and tools, and put the
+    field in the sheet body under the header like Add Movie's title input.
+  */
+  .deck-sidebar:has(.movie-selection-panel--renaming) .deck-sidebar-tools-row,
+  .deck-sidebar:has(.movie-selection-panel--renaming) .deck-sidebar-section--list.movie-list {
+    display: none;
+  }
+
+  .deck-sidebar .movie-selection-panel--renaming,
+  .deck-sidebar .movie-selection-panel--renaming[open] {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    z-index: auto;
+    max-height: none;
+    overflow: visible;
+    box-shadow: none;
+  }
+
+  /*
+    Compare has the same leftover-strip problem as Add, without a keyboard:
+    two native selects plus swap/legend are taller than an 11rem SE sidebar
+    after the 5.5rem list reservation, so the pickers sat in a ~2rem sliver
+    under the plot. Hide the plot (desktop Compare is a div, so [open] is
+    phone-only). Hide the list and Selected too - you are picking other
+    decks, not browsing this one - so the sheet can fill the sidebar.
+    Close Compare to get the grid back with the overlay.
+  */
+  .deck-page-layout:has(.deck-sidebar-section--tools[open]) .grid-panel {
+    display: none;
+  }
+
+  .deck-sidebar:has(.deck-sidebar-section--tools[open]) .deck-sidebar-section--list.movie-list,
+  .deck-sidebar:has(.deck-sidebar-section--tools[open]) .movie-selection-panel {
+    display: none;
+  }
+
+  .deck-sidebar:has(.deck-sidebar-section--tools[open]) > .deck-sidebar-tools-row {
+    flex: 1 1 auto;
+  }
+
+  /* Keep labels and ticks readable at the default (fit-to-width) zoom. */
+  .grid {
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+    -webkit-touch-callout: none;
+  }
+
+  /*
+    A ~370px square makes 0.1-interval subticks ~3px apart, and four axes of
+    numbers fight movie titles. Keep left/bottom majors only.
+  */
+  .grid-subtick,
+  .grid-tick-x-top,
+  .grid-tick-y-right {
+    display: none;
+  }
+
+  /*
+    Desktop ticks are #9ca3af on white (~2.5:1). On a ~370px phone square
+    those numbers ARE the 0-10 scale, so they need to read as text.
+    Body line-height 1.5 made 0.85rem labels ~20px tall plus a 10px outset,
+    which is larger than the 1-unit margin on SE and any landscape plot,
+    so overflow:hidden clipped Good-axis numbers at default zoom.
+  */
+  .grid-tick,
+  .grid-wrapper--example .grid-tick {
+    font-size: 0.85rem;
+    line-height: 1;
+    color: #4b5563;
+    /* 4px keeps 0.85rem "10" inside the portrait ~31px 1-unit margin. */
+    --grid-tick-outset-major: 4px;
+  }
+
+  /*
+    Keep 0-10 numbers in the 1-unit margin so they do not cover Fun≈0 /
+    Good≈0 movies at default zoom. The label child holds this offset so
+    pinch inverse-scale does not drift numbers off the axes.
+  */
+  .grid-tick-label {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 2px;
+    padding: 0 0.08rem;
+  }
+
+  .grid-tick-x > .grid-tick-label::before,
+  .grid-tick-y > .grid-tick-label::before,
+  .grid-wrapper--example .grid-tick-x > .grid-tick-label::before,
+  .grid-wrapper--example .grid-tick-y > .grid-tick-label::before {
+    display: none;
+  }
+
+  /*
+    Two origin 0s share the Fun=0 / Good=0 corner. Centered labels overlap
+    in the 2-4px mobile gutter ("10" already fills it). Sit Good 0 to the
+    right of the origin and Fun 0 above it. Notches are already hidden.
+  */
+  .grid-tick-x[data-tick='0'] > .grid-tick-label {
+    transform: translate(0, 0);
+  }
+
+  .grid-tick-y[data-tick='0'] > .grid-tick-label {
+    transform: translate(0, -100%);
+  }
+
+  /*
+    Fun 10 must stay on the left axis so the fitted scale reads 0-10 as
+    one column. Parking it in the top gutter made typical iPhone plots
+    look like Fun ended at 8, with a stray 10 at Good=10.
+
+    0.85rem "10" plus the 4px outset needs ~23px (~17.5rem square).
+    SE landscape with the URL bar is ~278-289px, which hit that query
+    and moved 10 even though a slightly smaller left-axis "10" still
+    fits. Shrink just that two-digit label so 0-10 stays one column
+    down to the 12rem floor. Only the 10rem landscape floor (~13px
+    gutter) is tighter than 0.7rem "10"; that last resort still uses
+    the top gutter. right: auto, or left+right on a 0-size anchor
+    would collapse the box.
+  */
+  @container (max-width: 17.5rem) {
+    .grid-tick-y:not(.grid-tick-y-right)[data-tick='10'] {
+      font-size: 0.7rem;
+      --grid-tick-outset-major: 2px;
+    }
+  }
+
+  @container (max-width: 12rem) {
+    .grid-tick-y:not(.grid-tick-y-right)[data-tick='10'] > .grid-tick-label {
+      right: auto;
+      left: 0;
+      transform: translate(0, -100%);
+    }
+  }
+
+  /*
+    0-10 along a ~160-280px axis collides in the gutter. Keep 0/2/4/5/6/8/10
+    at fit zoom; restore 1/3/7/9 after pinch past 1.4x so a zoomed corner
+    still has unit precision. Titles wait until 2.2x.
+  */
+  .grid-tick[data-tick='1'],
+  .grid-tick[data-tick='3'],
+  .grid-tick[data-tick='7'],
+  .grid-tick[data-tick='9'] {
+    display: none;
+  }
+
+  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='1'],
+  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='3'],
+  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='7'],
+  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='9'],
+  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='1'],
+  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='3'],
+  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='7'],
+  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='9'] {
+    display: block;
+  }
+
+  /*
+    #e5e7eb lines on white are decoration on desktop and the whole scale
+    on a phone. Example decks also faded the overlay to 0.55. Darken both.
+    Coarse pointers actually paint those lines on the overlay; this query
+    only sets contrast, so a narrow mouse window keeps the lines painted
+    on .grid::before.
+  */
+  .deck-page-layout .grid::before,
+  .deck-page-layout .grid-wrapper--example .grid::before {
+    opacity: 1;
+  }
+
+  .deck-page-layout .grid-line-overlay,
+  .deck-page-layout .grid-wrapper--example .grid-line-overlay {
+    opacity: 1;
+    --grid-line-unit: #94a3b8;
+  }
+
+  .deck-page-layout .grid-zoom-slot--zoomed > .grid-line-overlay,
+  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed > .grid-line-overlay {
+    --grid-line-unit: #64748b;
+  }
+
+  .deck-page-layout .grid-wrapper--example .grid-axis {
+    color: #111827;
+  }
+
+  /*
+    Example decks mute the whole plot (wrapper 0.9, gray #94a3b8 dots) as a
+    desktop read-only cue. On a ~370px fitted square those dots ARE the
+    grid, and 0.9 also faded the darker ticks/axes already restored above.
+    Keep cursor: not-allowed; the Example badge is the read-only signal.
+  */
+  .deck-page-layout .grid-wrapper--example {
+    opacity: 1;
+  }
+
+  /* Ghosts are .movie-point too. Restoring them here would paint compare
+     overlays as primary red/dark pills and hide purple vs teal. */
+  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point)::after {
+    background: #dc2626;
+    box-shadow:
+      0 0 0 2px rgba(220, 38, 38, 0.5),
+      0 2px 8px rgba(15, 23, 42, 0.45);
+  }
+
+  /* Same specificity as the unselected restore above; keep tap feedback. */
+  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point).movie-point--highlighted::after {
+    background: #16a34a;
+    box-shadow:
+      0 0 0 2px rgba(34, 197, 94, 0.95),
+      0 0 10px 3px rgba(34, 197, 94, 0.65),
+      0 0 22px 8px rgba(34, 197, 94, 0.4);
+  }
+
+  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point).movie-point--selected::after {
+    background: #2563eb;
+    box-shadow:
+      0 0 0 2px rgba(59, 130, 246, 0.95),
+      0 0 12px 4px rgba(59, 130, 246, 0.65),
+      0 0 24px 10px rgba(59, 130, 246, 0.4);
+  }
+
+  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point) > .movie-label {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f8fafc;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 2px 6px rgba(15, 23, 42, 0.45),
+      0 5px 14px rgba(15, 23, 42, 0.35);
+  }
+
+  .movie-point {
+    width: 11px;
+    height: 11px;
+  }
+
+  /* Stacked dots are anonymous at fit zoom (titles hidden). A larger
+     chip is how you can tell two movies share a score before tapping. */
+  .movie-point-count {
+    min-width: 1.15rem;
+    height: 1.15rem;
+    font-size: 0.7rem;
+    line-height: 1.15rem;
+  }
+
+  /*
+    The chip shares the south/west flip with selected titles. Example
+    stacks sit at Fun 9.05 (chip below) and a tap then grows the title
+    down or parks a compact landscape name on that same corner, so the
+    "2" covers the only default-zoom readout. Once selected, cycling
+    the marker and the Selected bar already show it is a stack.
+
+    At 2.2x every stacked name paints in the one-cell pill, so the
+    chip is redundant and sits on those letters: right-side titles
+    (Good < 5) share the default upper-right badge, and Fun 9-10 /
+    Good 9-10 (the namesake corner) put a south/west chip on the
+    left-side name. Hide it once --labels restores titles; keep it
+    on anonymous unselected dots through light pinch (1.4x).
+  */
+  .movie-point--selected > .movie-point-count,
+  .movie-point.dragging > .movie-point-count,
+  .movie-point--highlighted > .movie-point-count,
+  .grid-zoom-slot--labels .movie-point-count {
+    display: none;
+  }
+
+  /*
+    30+ truncated pills on a ~370px square hide the grid. Keep dots at fit
+    zoom and through light pinch; show the selected title, then restore all
+    titles at double-tap zoom (~3.0x on a 370px square, ~93px cells),
+    not at 1.4x (~43px).
+  */
+  .movie-point > .movie-label {
+    font-size: 0.8rem;
+    padding: 0.14rem 0.42rem;
+    transform: translate(calc(-100% - 9px), -50%);
+    max-width: 7.25rem;
+    max-width: min(7.25rem, calc(50cqw - 16px));
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+  }
+
+  .movie-point--selected > .movie-label,
+  .movie-point.dragging > .movie-label,
+  .movie-point--highlighted > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point) > .movie-label {
+    opacity: 1;
+    /*
+      Compact selected pills can still cover a neighbor. Capturing taps
+      would hide nearby movies and empty-space deselect at fit zoom.
+      The 44px marker still selects.
+    */
+    pointer-events: none;
+  }
+
+  /*
+    Portrait wrapping dumped a half-square title plus Good/Fun over the
+    fitted 0-10 grid you tapped to read. Match tick size (0.85rem) so the
+    only default-zoom on-canvas name is readable.
+
+    3.75rem is the zoomed one-cell size. At fit zoom other titles are
+    hidden, and 0.85rem in that box shows about four letters ("Kill...").
+    32cqw is ~3.8 score units (7.25rem on a ~370px square, less on a
+    short landscape plot) so the name can be read without the old 50cqw
+    wrap. Compact as soon as light pinch adds --zoomed (1.4x): that is
+    when half-unit lines appear, and a 32cqw wrap still covers ~3.8
+    units of a ~43px cell. --labels (2.2x) is too late; it is when
+    every title appears, not when the selected readout must shrink.
+  */
+  .movie-point--selected > .movie-label,
+  .movie-point.dragging > .movie-label,
+  .movie-point--highlighted > .movie-label {
+    font-size: 0.85rem;
+    max-width: min(7.25rem, 32cqw);
+  }
+
+  /*
+    32cqw nowrap still ellipsizes real titles: "Pirates of the
+    Carribean: Curse of the Black Pearl" (~50 chars) sits at Fun 9.55 /
+    Good 9.83 - the namesake corner - and reads as "Pirates of t…".
+    Wrap in that same box so the default-zoom readout can be identified
+    without bringing back 50cqw cover. Grow down at Fun 9-10 and up at
+    Fun 0-1 so the taller pill stays in the scoring region instead of
+    clipping the 1-unit gutter. Light-pinch and double-tap one-cell
+    titles stay nowrap; this is fit-zoom only (:not --zoomed), not
+    "until names appear" (:not --labels).
+
+    Last-N-lines only helps when a title overflows the box. In this
+    32cqw / 0.85rem cell on a ~370px square (~15-17 characters per
+    line), Pirates is three wraps and already fits. Alexander and
+    the Terrible, Horrible, No Good, Very Bad Day (~59) is four
+    wraps on portrait and five on a typical ~280-360px landscape
+    square (~11-13 characters per line). Four lines then hid the
+    identifying start (Alexander / Terrible) on that short plot
+    and showed only Horrible, No Good, / Very Bad Day. Five
+    line-heights (1.2) fit those. That same title still last-clips
+    on a 10rem-floor landscape square. Short names still
+    shrink-to-fit; the title must keep its content height so
+    flex-end can hide the start instead of shrinking to the
+    first lines. Fit-zoom stacks already hide inactive lines, so
+    this wrap is still one title.
+
+    A 5-line selected pill is ~81px. Unselected names are hidden, and
+    Fun 9-10 already grows down / Fun 0-1 up, so the extra line stays
+    in the scoring region even on a 10rem landscape square.     Overlay
+    3.2x wrap is seven lines: TARGET_LABEL_UNIT_PX 93 makes that
+    10rem ghost-label unit ~106px, so a ~92px seventh line still
+    fits the Fun 10 gutter.
+  */
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    white-space: normal;
+    /*
+      The pill is abspos on a 7px marker. Shrink-to-fit plus wrapping
+      reports the unwrapped title as its width, so max-width only
+      clips to one ellipsized line and the wrap clip never sees a
+      narrower box. Cap the used width so wrap actually runs;
+      max-content keeps short names like Heat from sitting in an
+      empty 32cqw pill.
+    */
+    width: min(max-content, 7.25rem);
+    width: min(max-content, 7.25rem, 32cqw);
+    min-width: 0;
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-line {
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    /*
+      Five line-heights (1.2 on .movie-label) so 5-wrap names like
+      Alexander on a short landscape plot fit in this cell. Height
+      stays auto so a one-line name does not sit in an empty
+      five-line box.
+    */
+    max-height: 6em;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: unset;
     flex: none;
   }
 
-  .deck-page-layout .grid-fit > .grid {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  /*
+    Selected stays one-cell as soon as 1.4x detail lines appear, not
+    only once every title paints at 2.2x. Unselected names and 3.2x
+    ghost names still wait for their own restore classes.
+  */
+  .grid-zoom-slot--zoomed .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point) > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point > .movie-label {
+    font-size: 0.65rem;
+    padding: 0.08rem 0.28rem;
+    width: max-content;
+    max-width: 3.75rem;
+    white-space: nowrap;
+  }
+
+  /*
+    Fit-zoom selected/highlighted halos (24px marker, 16px title) are how
+    you find the only painted name among anonymous dots. Once the pill
+    shrinks to one cell at 1.4x, those blooms cover the inner half of a
+    3.75rem name: labels sit 9px from the 11px marker, and the ::after
+    glow paints above the title (z-index 2 vs 1). At 2.2x the same halo
+    covers neighboring truncated titles and the other listed line in a
+    stacked pill - the names pinch-to-read and the chip-hide just
+    uncovered. Keep a 2px ring plus a solid selected/linked fill so the
+    active stacked name still reads without the bloom.
+  */
+  .grid-zoom-slot--zoomed .movie-point.movie-point--highlighted::after,
+  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point:not(.ghost-point).movie-point--highlighted::after {
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.95);
+  }
+
+  .grid-zoom-slot--zoomed .movie-point.movie-point--selected::after,
+  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point:not(.ghost-point).movie-point--selected::after {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.95);
+  }
+
+  .grid-zoom-slot--zoomed .movie-label-line--selected .movie-label-title {
+    background: #1e40af;
+    box-shadow: none;
+  }
+
+  .grid-zoom-slot--zoomed .movie-label-line--linked .movie-label-title {
+    background: #166534;
+    box-shadow: none;
+  }
+
+  /*
+    Fit-zoom pills lift off anonymous dots with a 14px drop shadow.
+    Once the selected readout shrinks to one cell at 1.4x, that bloom
+    covers neighboring compact titles - and at 2.2x it covers the
+    truncated names pinch-to-read just uncovered, the same leak as
+    the title-line glow above. Keep a tight inset plus 2px edge so
+    the dark pill still separates from the grid. Beat the example-
+    deck label restore, which reapplied the 14px shadow.
+  */
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) > .movie-label,
+  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) > .movie-label {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 1px 2px rgba(15, 23, 42, 0.35);
+  }
+
+  /*
+    Ghosts are .movie-point too, so the zoomed title restore would dump a
+    second 40-movie overlay onto the square you just pinched to read.
+    Keep compare as color-dots through double-tap 2.2x; names wait until
+    a deeper pinch (grid-zoom-slot--ghost-labels at 3.2x).
+
+    Overlay fade is on .ghost-point (opacity 0.5), not the marker.
+    Child .movie-label { opacity: 1 } cannot undo that: it only unhides
+    the pill from the fit-zoom 0, then the parent still composites at
+    50%. After iteration 168 restored purple/teal, pinch-to-read overlay
+    names were still washed-out half-opacity pills. Raise the whole
+    overlay once those names paint; faded color-dots stay through 2.2x.
+
+    Ghosts stay z-index 0 through 2.2x so faded color-dots sit under
+    primary titles. Labels cannot climb out: coarse-pointer inverse-
+    scale transform on .movie-point is a stacking context, so a child
+    z-index never paints above a sibling primary (z-index 1). Primary
+    and overlay titles also share a side at Good < 5 and Good > 7, so
+    a 3.2x overlay name still sat behind the 2.2x primary pill after
+    the opacity restore.
+
+    Unselected primaries are z-index 1, so lifting the overlay to 2
+    was enough for those. Selected (4) and highlighted (3) still
+    buried nearby overlay names: compact 3.75rem pills extend ~69px
+    from the marker, and at 3.2x a 0.5-unit neighbor is only ~59px
+    away on the same label side. 3.2x is when overlay names paint;
+    every primary title is already readable from 2.2x, and the blue
+    ring plus Selected bar still mark the movie you are looking at.
+    Lift overlays above selected/highlighted so pinch-to-read those
+    names is not the same cover-the-readout leak as the 1.4x wrap.
+    Dragging stays above that so a hold-to-move movie is not buried
+    by a compare pill. Ghosts are pointer-events: none, so paint
+    order does not steal taps.
+
+    Same-score is the leftover of lifting the whole overlay: the
+    purple/teal marker sat on the selected blue ring. Those overlays
+    stay at z-index 2 - above unselected primaries so a neighboring
+    title cannot cover the opposite-side overlay name, below
+    selected/highlighted so the ring you are looking at still paints.
+    GhostPoints also flips that coincident title to the other side
+    of the primary, so both names read without sharing a pill.
+    At Good <= 1 / Good >= 9 that other side is off-canvas (the
+    namesake Good 9-10 corner especially), so those stay on the
+    primary's side and shift north/south toward the scoring region.
+    Two overlays at that same score still share one slot, so the
+    second (teal) takes the next vertical opening toward the
+    interior: south/north of the opposite-side purple at interior
+    Good, or one pill farther at the edge.
+    With no primary they still share the default overlay side, so
+    the second takes the other side, or north/south of the
+    centered purple at Good 0 / Good 10.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point {
+    opacity: 1;
+    z-index: 5;
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point--under-selected {
+    z-index: 2;
+  }
+
+  .grid-zoom-slot--ghost-labels .movie-point.dragging {
+    z-index: 6;
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point > .movie-label {
+    opacity: 1;
+    pointer-events: none;
+  }
+
+  /*
+    Overlay movies have no Selected bar, so a one-line 3.75rem
+    ellipsis is the only 3.2x readout. Wrap in that same one-cell
+    box (the fit-zoom selected trick) so names like Pirates of
+    the Caribbean are identifiable without covering extra Good
+    units. Cap used width: shrink-to-fit plus a wrapping block
+    otherwise reports the unwrapped title and the two-line clip
+    never sees a narrower box.
+
+    Line-clamp shows the start of that wrap: "A Complete
+    Unknown" became "A / Complete…", "The Phoenician Scheme"
+    became "The / Phoenici…", and "Pirates of the Carribean:
+    Curse of the Black Pearl" never reached Black Pearl. Clip
+    to the last wrapped lines instead (column flex-end plus
+    overflow) so those read as Complete/Unknown,
+    Phoenician/Scheme, and Black Pearl. Short names still
+    shrink-to-fit; the title must keep its content height so
+    flex-end can hide the start instead of shrinking to the
+    first lines.
+
+    Last-N-lines only helps when a title overflows the box.
+    In this ~9-character 3.75rem cell, 24-27 character names
+    are three wraps and already fit. 28-35 character names
+    are four wraps and already fit. 36-43 character names
+    are five wraps and already fit. 44-50 character names
+    are six wraps and already fit. 51-59 character names
+    are seven wraps: "Alexander and the Terrible, Horrible,
+    No Good, Very Bad Day". Six lines then hid the
+    identifying start (Alexander / Terrible), and overlays
+    have no Selected bar to recover it. Seven line-heights
+    (1.2) fit those. Longer namesake titles still last-clip
+    to the distinctive ending.
+
+    A 7-line overlay is ~92px. Ghost-label zoom keeps at
+    least ~106px per unit even on a 10rem landscape square
+    (labelsVisibleScale plus 1x after TARGET_LABEL_UNIT_PX
+    93), so the extra line stays inside one Fun cell and
+    the 1-unit Fun 10 gutter.
+
+    Stacked overlays already list every truncated name, the same
+    2.2x primary readout. Wrapping each of those lines too turns
+    a two-film overlay (Code 3 + Kill Bill V2 in the 2026 example)
+    into a twelve-line pill over the cluster pinch-to-read just
+    uncovered. Keep stacks one-line; wrap only a single overlay.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) > .movie-label {
+    white-space: normal;
+    width: min(max-content, 3.75rem);
+    min-width: 0;
+  }
+
+  .movie-point .movie-label-title {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) .movie-label-line {
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    /*
+      Seven line-heights (1.2 on .movie-label) so 7-wrap overlay
+      names fit in this cell. Height stays auto so a one-line
+      name does not sit in an empty seven-line box.
+    */
+    max-height: 8.4em;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) .movie-label-title {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: unset;
+    flex: none;
+  }
+
+  /*
+    Stacked overlay names stay one-line so a two-film compare
+    (Code 3 + Kill Bill V2) does not become a ten-line pill.
+    End ellipsis then hides the sequel: "Back to the Future 2"
+    and "Kill Bill V2" read as "Back to t…" / "Kill Bill…", and
+    overlays have no Selected bar to recover the ending. Clip
+    from the start instead: RTL overflow on the line, LTR
+    isolate on the title, so the same 3.75rem box shows
+    "…Future 2" / "…Bill V2". Short names like Code 3 still
+    fit and stay left-aligned. min-width: 0 so the flex line
+    actually shrinks to that box instead of painting past it.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point--stacked .movie-label-line {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: rtl;
+    text-align: left;
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point--stacked .movie-label-title {
+    display: inline;
+    direction: ltr;
+    unicode-bidi: isolate;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  /*
+    Compact one-cell primary titles clip from the start so
+    sequels stay identifiable without the Selected bar.
+    Gate on --zoomed, not --labels and not --stacked: that
+    is when every compact primary pill exists.
+
+    RTL + unicode-bidi:isolate on the title itself (iteration
+    180) reorders leading numbers: "28 Days Later" and "28
+    Years Later" both painted as "… Later 28", and "28 Years
+    Later Bone Temple" became "…emple 28". Use the overlay
+    two-element isolate instead: RTL overflow on the line,
+    LTR isolate on the inline title, so "…ays Later" /
+    "…ars Later" / "…e Temple" / "…Future 3" keep English
+    order. Short names still fit and stay left-aligned.
+
+    overflow:visible on that isolate grows the title's layout
+    box into the clipped start. listedMovieIdContainingPoint
+    intersects with the pill so right-side 2.2x labels cannot
+    steal tap-A-then-tap-B from this stack's 44px ring.
+    Ghost stacks already clip at --ghost-labels; unstacked
+    overlays wrap there. Unstacked primaries wrap at --labels
+    (below) so pinch-to-read names are not stuck at one line.
+  */
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) .movie-label-line {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: rtl;
+    text-align: left;
+  }
+
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) .movie-label-title {
+    display: inline;
+    direction: ltr;
+    unicode-bidi: isolate;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  /*
+    Unstacked primary titles have no Selected bar once they are
+    not the tapped movie, so a one-line 3.75rem start-clip is the
+    only 2.2x readout for the rest of the grid. Wrap in that same
+    one-cell box (the overlay 3.2x trick) so names like A Complete
+    Unknown and The Phoenician Scheme are identifiable without
+    tapping each one. Stacked primaries stay one-line start-clipped:
+    wrapping each listed sequel would turn Back to the Future 2/3
+    into a four-line pill over the cluster pinch-to-read just
+    uncovered, and last-two-lines would hide those numbers.
+
+    Line-clamp would paint the first wrapped lines. Clip to
+    the last instead so a longer wrap still reaches the
+    distinctive ending. Last-N-lines only helps when a
+    title overflows the box. Two lines only covered ~10-18
+    character names in this ~9-character cell. 19-27
+    character names are three wraps and already fit. 28-35
+    character names are four wraps and already fit. 36-43
+    character names are five wraps: "Austin Powers:
+    International Man of Mystery", "The Unbearable Weight
+    of Massive Talent". Five line-heights then hid the
+    identifying start of 44-50 character names ("Pirates
+    of the Carribean: Curse of the Black Pearl"), and
+    unselected primaries have no Selected bar to recover
+    it. Six line-heights then hid the identifying start of
+    51-59 character names ("Alexander and the Terrible,
+    Horrible, No Good, Very Bad Day"), and unselected
+    primaries have no Selected bar to recover it. Seven
+    line-heights (1.2) fit those once double-tap cells
+    are ~93px. Short names still shrink-to-fit.
+
+    Compact zoomed titles are 0.65rem, not the 0.8rem
+    fit-hidden size. A 7-line pill (8.4em plus 0.08rem
+    padding and 1px border) is ~92px. Double-tap now
+    raises the cell to ~93px (TARGET_LABEL_UNIT_PX) so
+    that extra line fits at --labels instead of waiting
+    for a deeper pinch. Alexander is the longest
+    example-deck title, so eight-line wrap has no
+    remaining name at this cell size.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked) > .movie-label {
+    white-space: normal;
+    width: min(max-content, 3.75rem);
+    min-width: 0;
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked) .movie-label-line {
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    /*
+      Seven line-heights (1.2 on .movie-label) so 7-wrap
+      names fit in this cell. Height stays auto so a
+      one-line name does not sit in an empty seven-line box.
+    */
+    max-height: 8.4em;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    direction: ltr;
+    text-overflow: unset;
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked) .movie-label-title {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: unset;
+    flex: none;
+    direction: ltr;
+    unicode-bidi: normal;
+  }
+
+  /*
+    Keep right-side titles on the right; the rule above would pull them left.
+    .movie-label only - the floating score pill is also a child span.
+  */
+  .movie-point--label-end > .movie-label,
+  .ghost-point > .movie-label {
+    transform: translate(calc(100% + 9px), -50%);
+  }
+
+  /*
+    Fit-zoom selected wrap grows into the square at Fun 9-10 / Fun 0-1
+    because that 1-unit gutter is only ~31px and cannot hold a 5-line
+    pill. Double-tap cells are ~93px, so the same gutter can hold a
+    7-line ~92px wrap. A centered 7-line pill still extends ±0.5
+    Fun units, so Pirates (9.55 / 9.83) covers Kill Bill V1
+    (8.67 / 9.25) in the namesake corner. Grow into the Fun 10 /
+    Fun 0 gutter instead (the inverse of fit-zoom) so those names
+    stay identifiable without covering the cluster pinch-to-read
+    just uncovered. Interior same-Good pairs closer than one Fun
+    unit (Grizzly Man and 28 Days Later at 8.32) reuse that
+    vertical growth so both seven-line pills fit instead of
+    covering each other; that stagger is labels-visible only so
+    fit-zoom selected wrap stays centered. Other interior titles
+    stay centered. Stacked stay one-line and do not need this.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10 > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--label-end > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10.movie-point--label-end > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0 > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--label-end > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0.movie-point--label-end > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  /*
+    Fun 9-10 / Fun 0-1 gutter growth still leaves a 3.75rem pill covering
+    1-unit Good neighbors: default labels sit left at Good >= 5, so
+    Pirates (9.55 / 9.83) covers Kill Bill V1 (8.67 / 9.25) and
+    Inglorious Basterds (9.00 / 9.02) on the same side. Fit-zoom
+    selected wrap stays on that interior side because the 1-unit
+    gutter is only ~31px. Double-tap cells are ~93px, so grow into
+    the Good 10 / Good 0 gutter instead (the inverse of the Good < 5
+    flip). Combine with the Fun 9-10 / Fun 0-1 flip so the namesake
+    corner sits in both gutters. Overlay names get the same Good
+    gutter at ghost-label zoom. Stacked stay one-line and do not
+    need this.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10 > .movie-label {
+    transform: translate(calc(100% + 9px), -50%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-south > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-north > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0 > .movie-label {
+    transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-south > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-north > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Good-gutter transform is vertically centered and would undo
+    Fun 10 / Fun 0 growth on a gutter neighbor of an interior
+    Fun-plus-Good slot. Combine so Stand by Me (Good 10, Fun 0)
+    sits below Mickey 17 (Good 10, Fun 0) instead of covering
+    it, matching label-south / label-north combos already used
+    at Fun 9-10 / Fun 0-1. Leftover Fun-gutter triangles
+    reuse these so 12 Years (Good 10, Fun 10) sits above
+    Schindler and Requiem instead of covering them; the
+    3-class label-north combos below keep that Fun 10
+    offset when namesake Fun 0-1 gutter growth would
+    otherwise win. Overlay leftover triangles match at
+    ghost-label zoom. Fit-zoom selected wrap is unchanged
+    because both classes are labels-visible only.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--stagger-fun-10 > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--stagger-fun-0 > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--stagger-fun-10 > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--stagger-fun-0 > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Fun 0-1 / Fun 9-10 gutter growth is equally specific
+    to gutter-good + stagger-fun and would keep 12 Years
+    growing off the Fun 0 edge. Combine so leftover
+    Fun-gutter triangles keep both offsets: 12 Years
+    (label-north, Good 10, Fun 10) grows into the plot
+    above Schindler and Requiem. Overlay copies match
+    at ghost-label zoom. Fit-zoom selected wrap is
+    unchanged because both classes are labels-visible
+    only.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-north.movie-point--stagger-fun-10 > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-north.movie-point--stagger-fun-10 > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-south.movie-point--stagger-fun-0 > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-south.movie-point--stagger-fun-0 > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Same-Good Fun stagger still leaves a 3.75rem pill covering a
+    close-Good neighbor on the default label side: Grizzly Man
+    (7.59 / 8.32, toward Fun 10) covers The Death of Stalin
+    (8.01 / 8.44). Fit-zoom selected wrap must stay on that
+    interior side, so this is labels-visible only and uses its
+    own classes instead of label-end. Anchor left/right like
+    label-end: a transform-only Good 10 shift on left:0 would
+    leave a one-pill gap and cover Kill Bill V1 instead of
+    sitting beside Stalin. One neighbor per pair, away from
+    the pair's Good, so Novocaine stays put.     Isolated
+    close-Good pairs that are not next to a same-Good pair
+    (Frankenstein vs Back to the Future 3, Ad Astra vs
+    Sicario) reuse these classes: one title, away from its
+    partner.     Remaining degree-1 ends of longer close-Good
+    chains (Alexander toward 28 Years Later, Pizza Movie
+    toward Bone Temple) reuse them too, and odd-length
+    leftovers of those peels (Indiana Jones toward Black
+    Panther) flip opposite the claimed partner. Overlay
+    close-Good gets this stagger at ghost-label zoom.
+    Independent same-side collisions after those flips
+    (Lebowski vs Palm Springs both Good 10, Moana vs On
+    the Basis of Sex both Good 0) add Fun stagger on top
+    of these classes; remaining 4-cliques (Brokeback /
+    Marriage Story / Room / Nomadland) assign both Fun
+    and Good slots at once, size-3 triangles (Naked
+    Gun / Naked Gun old / One of Them Days) reuse three
+    of those slots as a 2-vs-1 split, size-5+ mesh
+    hub peels (Sinners / Clerks / One Battle After
+    Another / Mickey 17 around Knives Out 3) reuse a
+    leftover unique-quadrant 4, and leftover size-5
+    of that peel (Knives Out 3 / The Vvitch / The
+    Killer) reuse three of those slots as a triangle.
+    The combo rules below keep both offsets so
+    Good-side transform does not re-center them.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-good-10 > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -50%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-good-0 > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  /*
+    Good-side stagger transform is vertically centered and would
+    undo Fun 10 / Fun 0 growth. Combine so Lebowski (Good 10,
+    Fun 10) sits above Palm Springs (Good 10, Fun 0) instead of
+    covering it, and Moana (Good 0, Fun 10) sits above On the
+    Basis of Sex (Good 0, Fun 0). Remaining 4-cliques reuse
+    all four combo slots around the cluster centroid so
+    Brokeback, Marriage Story, Room, and Nomadland sit in
+    opposite corners instead of covering. Leftover
+    Fun-gutter Fun 10 that still meets Room then
+    reuses Room's Fun-plus-Good combo so Room
+    (Fun 10 / Good 10) sits above 12 Years instead
+    of covering it. Size-3 triangles reuse three of
+    those slots as a 2-vs-1 split so Naked
+    Gun old (Fun 10 / Good 10) sits above Naked Gun (Fun 0 /
+    Good 10) while One of Them Days occupies Fun 0 / Good 0.
+    Size-5+ mesh hub peels reuse a leftover unique-quadrant
+    4 so Sinners (Fun 10 / Good 10), Clerks (Fun 10 /
+    Good 0), One Battle After Another (Fun 0 / Good 0),
+    and Mickey 17 (Fun 0 / Good 10) sit in opposite
+    corners instead of covering. Leftover size-5 of that
+    peel reuses three of those slots so Knives Out 3
+    (Fun 10 / Good 0), The Vvitch (Fun 10 / Good 10),
+    and The Killer (Fun 0 / Good 10) sit apart instead
+    of covering. Good-gutter neighbors of those slots
+    (Stand by Me next to Mickey 17) reuse Fun stagger
+    with the gutter-good combo above so the centered
+    Good 10 transform does not re-center them.
+    Fun-gutter neighbors of those slots (Manchester
+    by the Sea next to Room) reuse Good stagger with
+    the label-north / label-south combo below so the
+    centered Good-side transform does not undo Fun
+    0-1 / Fun 9-10 edge-gutter growth. Isolated
+    Fun-gutter close-Good pairs (Airplane vs
+    Ghostbusters, Inglorious Basterds vs Pirates)
+    reuse that same left/right flip.
+    Fit-zoom selected wrap is unchanged
+    because both classes are labels-visible only.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Good-side stagger transform is vertically centered and
+    would undo Fun 0-1 / Fun 9-10 edge-gutter growth on a
+    Fun-gutter neighbor of an interior Fun-plus-Good slot.
+    Combine so Manchester by the Sea (label-north, Good 0)
+    sits left of Room (Fun 10 / Good 10 after leftover
+    Fun-gutter Fun 10 matches that interior) instead of
+    covering it in the Fun 0 gutter, matching the
+    Fun-plus-Good combos above.     Isolated Fun-gutter
+    pairs reuse these combos so Airplane (label-south,
+    Good 10) sits right of Ghostbusters and Inglorious
+    Basterds (label-south, Good 0) sits left of
+    Pirates. Fun-gutter 3-chains reuse them so Top
+    Gun (label-south, Good 10) sits
+    right of Die Hard and Kill Bill (label-south,
+    Good 10) sits right of Die Hard after the leftover
+    peel. Leftover Fun-gutter triangles reuse the
+    gutter-good + stagger-fun combos above so 12
+    Years (label-north, Good 10, Fun 10) sits above
+    Schindler and Requiem and below Room once Room
+    matches that Fun 10. Leftover pairs on that
+    slot reuse the Fun-plus-Good combos below so
+    Schindler (Fun 10 / Good 0) sits left of 12
+    Years and above Requiem. Include label-end so an
+    equally specific later label-south / label-north
+    + label-end rule does not grow these back onto
+    the interior Good side. Overlay Fun-gutter
+    3-chains, leftover triangles, and leftover
+    pairs match at ghost-label zoom. Fit-zoom
+    selected wrap is unchanged because both
+    classes are labels-visible only.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    label-north + stagger-good is equally specific to
+    stagger-fun + stagger-good and would keep Schindler
+    hanging in the Fun 0 gutter after the leftover pair
+    takes Fun 10 / Good 0. Combine so leftover Fun-gutter
+    pairs keep both offsets: Schindler (label-north, Fun
+    10, Good 0) sits left of 12 Years and above Requiem
+    instead of covering Requiem on the north/Good-10 slot.
+    Fun 9-10 leftover pairs reuse the south / Fun 0
+    combos. Include label-end so an equally specific
+    later label-north + stagger-good + label-end rule
+    does not grow these back onto the namesake Good
+    side or undo Fun 10. Overlay copies match at
+    ghost-label zoom. Fit-zoom selected wrap is
+    unchanged because both classes are labels-visible
+    only.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  .ghost-point.ghost-point--label-south > .movie-label {
+    transform: translate(calc(100% + 9px), calc(50% + 4px));
+  }
+
+  .ghost-point.ghost-point--label-south.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), calc(50% + 4px));
+  }
+
+  .ghost-point.ghost-point--label-north > .movie-label {
+    transform: translate(calc(100% + 9px), calc(-150% - 4px));
+  }
+
+  .ghost-point.ghost-point--label-north.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), calc(-150% - 4px));
+  }
+
+  .ghost-point.ghost-point--label-south-far > .movie-label {
+    transform: translate(calc(100% + 9px), calc(150% + 8px));
+  }
+
+  .ghost-point.ghost-point--label-south-far.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), calc(150% + 8px));
+  }
+
+  .ghost-point.ghost-point--label-north-far > .movie-label {
+    transform: translate(calc(100% + 9px), calc(-250% - 8px));
+  }
+
+  .ghost-point.ghost-point--label-north-far.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), calc(-250% - 8px));
+  }
+
+  /*
+    Primary 7-line titles at labels-visible already grow into the Fun
+    10 / Fun 0 gutter. Overlay names wait for ghost-label zoom and
+    stayed vertically centered, so a 7-line compare pill like Pirates
+    (9.55 / 9.83) still covers a 1-unit Fun neighbor such as Kill
+    Bill V1 (8.67 / 9.25) on the same label side. Grow unstacked
+    overlays into that same gutter. Interior same-Good pairs closer
+    than one Fun unit reuse that vertical growth so both seven-line
+    pills fit instead of covering each other; that stagger is
+    ghost-label only and uses its own classes so Fun 9-10 / Fun 0-1
+    edge flags stay edge-only. Coincident north/south keep their
+    interior slot so they do not restack on the primary that already
+    moved into the gutter. Stacked overlays stay one-line and do
+    not need this.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10 > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--label-start > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-0 > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--label-start > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Fun 9-10 / Fun 0-1 overlay gutter growth still leaves a 3.75rem
+    pill covering 1-unit Good neighbors: default overlays sit left
+    at Good > 7, so Pirates (9.55 / 9.83) covers Kill Bill V1
+    (8.67 / 9.25) and Inglorious Basterds (9.00 / 9.02) on the same
+    side. Grow unstacked centered overlays into the Good 10 / Good 0
+    gutter, matching primary labels-visible. Combine with Fun
+    gutter growth so the namesake corner sits in both. Coincident
+    north/south keep their current Good side so they do not restack
+    on the primary that already occupies that gutter. Stacked
+    overlays stay one-line and do not need this.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10 > .movie-label {
+    transform: translate(calc(100% + 9px), -50%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0 > .movie-label {
+    transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Good-gutter overlay transform is vertically centered and would
+    undo Fun 10 / Fun 0 growth on a gutter neighbor of an interior
+    Fun-plus-Good slot. Combine so Stand by Me (Good 10, Fun 0)
+    sits below Mickey 17 (Good 10, Fun 0) instead of covering
+    it, matching primary labels-visible. Include label-start so
+    an equally specific later stagger-fun + label-start rule
+    does not grow these back onto the interior Good side.
+    Fun 0-1 / Fun 9-10 gutter titles stay out of this pass
+    so it does not fight edge-gutter CSS. Leftover Fun-gutter
+    triangles reuse these so 12 Years (Good 10, Fun 10) sits
+    above Schindler and Requiem; the 3-class gutter-fun
+    combos below keep that Fun 10 offset when namesake
+    Fun 0-1 gutter growth would otherwise win.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--stagger-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--stagger-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--stagger-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--stagger-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--stagger-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--stagger-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--stagger-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--stagger-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Fun 0-1 / Fun 9-10 overlay gutter growth is equally
+    specific to gutter-good + stagger-fun and would keep
+    12 Years growing off the Fun 0 edge. Combine so leftover
+    Fun-gutter triangles keep both offsets: 12 Years
+    (gutter-fun-0, Good 10, Fun 10) grows into the plot
+    above Schindler and Requiem. Include label-start so an
+    equally specific later gutter-fun + label-start rule
+    does not grow these back off the Fun 0 edge.
+    Coincident namesake Good 10 already occupy north/south
+    because the opposite side clips, so hasVerticalSlot
+    skips this on same-position compare; the split helps
+    non-coincident overlay clusters.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-0.ghost-point--stagger-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-0.ghost-point--stagger-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-0.ghost-point--stagger-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-0.ghost-point--stagger-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-10.ghost-point--stagger-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-10.ghost-point--stagger-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-10.ghost-point--stagger-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-10.ghost-point--stagger-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Same-Good Fun stagger still leaves a 3.75rem overlay covering a
+    close-Good neighbor on the default overlay side: Grizzly Man
+    (7.59 / 8.32, toward Fun 10) covers The Death of Stalin
+    (8.01 / 8.44). Overlay names wait for ghost-label zoom, so this
+    is ghost-label only and uses its own classes instead of
+    label-start. Anchor left/right like label-start: a transform-only
+    Good 10 shift on left:0 would leave a one-pill gap and cover
+    Kill Bill V1 instead of sitting beside Stalin. One neighbor per
+    pair, away from the pair's Good. Isolated close-Good pairs that
+    are not next to a same-Good pair (Frankenstein vs Back to the
+    Future 3, Ad Astra vs Sicario) reuse these classes: one title,
+    away from its partner.     Remaining degree-1 ends of longer
+    close-Good chains (Alexander toward 28 Years Later, Pizza Movie
+    toward Bone Temple) reuse them too. Independent same-side
+    collisions after those flips (Lebowski vs Palm Springs both
+    Good 10, Moana vs On the Basis of Sex both Good 0) add Fun
+    stagger on top of these classes; remaining 4-cliques
+    (Brokeback / Marriage Story / Room / Nomadland) assign
+    both Fun and Good slots at once, and size-3 triangles
+    (Naked Gun / Naked Gun old / One of Them Days) reuse
+    three of those slots as a 2-vs-1 split, size-5+
+    mesh hub peels (Sinners / Clerks / One Battle After
+    Another / Mickey 17 around Knives Out 3) reuse a
+    leftover unique-quadrant 4, leftover mesh of that
+    peel (Knives Out 3 / The Vvitch / The Killer) reuse
+    three of those slots as a triangle, and leftover
+    size-5 of that peel (John Wick / Some Like It Hot /
+    Challengers / Logan Lucky after peeling Inside the
+    Mind of a Dog) reuse a leftover unique-quadrant 4.
+    The combo rules below keep both offsets so Good-side
+    transform does not re-center them. Coincident
+    north/south keep their current Good side so they do
+    not restack on the primary.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -50%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  /*
+    Good-side overlay stagger transform is vertically centered and
+    would undo Fun 10 / Fun 0 growth. Combine so Lebowski (Good 10,
+    Fun 10) sits above Palm Springs (Good 10, Fun 0) instead of
+    covering it, and Moana (Good 0, Fun 10) sits above On the
+    Basis of Sex (Good 0, Fun 0). Remaining 4-cliques reuse
+    all four combo slots around the cluster centroid so
+    Brokeback, Marriage Story, Room, and Nomadland sit in
+    opposite corners instead of covering. Size-3 triangles
+    reuse three of those slots as a 2-vs-1 split so Naked
+    Gun old (Fun 10 / Good 10) sits above Naked Gun (Fun 0 /
+    Good 10) while One of Them Days occupies Fun 0 / Good 0.
+    Size-5+ mesh hub peels reuse a leftover unique-quadrant
+    4 so Sinners (Fun 10 / Good 10), Clerks (Fun 10 /
+    Good 0), One Battle After Another (Fun 0 / Good 0),
+    and Mickey 17 (Fun 0 / Good 10) sit in opposite
+    corners instead of covering. Leftover mesh of that
+    peel reuses three of those slots so Knives Out 3
+    (Fun 10 / Good 0), The Vvitch (Fun 10 / Good 10),
+    and The Killer (Fun 0 / Good 10) sit apart instead
+    of covering. Leftover size-5 of that peel reuses a
+    leftover unique-quadrant 4 so John Wick (Fun 10 /
+    Good 0), Some Like It Hot (Fun 10 / Good 10),
+    Challengers (Fun 0 / Good 10), and Logan Lucky
+    (Fun 0 / Good 0) sit in opposite corners instead of
+    covering. Good-gutter neighbors of those slots
+    (Stand by Me next to Mickey 17) reuse Fun stagger
+    with the gutter-good combo above so the centered
+    Good 10 transform does not re-center them.
+    Fun-gutter neighbors of those slots (Manchester
+    by the Sea next to Room) reuse Good stagger with
+    the gutter-fun combo below so the centered
+    Good-side transform does not undo Fun 0-1 /
+    Fun 9-10 edge-gutter growth.
+    Coincident north/south keep their slot because
+    both classes skip hasVerticalSlot.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-0.ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-0.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-0.ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-0.ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Good-side overlay stagger transform is vertically centered
+    and would undo Fun 0-1 / Fun 9-10 edge-gutter growth on a
+    Fun-gutter neighbor of an interior Fun-plus-Good slot.
+    Combine so Manchester by the Sea (gutter-fun-0, Good 0)
+    sits left of Room (Fun 0 / Good 10) instead of covering
+    it in the Fun 0 gutter, matching the Fun-plus-Good
+    combos above. Isolated Fun-gutter pairs reuse these
+    combos so Airplane (gutter-fun-10, Good 10) sits right
+    of Ghostbusters and Inglorious Basterds (gutter-fun-10,
+    Good 0) sits left of Pirates. Fun-gutter 3-chains
+    reuse them so Top Gun (gutter-fun-10, Good 10) sits
+    right of Die Hard. Overlay flip 7 already puts Kill
+    Bill on the right of Die Hard, so the leftover peel
+    does not need a new transform.     Leftover Fun-gutter
+    triangles reuse the gutter-good + gutter-fun +
+    stagger-fun combos above so 12 Years (gutter-fun-0,
+    Good 10, Fun 10) sits above Schindler and Requiem.
+    Leftover pairs on that slot reuse the Fun-plus-Good
+    combos below so Schindler (Fun 10 / Good 0) sits
+    left of 12 Years and above Requiem. Include label-start so an
+    equally specific gutter-fun + label-start or stagger-good
+    + label-start rule does not grow these back onto the
+    interior Good side or re-center them. Overlay Fun-gutter
+    neighbors at Good >= 9 / <= 1 already occupy north/south
+    when coincident because the opposite side clips, so
+    hasVerticalSlot skips this on same-position compare;
+    the split helps non-coincident overlay clusters.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    gutter-fun + stagger-good is equally specific to
+    stagger-fun + stagger-good and would keep Schindler
+    hanging in the Fun 0 gutter after the leftover pair
+    takes Fun 10 / Good 0. Combine so leftover Fun-gutter
+    pairs keep both offsets: Schindler (gutter-fun-0, Fun
+    10, Good 0) sits left of 12 Years and above Requiem
+    instead of covering Requiem on the north/Good-10 slot.
+    Fun 9-10 leftover pairs reuse the gutter-fun-10 / Fun 0
+    combos. Include label-start so an equally specific
+    later gutter-fun + stagger-good + label-start rule
+    does not grow these back onto the namesake Good
+    side or undo Fun 10. Coincident namesake Good 10
+    already occupy north/south because the opposite
+    side clips, so hasVerticalSlot skips this on
+    same-position compare; the split helps
+    non-coincident overlay clusters.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-fun-10.ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-fun-10.ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-fun-10.ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-fun-10.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-fun-0.ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-fun-0.ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-fun-0.ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-fun-0.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  /*
+    Stacked groups put every title in one pill. Keep only the active line
+    until 2.2x so cycling changes the compact title; the count chip is
+    already hidden on the selected marker. At 2.2x stacks list every
+    truncated title so pinch-in can be read without tapping.
+  */
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--stacked.movie-point--selected .movie-label-line:not(.movie-label-line--selected):not(.movie-label-line--linked),
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--stacked.movie-point.dragging .movie-label-line:not(.movie-label-line--selected):not(.movie-label-line--linked),
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--stacked.movie-point--highlighted .movie-label-line:not(.movie-label-line--selected):not(.movie-label-line--linked) {
+    display: none;
+  }
+
+  /*
+    The hover score pill is centered above the dot, so on a ~370px square
+    it clips at Good 0/10 (needs ~60px, margin is ~31px). Scores live in
+    the sidebar Selected bar instead of a wrapping on-canvas stack.
+  */
+  .movie-point .movie-point-score {
+    display: none;
+  }
+
+  .btn-undo {
+    min-height: 2.25rem;
+    touch-action: manipulation;
+  }
+
+  /*
+    iOS Safari zooms the whole page when focusing inputs smaller than 16px.
+    Beat component rules that set 0.8rem / 0.95rem on the same elements.
+  */
+  input,
+  select,
+  textarea,
+  .movie-form--compact .field input,
+  .movie-list-header select,
+  .ghost-compare-row select,
+  .deck-sidebar .ghost-compare-row select,
+  .deck-form input,
+  .deck-toolbar select,
+  .deck-rename-input,
+  .cl-formFieldInput,
+  .cl-otpCodeFieldInput,
+  .cl-phoneInputInput,
+  .cl-input {
+    font-size: 16px;
+  }
+
+  button,
+  .movie-form--compact button,
+  .deck-form button,
+  .deck-actions button,
+  .btn-swap,
+  .btn-rename-selected,
+  .btn-delete-selected {
+    touch-action: manipulation;
+  }
+
+  .movie-form--compact button,
+  .deck-sidebar .btn-swap {
+    min-height: 2.75rem;
+  }
+
+  /*
+    Sidebar layout sets compare selects to min-height: 0, and the movie-list
+    sort still uses 0.2rem padding, so 16px font is only ~28-30px. iOS also
+    ignores min-height on native selects unless padding actually grows the
+    box. 44px padding-box so Sort and Compare are real taps, matching Swap.
+  */
+  .ghost-compare-row select,
+  .deck-sidebar .ghost-compare-row select,
+  .movie-list-header select {
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
+  }
+
+  /*
+    Compact add-movie title is 0.35rem padding + 16px font, which is only
+    ~27-37px. Summary, Fun/Good, and submit in that sheet are already 44px.
+    Same padding-box recipe as Sort/Compare; keep 16px so Safari does not
+    page-zoom on focus.
+  */
+  .movie-form--compact .field input {
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
+  }
+
+  /*
+    Inline rename replaces window.prompt, which is a tiny native field on
+    iPhone. Same 16px / 44px padding-box as Add Movie so Safari does not
+    page-zoom, and the caret is a real tap target in the sheet or list row.
+  */
+  .movie-selection-rename-input,
+  .deck-rename-input {
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
+    font-size: 16px;
+  }
+
+  .deck-form {
+    flex-wrap: wrap;
+  }
+
+  /*
+    Native range height is 0.9rem (~14px), so iPhone cannot grab Fun/Good.
+    Expand the hit box to 44px, keep a thin centered track, and a 28px thumb.
+  */
+  .score-slider {
+    gap: 0.25rem;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .score-slider-label,
+  .score-slider-value {
+    font-size: 0.8rem;
+  }
+
+  .score-slider-input {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 2.75rem;
+    min-height: 44px;
+    padding: 0;
+    background:
+      linear-gradient(#111827, #111827) no-repeat left center,
+      linear-gradient(#d1d5db, #d1d5db) no-repeat center;
+    background-size:
+      var(--score-percent) 0.5rem,
+      100% 0.5rem;
+    touch-action: none;
+  }
+
+  .score-slider-input:focus {
+    outline: none;
+  }
+
+  .score-slider-input:focus-visible {
+    outline: 2px solid #111827;
+    outline-offset: 2px;
+  }
+
+  .score-slider-input::-webkit-slider-runnable-track {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 2.75rem;
+    background: transparent;
+    border: none;
+  }
+
+  .score-slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    width: 1.75rem;
+    height: 1.75rem;
+    margin-top: calc((2.75rem - 1.75rem) / 2);
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: #111827;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+  }
+
+  .score-slider-input::-moz-range-track {
+    height: 0.5rem;
+    background: #d1d5db;
+    border: none;
+    border-radius: 999px;
+  }
+
+  .score-slider-input::-moz-range-progress {
+    height: 0.5rem;
+    background: #111827;
+    border: none;
+    border-radius: 999px;
+  }
+
+  .score-slider-input::-moz-range-thumb {
+    box-sizing: border-box;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: #111827;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+  }
+
+  /*
+    Later rules in this query set touch-action: manipulation for tap delay.
+    That value still allows Safari page pinch-zoom, so pinching a nav link
+    or collapse row would zoom the locked page. Keep pan-y only.
+  */
+  .app:has(.deck-page-layout) .nav-link,
+  .app:has(.deck-page-layout) button,
+  .deck-page-layout .movie-form--compact button,
+  .deck-page-layout .btn-swap,
+  .deck-page-layout .deck-sidebar-collapse-summary,
+  .deck-page-layout .deck-sidebar-back,
+  .deck-page-layout .btn-undo,
+  .deck-page-layout .btn-rename-selected,
+  .deck-page-layout .btn-delete-selected {
+    touch-action: pan-y;
+  }
+}
+
+/*
+  Plot zoom chrome follows the pointer, not the 900px layout breakpoint,
+  because only a coarse pointer can zoom. A mouse in a narrow window keeps
+  the fitted, non-zooming chart. A finger still needs
+  inverse-scale so pinch spreads the grid without exploding pills or 1px
+  strokes. iPhone already matches this; iPad landscape does too, even
+  when it keeps the desktop two-column frame.
+*/
+@media (pointer: coarse) {
+  .grid-tick,
+  .grid-wrapper--example .grid-tick {
+    transform: scale(var(--plot-inverse-scale, 1));
+    transform-origin: 0 0;
+  }
+
+  .deck-page-layout .grid::before,
+  .deck-page-layout .grid-wrapper--example .grid::before {
+    border-left: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
+    border-bottom: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
+    border-right: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
+    border-top: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
+    background-image: none;
+  }
+
+  .deck-page-layout .grid-line-overlay,
+  .deck-page-layout .grid-wrapper--example .grid-line-overlay {
+    display: block;
+  }
+
+  /*
+    Once zoomed, 1-unit cells are large enough that decimal scores need
+    half-unit lines. Overlay 1px strokes stay 1px while the canvas scales.
+  */
+  .deck-page-layout .grid-zoom-slot--zoomed > .grid-line-overlay,
+  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed > .grid-line-overlay {
+    background-image: linear-gradient(var(--grid-line-unit) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line-unit) 1px, transparent 1px),
+      linear-gradient(var(--grid-line-half) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line-half) 1px, transparent 1px);
+    background-size: 10% 10%, 10% 10%, 5% 5%, 5% 5%;
+  }
+
+  .movie-point {
+    transform: translate(-50%, -50%) scale(calc(1 / var(--plot-scale, 1)));
+  }
+
+  /* Invisible ~44px tap target around the marker. */
+  .movie-point::before {
+    content: '';
+    position: absolute;
+    inset: -16px;
+    border-radius: 999px;
+  }
+}
+
+/*
+  iPhone landscape: the portrait stack sizes a square from remaining height
+  after an 11rem sidebar strip, so the plot collapses to ~12rem. Put plot and
+  sidebar side by side and size the square from the short viewport edge.
+  Same 900px / coarse-and-1023px split as the phone layout block so Pro Max
+  landscape gets this row, not the desktop two-column grid.
+*/
+@media (max-width: 900px) and (orientation: landscape),
+  (pointer: coarse) and (max-width: 1023px) and (orientation: landscape) {
+  /*
+    Landscape height is the binding constraint for the fitted square.
+    The phone query already hides the app header; keep tighter padding
+    so the short-side 0-10 grid gets the leftover.
+  */
+  .app:has(.deck-page-layout) > .layout {
+    padding: max(0.12rem, env(safe-area-inset-top)) max(0.25rem, env(safe-area-inset-right))
+      max(0.12rem, env(safe-area-inset-bottom)) max(0.25rem, env(safe-area-inset-left));
+    gap: 0.25rem;
+  }
+
+  .deck-page-layout {
+    flex-direction: row;
+    gap: 0.25rem;
+    min-width: 0;
     width: 100%;
+  }
+
+  .deck-page-layout .grid-panel {
+    flex: 0 0 auto;
+    width: auto;
+    height: auto;
+    max-height: 100%;
+    align-self: center;
+  }
+
+  .deck-page-layout .grid-wrapper {
+    --plot-chrome-y: 2.1rem;
+    width: auto;
+    max-width: none;
+    height: auto;
+    max-height: 100%;
+    align-self: center;
+    padding: 0.25rem;
+    grid-template-columns: 1.65rem minmax(0, 1fr);
+    grid-template-rows: auto auto;
+  }
+
+  .deck-page-layout .grid-zoom-slot {
+    --landscape-pad-y: calc(
+      max(0.12rem, env(safe-area-inset-top, 0px)) +
+        max(0.12rem, env(safe-area-inset-bottom, 0px))
+    );
+    /* Sidebar min plus Fun-axis chrome, wrapper padding, and the row gap. */
+    --landscape-sidebar-min: 15.5rem;
+    --max-plot: min(
+      var(--plot-side-max),
+      max(
+        10rem,
+        calc(
+          var(--deck-viewport-h) - var(--landscape-pad-y) - var(--plot-chrome-y)
+        )
+      ),
+      calc(
+        100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) -
+          var(--landscape-sidebar-min)
+      )
+    );
+    --plot-side: var(--max-plot);
+    width: var(--max-plot);
+    height: var(--max-plot);
+    max-width: var(--max-plot);
+    max-height: var(--max-plot);
+    aspect-ratio: auto;
+    justify-self: start;
+    align-self: start;
+  }
+
+  /*
+    Landscape used to shrink every 0-10 tick to 0.7rem because the stacked
+    12rem-floor plot had a ~13px gutter. Hiding the landscape header grew
+    typical iPhone squares to ~280-360px, the same size as portrait, so
+    those numbers can stay the readable 0.85rem / 4px gutter. Keep the
+    compact ticks only on the 10rem-floor square, where 0.85rem still clips.
+    Fun 10 stays on the left with a 0.7rem label below 17.5rem; only the
+    12rem/10rem floors still use the top-gutter last resort.
+  */
+  @container (max-width: 14rem) {
+    .grid-tick,
+    .grid-wrapper--example .grid-tick {
+      font-size: 0.7rem;
+      /* 2px plus 0.7rem "10" fits a 14rem gutter; the 10rem floor
+         still uses the 12rem Fun 10 top-gutter last resort. */
+      --grid-tick-outset-major: 2px;
+    }
+  }
+
+  .deck-rail {
+    flex: 1 1 0;
+    min-width: 12rem;
+    height: auto;
+    max-height: 100%;
+    align-self: stretch;
+  }
+
+  .deck-sidebar {
+    padding: 0.3rem 0.3rem max(0.3rem, env(safe-area-inset-bottom), var(--keyboard-inset, 0px));
+    gap: 0.35rem;
+  }
+
+  .deck-sidebar .movie-selection-panel {
+    left: 0.3rem;
+    right: 0.3rem;
+    bottom: max(0.3rem, env(safe-area-inset-bottom), var(--keyboard-inset, 0px));
+  }
+
+  .deck-sidebar .movie-selection-panel--renaming,
+  .deck-sidebar .movie-selection-panel--renaming[open] {
+    left: auto;
+    right: auto;
+    bottom: auto;
+    top: auto;
+  }
+
+  /*
+    Portrait hides the plot for open Add/Compare because that stacked
+    square sits above the leftover sidebar and steals the height those
+    sheets need. Landscape is a row: hiding .grid-panel only widens the
+    rail, so the form still fights the short side and the 0-10 grid
+    disappears. Keep the square; give the open sheet the sidebar by
+    hiding the list (Compare already does this in the phone query).
+  */
+  .deck-page-layout:has(.deck-sidebar-section--add[open]) .grid-panel,
+  .deck-page-layout:has(.deck-sidebar-section--tools[open]) .grid-panel {
+    display: flex;
+  }
+
+  .deck-sidebar:has(.deck-sidebar-section--add[open]) .deck-sidebar-section--list.movie-list,
+  .deck-sidebar:has(.deck-sidebar-section--add[open]) .movie-selection-panel {
+    display: none;
+  }
+
+  .deck-sidebar:has(.deck-sidebar-section--add[open]) > .deck-sidebar-tools-row {
+    flex: 1 1 auto;
+  }
+
+  /*
+    Keep the plot in landscape while Add is open so Fun/Good sliders still
+    have a live grid. The iOS landscape keyboard is the exception: it eats
+    the short side, and keyboard-inset cannot lift a title field that sits
+    beside a 10rem-floor square. Hide the plot while typing so the form
+    can use the visual viewport above the keys. Range sliders are not text
+    fields, so dragging Fun/Good brings the grid back. The app header is
+    already hidden on phone deck pages, so typing no longer needs a second hide.
+    Selected rename uses the --renaming session, not :focus, so hiding the
+    square cannot blur-commit the field before the keyboard opens.
+  */
+  .deck-page-layout:has(.deck-sidebar-section--add input[type='text']:focus) .grid-panel,
+  .deck-page-layout:has(.movie-selection-panel--renaming) .grid-panel {
+    display: none;
+  }
+
+  /*
+    Landscape leftover is tall but only ~12-15.5rem wide. The portrait
+    row (title | F/G) is still tight; stacking F/G under the title lets
+    the name use the full rail (~20-24 characters per line). Two lines
+    is ~40-48 characters, so Pirates (~50) and Alexander and the
+    Terrible, Horrible, No Good, Very Bad Day (~59) still wrap three
+    times; last-two-lines then hid the namesake start (Alexander /
+    Pirates). Three line-heights (1.25) fit those on this rail.
+    Portrait list already uses the same three-line clip beside F/G;
+    this override is the stacked-score layout plus collapsed Selected
+    three-line wrap, not a further list-clip bump.
+  */
+  .movie-list li {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0.1rem;
+    min-height: 0;
+    padding: 0.3rem 0.4rem 0.3rem 0.55rem;
+  }
+
+  .movie-list-title {
+    flex: none;
+    width: 100%;
+    min-height: 2.75rem;
+  }
+
+  .movie-list-title strong,
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
+    max-height: 3.75em;
+  }
+
+  /*
+    Collapsed Selected is title + F/G. Three title lines at 0.8rem /
+    1.25 plus the score row is ~4.54rem; keep the same ~0.7rem gap
+    under the bar that 4.25rem gave the two-line overlay.
+  */
+  .deck-sidebar:has(.movie-selection-panel) .deck-sidebar-section--list.movie-list ul {
+    padding-bottom: 5.25rem;
+  }
+
+  .movie-list-scores {
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+
+  /* Landscape sidebar is ~12-15rem; two 44px sliders would have ~90px tracks. */
+  .score-sliders--add,
+  .score-sliders--selected {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+}
+
+/*
+  Decks list tap targets: iPhone Pro Max landscape is ~932px, so the 900px
+  block misses it. pointer: coarse covers every iPhone; max-width covers a
+  narrow desktop window.
+*/
+@media (max-width: 900px), (pointer: coarse) {
+  /*
+    /decks is the only account path after the deck-page header hide.
+    Nav pills were 2.25rem, Clerk's avatar is 2rem, and create/sort still
+    used padding iOS ignores on native controls. 44px padding-box so the
+    entry page matches Sort/Compare on the grid.
+  */
+  .header {
+    --nav-user-size: 2.75rem;
+  }
+
+  .nav-link {
+    min-height: 2.75rem;
+    padding: 0.55rem 0.85rem;
+  }
+
+  .cl-userButtonTrigger,
+  .cl-userButtonAvatarBox,
+  .cl-userButtonTrigger .cl-avatarBox {
+    width: var(--nav-user-size);
+    height: var(--nav-user-size);
+  }
+
+  /*
+    Clerk Sign in/Sign up fields use .cl-formFieldInput at ~13px, which
+    beats the generic input 16px rule, so focusing email Safari-zooms
+    the page. The default card is also ~400px, wider than a 375px
+    leftover after #root padding. 16px / 44px matches create-deck, and
+    the card has to shrink to the slot (min-width: 0 so Clerk's default
+    min-width cannot keep it at ~400px). After email, the verification
+    code is six OTP boxes: email-field padding on each one overflows
+    that leftover, so those boxes share the card width. Edit-identifier,
+    resend, use-another-method, and Sign up stay ~32px text links unless
+    those inner steps get the same 44px padding-box as Continue.
+    Account popover actions were still ~32px after the avatar grew.
+    Card fill stays on .sign-in-page: the same .cl-card/.cl-rootBox
+    classes wrap UserButton, and 100% there overflows the signed-in
+    header plus the Manage account popover. Iteration 115 capped the
+    popover width but left min-width auto, so a nowrap name or email
+    in userPreview still beats that max-width and shoves Manage
+    account off a 375px leftover.
+  */
+  .sign-in-page {
+    overflow-x: hidden;
+  }
+
+  .sign-in-page .cl-rootBox,
+  .sign-in-page .cl-cardBox,
+  .sign-in-page .cl-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .nav .cl-rootBox,
+  .nav .cl-userButtonBox {
+    width: auto;
+    max-width: none;
+    flex-shrink: 0;
+  }
+
+  .cl-userButtonPopoverRootBox,
+  .cl-userButtonPopoverCard {
+    width: auto;
+    max-width: min(
+      20rem,
+      calc(
+        100vw - 1.5rem - env(safe-area-inset-left, 0px) -
+          env(safe-area-inset-right, 0px)
+      )
+    );
+    min-width: 0;
+  }
+
+  .cl-userButtonPopoverMain {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /*
+    Same intrinsic-width leak as identity-preview and UserProfile rows:
+    nowrap name/email in the popover preview sets min-content wider than
+    the 20rem cap. min-width 0 plus overflow-wrap keeps Manage account
+    on a 375px leftover.
+  */
+  .cl-userPreview,
+  .cl-userPreviewTextContainer,
+  .cl-userPreviewMainIdentifier,
+  .cl-userPreviewMainIdentifierText,
+  .cl-userPreviewSecondaryIdentifier {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /*
+    Manage account is Clerk's default ~55rem modal. On a 375px iPhone
+    that overflows horizontally. Cap to the viewport like Sign in,
+    including notch/home-indicator insets, scoped to UserProfile so
+    UserButton popover stays auto-sized. A fixed height without a
+    scrolling scrollBox clips Account/Security; min-width: 0 plus
+    overflow-wrap keeps long emails from forcing a horizontal pan.
+    Appearance inline styles are the cascade that beats Clerk's
+    injected sheet; these rules match that sizing when they win.
+  */
+  .cl-modalContent:has(.cl-userProfile-root) {
+    width: 100%;
+    max-width: min(
+      55rem,
+      calc(
+        100vw - 1.5rem - env(safe-area-inset-left, 0px) -
+          env(safe-area-inset-right, 0px)
+      )
+    );
+    height: min(
+      44rem,
+      calc(
+        100dvh - 1.5rem - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
+    max-height: min(
+      44rem,
+      calc(
+        100dvh - 1.5rem - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
+    margin: 0;
+  }
+
+  .cl-userProfile-root,
+  .cl-userProfile-root .cl-cardBox,
+  .cl-userProfile-root .cl-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
     height: 100%;
+  }
+
+  .cl-userProfile-root .cl-card {
+    overflow: hidden;
+  }
+
+  .cl-userProfile-root .cl-scrollBox,
+  .cl-userProfile-root .cl-pageScrollBox {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cl-userProfile-root .cl-profileSection,
+  .cl-userProfile-root .cl-profileSectionContent,
+  .cl-userProfile-root .cl-profileSectionItemList,
+  .cl-userProfile-root .cl-profileSectionItem {
+    min-width: 0;
+  }
+
+  .cl-userProfile-root .cl-profileSectionItem {
+    min-height: 2.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .cl-navbarButton,
+  .cl-navbarMobileMenuButton,
+  .cl-navbarMobileMenuRow,
+  .cl-profileSectionPrimaryButton,
+  .cl-accordionTriggerButton,
+  .cl-formButtonReset,
+  .cl-menuButton,
+  .cl-menuItem,
+  .cl-formFieldInputShowPasswordButton,
+  .cl-modalCloseButton {
+    min-height: 2.75rem;
+  }
+
+  .cl-menuButton,
+  .cl-formFieldInputShowPasswordButton,
+  .cl-modalCloseButton {
+    min-width: 2.75rem;
+  }
+
+  /*
+    Password reveal sits on the input. The 44px hit from iteration 117
+    plus 0.7rem field padding covers the last characters. Keep the
+    button in the field's right edge and pad only those inputs so OTP
+    boxes do not pick up 3rem sides. This rule has to follow the
+    padding shorthand below, or that shorthand resets padding-right.
+  */
+  .cl-formFieldInputGroup {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .cl-formFieldInputShowPasswordButton {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 2.75rem;
+  }
+
+  .cl-menuList {
+    max-width: min(20rem, calc(100vw - 1.5rem));
+  }
+
+  .cl-formFieldInput,
+  .cl-phoneInputInput,
+  .cl-input:not(.cl-otpCodeFieldInput) {
+    font-size: 16px;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
+  }
+
+  .cl-formFieldInputGroup:has(.cl-formFieldInputShowPasswordButton) :is(.cl-formFieldInput, .cl-input) {
+    padding-right: 3.1rem;
+  }
+
+  /*
+    Email/password padding on each OTP box overflows a 375px leftover:
+    6 * (44px + 0.7rem sides) plus gaps is wider than the card after
+    #root inset. Keep 16px / 44px height and let the row share width.
+  */
+  .cl-otpCodeField,
+  .cl-otpCodeFieldInputs,
+  .cl-otpCodeFieldInputContainer {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .cl-otpCodeFieldInputs {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: space-between;
+  }
+
+  .cl-otpCodeFieldInput {
+    font-size: 16px;
+    min-height: 2.75rem;
+    min-width: 0;
+    flex: 1 1 0;
+    width: auto;
+    aspect-ratio: auto;
+    padding: 0.35rem 0.15rem;
+  }
+
+  .cl-formButtonPrimary,
+  .cl-socialButtonsBlockButton,
+  .cl-socialButtonsIconButton,
+  .cl-alternativeMethodsBlockButton,
+  .cl-userButtonPopoverActionButton,
+  .cl-selectButton {
+    min-height: 2.75rem;
+  }
+
+  .cl-socialButtonsIconButton,
+  .cl-identityPreviewEditButton {
+    min-width: 2.75rem;
+  }
+
+  /*
+    Sign-in step two still uses text <a> hits (edit identifier, resend,
+    Forgot password, Back, Sign up). min-height on an inline link does
+    not grow the box; inline-flex matches Continue's 44px padding-box.
+    Long emails in the identity chip wrap so the 44px pencil stays on a
+    375px leftover instead of forcing a horizontal pan.
+  */
+  .cl-identityPreview {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .cl-identityPreviewText {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .cl-identityPreviewEditButton,
+  .cl-footerActionLink,
+  .cl-formResendCodeLink,
+  .cl-formFieldAction,
+  .cl-headerBackLink,
+  .cl-backLink {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+
+  .deck-form input,
+  .deck-toolbar select,
+  .deck-rename-input {
+    font-size: 16px;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
+  }
+
+  .deck-form button {
+    min-height: 2.75rem;
+    padding: 0.55rem 1.1rem;
+  }
+
+  /*
+    HTML5 drag on every row delays or steals taps on the deck link, and a
+    finger on a title cannot pan-y. Reorder stays a mouse gesture; Sort
+    still covers order on iPhone.
+  */
+  .decks-panel .subhead {
+    display: none;
+  }
+
+  .deck-list li {
+    cursor: default;
+    touch-action: pan-y;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .deck-list li.deck-list-item--renaming {
+    cursor: text;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /*
+    Inline delete confirm replaces window.confirm. Keep the copy at 16px
+    so the warning is as readable as the 44px Cancel/Delete hits already
+    on these action buttons. Example-deck read-only uses a notice banner
+    instead of window.alert, the last native iOS dialog after rename
+    and delete left prompt/confirm.
+  */
+  .deck-delete-confirm-copy,
+  .notice-banner {
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  .deck-delete-confirm {
+    touch-action: manipulation;
+  }
+
+  .deck-rename-input {
+    touch-action: manipulation;
+    -webkit-touch-callout: default;
+  }
+
+  .deck-select {
+    flex-wrap: wrap;
+    align-items: center;
+    min-height: 2.75rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .deck-actions {
+    width: 100%;
+  }
+
+  .deck-actions button {
+    flex: 1;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
   }
 }

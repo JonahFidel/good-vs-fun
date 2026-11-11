@@ -5,9 +5,17 @@
   width: 7px;
   height: 7px;
   border-radius: 999px;
+  /* A fine pointer never zooms, so titles keep their drawn size.
+     Coarse pointers re-apply inverse-scale so pinch spreads points without
+     exploding pills. Gated on pointer: coarse, not 900px, because only a
+     coarse pointer can zoom. */
   transform: translate(-50%, -50%);
+  transform-origin: center;
   cursor: grab;
   z-index: 1;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .movie-point.dragging {
@@ -19,8 +27,9 @@
   z-index: 3;
 }
 
-/* Always-visible title label — dark pill so it reads clearly off the grid */
-.movie-point > span {
+/* Always-visible title label - dark pill so it reads clearly off the grid.
+   Target .movie-label, not > span: the score pill is also a direct child span. */
+.movie-point > .movie-label {
   position: absolute;
   left: 0;
   top: 50%;
@@ -40,6 +49,13 @@
     0 5px 14px rgba(15, 23, 42, 0.35);
   cursor: default;
   z-index: 1;
+}
+
+/* Keep titles inside the scoring region when the point is near x=0. */
+.movie-point--label-end > .movie-label {
+  left: auto;
+  right: 0;
+  transform: translate(calc(100% + 7px), -50%);
 }
 
 .movie-point::after {
@@ -72,6 +88,49 @@
     0 0 0 2px rgba(59, 130, 246, 0.95),
     0 0 12px 4px rgba(59, 130, 246, 0.65),
     0 0 24px 10px rgba(59, 130, 246, 0.4);
+}
+
+/* Count of movies sharing this Fun/Good score. Inverse-scales with the
+   marker on coarse pointers, so it stays readable at iPhone fit zoom.
+   Default sits up-right of the dot. Near Fun 10 / Good 10 the 1-unit
+   margin on a 10rem-floor landscape square is ~13px, smaller than the
+   chip, so flip toward the scoring region or the namesake corner clips. */
+.movie-point-count {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 3;
+  pointer-events: none;
+  box-sizing: border-box;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  padding: 0 0.18rem;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #ffffff;
+  font-size: 0.55rem;
+  font-weight: 800;
+  line-height: 0.95rem;
+  text-align: center;
+  transform: translate(30%, -70%);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.45);
+}
+
+.movie-point--label-south > .movie-point-count {
+  top: auto;
+  bottom: 0;
+  transform: translate(30%, 70%);
+}
+
+.movie-point--count-west > .movie-point-count {
+  left: auto;
+  right: 50%;
+  transform: translate(-30%, -70%);
+}
+
+.movie-point--label-south.movie-point--count-west > .movie-point-count {
+  transform: translate(-30%, 70%);
 }
 
 .movie-label-line--selected .movie-label-title {
@@ -116,7 +175,8 @@
 }
 
 .movie-point:hover .movie-point-score,
-.movie-point.dragging .movie-point-score {
+.movie-point.dragging .movie-point-score,
+.movie-point--selected .movie-point-score {
   opacity: 1;
   transform: translateX(-50%) translateY(-2px);
 }
@@ -136,6 +196,11 @@
 
 .movie-label-title {
   display: inline-block;
+}
+
+/* Desktop keeps the floating hover pill; mobile folds this into the title. */
+.movie-label-score {
+  display: none;
 }
 
 .movie-delete {

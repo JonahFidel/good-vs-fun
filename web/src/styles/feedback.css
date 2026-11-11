@@ -16,6 +16,17 @@
   font-weight: 600;
 }
 
+.notice-banner {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
 .empty-state {
   margin-top: 1.5rem;
   color: #6b7280;

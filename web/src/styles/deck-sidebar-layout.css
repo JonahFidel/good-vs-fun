@@ -58,7 +58,19 @@
   word-break: break-word;
 }
 
+.deck-sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.deck-sidebar-history {
+  display: none;
+}
+
 .deck-sidebar-back {
+  position: relative;
   flex-shrink: 0;
   font-size: 0.82rem;
   line-height: 1.35;
@@ -71,6 +83,18 @@
   gap: 0.5rem;
   min-width: 0;
   width: 100%;
+}
+
+/*
+  Phone layout turns this into one Add | Compare row. display: contents
+  keeps Add and Compare as stacked sidebar sections on desktop.
+*/
+.deck-sidebar-tools-row {
+  display: contents;
+}
+
+.deck-sidebar-tools-row:empty {
+  display: none;
 }
 
 .deck-sidebar .ghost-compare-section {
@@ -117,6 +141,7 @@
 }
 
 .deck-sidebar .error-banner,
+.deck-sidebar .notice-banner,
 .deck-sidebar .status-line {
   margin: 0;
 }

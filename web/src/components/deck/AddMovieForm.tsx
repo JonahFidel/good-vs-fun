@@ -1,5 +1,6 @@
 import { ScoreSlider } from './ScoreSlider'
 import { snapScoreToStep } from '../../lib/format'
+import { SidebarCollapse } from './SidebarCollapse'
 
 export function AddMovieForm({
   title,
@@ -19,8 +20,11 @@ export function AddMovieForm({
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
 }) {
   return (
-    <div className="deck-sidebar-section deck-sidebar-section--add">
-      <h3 className="deck-sidebar-section__title">Add a movie</h3>
+    <SidebarCollapse
+      title="Add a movie"
+      heading
+      className="deck-sidebar-section deck-sidebar-section--add"
+    >
       <form className="movie-form movie-form--compact" onSubmit={onSubmit}>
         <label className="field">
           <span>Movie title</span>
@@ -46,6 +50,6 @@ export function AddMovieForm({
         </div>
         <button type="submit">Add movie</button>
       </form>
-    </div>
+    </SidebarCollapse>
   )
 }

@@ -1,4 +1,4 @@
-/* Plot panel and the 0-10 scoring region. */
+/* Plot panel, zoom canvas, and the 0-10 scoring region. */
 
 .grid-panel {
   display: flex;
@@ -37,26 +37,65 @@
 
 /* Cell that holds the square chart. The chart itself is sized to the largest
    square that fits this cell, so scores 0–10 stay on screen. */
-.grid-fit {
+.grid-zoom-slot {
   grid-column: 2;
   grid-row: 1;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   justify-self: stretch;
   align-self: stretch;
   width: 100%;
   height: 100%;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
   container-type: size;
+  touch-action: none;
+}
+
+/* The square chart: the largest square that fits the slot. At rest it is
+   centered (see centeredTransform); only a coarse pointer can zoom or pan it. */
+.grid-zoom-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+  transform-origin: 0 0;
+  will-change: transform;
+  z-index: 1;
+  /* Used by coarse-pointer tick and Fun/Good axis-border inverse-scale. */
+  --plot-inverse-scale: calc(1 / var(--plot-scale, 1));
+}
+
+/*
+  Coarse-pointer unit lines. Hidden for a mouse, which paints the same 1px
+  strokes on .grid::before (a fine pointer never zooms). Touch re-enables
+  this overlay so pinch keeps 1px screen thickness (canvas-local 1px lines
+  round away on WebKit past ~1.4x, and 1px local becomes 8px at max zoom).
+*/
+.grid-line-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 0;
+  transform-origin: 0 0;
+  --grid-line-unit: #e5e7eb;
+  --grid-line-half: #cbd5e1;
+  background-image: linear-gradient(var(--grid-line-unit) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line-unit) 1px, transparent 1px);
+  background-size: 10% 10%;
+  background-position: 0 0;
 }
 
 .grid {
   position: relative;
-  width: min(100cqw, 100cqh);
-  height: min(100cqw, 100cqh);
+  width: 100%;
+  height: 100%;
+  -webkit-user-select: none;
   user-select: none;
   touch-action: none;
 }
@@ -69,13 +108,24 @@
   bottom: calc(100% * var(--grid-margin) / var(--grid-canvas));
   width: calc(100% * var(--grid-score-max) / var(--grid-canvas));
   height: calc(100% * var(--grid-score-max) / var(--grid-canvas));
+  /*
+    A fine pointer never zooms, so these borders stay as drawn. Coarse
+    pointers re-apply inverse-scale so pinch does not bury origin movies.
+    Keep content-box so a future border change does not resize the 0-10 box
+    (universal * does not match ::before).
+  */
+  box-sizing: content-box;
   border-left: 4px solid #111827;
   border-bottom: 4px solid #111827;
   border-right: 2px solid #111827;
   border-top: 2px solid #111827;
+  /*
+    A fine pointer paints unit lines here (it never zooms).
+    Coarse pointers clear this background and paint the same lines on the
+    unscaled overlay so 1px strokes stay 1px.
+  */
   background-image: linear-gradient(#e5e7eb 1px, transparent 1px),
     linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
-  /* 10% of ::before width = 1 scoring unit */
   background-size: 10% 10%;
   background-position: 0 0;
   pointer-events: none;

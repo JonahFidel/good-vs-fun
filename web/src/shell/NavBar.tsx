@@ -1,5 +1,6 @@
 import { UserButton, useAuth } from '@clerk/clerk-react'
 import { NavLink } from 'react-router-dom'
+import { clerkAppearance } from './clerkAppearance'
 import { useIsHydrated } from './useIsHydrated'
 
 export function NavBar() {
@@ -10,15 +11,22 @@ export function NavBar() {
   return (
     <nav className="nav" aria-busy={!ready}>
       <div className="nav-links">
-        <NavLink
-          to="/decks"
-          className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-        >
-          Decks
-        </NavLink>
         {ready ? (
           isSignedIn ? (
-            <UserButton afterSignOutUrl="/" />
+            <>
+              <NavLink
+                to="/decks"
+                className={({ isActive }) =>
+                  isActive ? 'nav-link active' : 'nav-link'
+                }
+              >
+                Decks
+              </NavLink>
+              <UserButton
+                afterSignOutUrl="/"
+                userProfileProps={{ appearance: clerkAppearance.userProfile }}
+              />
+            </>
           ) : (
             <>
               <NavLink to="/sign-in" className="nav-link">

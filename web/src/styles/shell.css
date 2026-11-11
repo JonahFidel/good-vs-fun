@@ -13,6 +13,7 @@
 
 /* Persistent top navbar */
 .header {
+  --nav-user-size: 2rem;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -47,8 +48,8 @@
 
 .nav-auth-placeholder {
   display: inline-block;
-  width: 2rem;
-  height: 2rem;
+  width: var(--nav-user-size);
+  height: var(--nav-user-size);
   flex-shrink: 0;
 }
 
@@ -92,6 +93,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  max-width: 100%;
   min-height: 50vh;
 }
 
