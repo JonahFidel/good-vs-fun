@@ -1119,10 +1119,18 @@
     down or parks a compact landscape name on that same corner, so the
     "2" covers the only default-zoom readout. Once selected, cycling
     the marker and the Selected bar already show it is a stack.
+
+    At 2.2x every stacked name paints in the one-cell pill, so the
+    chip is redundant and sits on those letters: right-side titles
+    (Good < 5) share the default upper-right badge, and Fun 9-10 /
+    Good 9-10 (the namesake corner) put a south/west chip on the
+    left-side name. Hide it once --labels restores titles; keep it
+    on anonymous unselected dots through light pinch (1.4x).
   */
   .movie-point--selected > .movie-point-count,
   .movie-point.dragging > .movie-point-count,
-  .movie-point--highlighted > .movie-point-count {
+  .movie-point--highlighted > .movie-point-count,
+  .grid-zoom-slot--labels .movie-point-count {
     display: none;
   }
 
