@@ -40,7 +40,10 @@ export function useDeckSelection() {
         target.closest('select') ||
         target.closest('textarea') ||
         target.closest('a') ||
-        target.closest('summary')
+        target.closest('summary') ||
+        // Rename unmounts the field when selection clears. Keep the
+        // panel mounted so blur can commit instead of dropping the edit.
+        event.currentTarget.querySelector('.movie-selection-panel--renaming')
       ) {
         return
       }

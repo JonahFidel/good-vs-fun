@@ -37,7 +37,10 @@ export function SidebarCollapse({
         : target instanceof Node
           ? target.parentElement
           : null
-    if (element?.closest('button, input, textarea, label')) {
+    if (
+      element?.closest('button, input, textarea, label') ||
+      element?.closest('.movie-selection-panel--renaming')
+    ) {
       event.preventDefault()
     }
   }

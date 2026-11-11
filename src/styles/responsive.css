@@ -523,18 +523,33 @@
 
   /*
     Inline rename lives in the summary title cell. Hide Aa/× so the 16px
-    field can use that leftover width, and drop back to title | chevron
-    so portrait's 3-column open row does not leave an empty actions track.
+    field can use that leftover width. Drop the chevron too: collapsing
+    during an edit would only hide already-hidden sliders, and the
+    caret should keep the full title track.
   */
-  .movie-selection-panel--renaming[open] > .deck-sidebar-collapse-summary {
-    grid-template-columns: minmax(0, 1fr) auto;
+  .deck-sidebar .movie-selection-panel--renaming > .deck-sidebar-collapse-summary,
+  .deck-sidebar .movie-selection-panel--renaming[open] > .deck-sidebar-collapse-summary {
+    position: static;
+    margin-bottom: 0;
+    border-bottom: none;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    min-height: 2.75rem;
+    padding: 0 0.65rem;
+    align-content: center;
   }
 
   .movie-selection-panel--renaming[open] > .deck-sidebar-collapse-summary > .movie-selection-actions {
     display: none;
   }
 
-  .movie-selection-panel--renaming > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta {
+  .movie-selection-panel--renaming > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta,
+  .movie-selection-panel--renaming > .deck-sidebar-collapse-summary::after {
+    display: none;
+  }
+
+  .deck-sidebar .movie-selection-panel--renaming[open] > .score-sliders--selected,
+  .deck-sidebar .movie-selection-panel--renaming[open] > .movie-selection-bar {
     display: none;
   }
 
@@ -869,6 +884,32 @@
   .deck-page-layout:has(.deck-sidebar-section--add[open]) .grid-panel,
   .deck-page-layout:has(.movie-selection-panel--renaming) .grid-panel {
     display: none;
+  }
+
+  /*
+    Hiding the plot is not enough: Selected stays a bottom overlay with
+    Fun/Good still open, so the 16px field sits under the keyboard the
+    same way Add did before it lived at the top of the leftover. Take
+    Selected out of that overlay, hide the list and tools, and drop
+    sliders (the live grid is already gone) so the field sits under the
+    header like Add Movie's title input.
+  */
+  .deck-sidebar:has(.movie-selection-panel--renaming) .deck-sidebar-tools-row,
+  .deck-sidebar:has(.movie-selection-panel--renaming) .deck-sidebar-section--list.movie-list {
+    display: none;
+  }
+
+  .deck-sidebar .movie-selection-panel--renaming,
+  .deck-sidebar .movie-selection-panel--renaming[open] {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    z-index: auto;
+    max-height: none;
+    overflow: visible;
+    box-shadow: none;
   }
 
   /*
@@ -1615,6 +1656,14 @@
     left: 0.3rem;
     right: 0.3rem;
     bottom: max(0.3rem, env(safe-area-inset-bottom), var(--keyboard-inset, 0px));
+  }
+
+  .deck-sidebar .movie-selection-panel--renaming,
+  .deck-sidebar .movie-selection-panel--renaming[open] {
+    left: auto;
+    right: auto;
+    bottom: auto;
+    top: auto;
   }
 
   /*
