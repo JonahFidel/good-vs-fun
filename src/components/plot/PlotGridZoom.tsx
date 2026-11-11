@@ -181,14 +181,21 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       return () => ro.disconnect()
     }, [])
 
-    // Wheel / trackpad pinch → zoom toward cursor
+    // Wheel / trackpad pinch → zoom toward cursor. Listen on the plot card,
+    // not just the inner slot: Fun/Good axis labels live outside the slot,
+    // and Chrome/Firefox trackpad pinch is wheel-only. Slot-only listening
+    // left those labels as a zoom dead zone (Safari GestureEvents and iPhone
+    // Touch Events already use the wrapper). Cursor math stays in slot space
+    // so a point on the Fun axis (negative x) still zooms toward the origin.
     useEffect(() => {
       const slot = slotRef.current
       if (!slot) return
       const capturedSlot = slot
+      const wrapper = capturedSlot.closest('.grid-wrapper')
+      const wheelRoot = wrapper instanceof HTMLElement ? wrapper : capturedSlot
 
       function onWheel(e: WheelEvent) {
-        // Always zoom when the cursor is inside the slot.
+        // Always zoom when the cursor is on the plot card.
         // - Trackpad pinch fires wheel with synthetic ctrlKey=true
         // - Cmd/Ctrl + scroll fires wheel with metaKey/ctrlKey=true
         // - Plain two-finger scroll (no modifier) is also captured here so that
@@ -217,8 +224,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       // { passive: false } is required so we can call preventDefault() and
       // suppress both native page-scroll and OS-level pinch-zoom.
-      capturedSlot.addEventListener('wheel', onWheel, { passive: false })
-      return () => capturedSlot.removeEventListener('wheel', onWheel)
+      wheelRoot.addEventListener('wheel', onWheel, { passive: false })
+      return () => wheelRoot.removeEventListener('wheel', onWheel)
     }, [])
 
     // One-finger pan; two-finger pinch-zoom on touch devices. Double-tap on
