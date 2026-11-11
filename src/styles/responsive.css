@@ -1480,15 +1480,14 @@
     In this ~9-character 3.75rem cell, 24-27 character names
     are three wraps and already fit. 28-35 character names
     are four wraps and already fit. 36-43 character names
-    are five wraps: "Austin Powers: International Man of
-    Mystery", "The Unbearable Weight of Massive Talent".
-    Four lines then hid the identifying start (Austin
-    Powers / The Unbearable), and overlays have no
-    Selected bar to recover it. Five line-heights (1.2)
-    fit those. Longer namesake titles still last-clip to
-    the distinctive ending.
+    are five wraps and already fit. 44-50 character names
+    are six wraps: "Pirates of the Carribean: Curse of the
+    Black Pearl". Five lines then hid the identifying start
+    (Pirates / Curse of), and overlays have no Selected bar
+    to recover it. Six line-heights (1.2) fit those. Longer
+    namesake titles still last-clip to the distinctive ending.
 
-    A 5-line overlay is ~64px. Ghost-label zoom keeps at
+    A 6-line overlay is ~78px. Ghost-label zoom keeps at
     least ~81px per unit even on a 10rem landscape square
     (labelsVisibleScale plus 1x), so the extra line stays
     inside one Fun cell and the 1-unit Fun 10 gutter.
@@ -1496,7 +1495,7 @@
     Stacked overlays already list every truncated name, the same
     2.2x primary readout. Wrapping each of those lines too turns
     a two-film overlay (Code 3 + Kill Bill V2 in the 2026 example)
-    into a ten-line pill over the cluster pinch-to-read just
+    into a twelve-line pill over the cluster pinch-to-read just
     uncovered. Keep stacks one-line; wrap only a single overlay.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) > .movie-label {
@@ -1517,11 +1516,11 @@
     min-width: 0;
     max-width: 100%;
     /*
-      Five line-heights (1.2 on .movie-label) so 5-wrap overlay
+      Six line-heights (1.2 on .movie-label) so 6-wrap overlay
       names fit in this cell. Height stays auto so a one-line
-      name does not sit in an empty five-line box.
+      name does not sit in an empty six-line box.
     */
-    max-height: 6em;
+    max-height: 7.2em;
     overflow: hidden;
     display: flex;
     flex-direction: column;
