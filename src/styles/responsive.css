@@ -1306,7 +1306,11 @@
   .deck-sidebar .ghost-compare-row select,
   .deck-form input,
   .deck-toolbar select,
-  .deck-rename-input {
+  .deck-rename-input,
+  .cl-formFieldInput,
+  .cl-otpCodeFieldInput,
+  .cl-phoneInputInput,
+  .cl-input {
     font-size: 16px;
   }
 
@@ -1747,6 +1751,40 @@
   .cl-userButtonTrigger .cl-avatarBox {
     width: var(--nav-user-size);
     height: var(--nav-user-size);
+  }
+
+  /*
+    Clerk Sign in/Sign up fields use .cl-formFieldInput at ~13px, which
+    beats the generic input 16px rule, so focusing email Safari-zooms
+    the page. The default card is also ~400px, wider than a 375px
+    leftover after #root padding. 16px / 44px matches create-deck, and
+    the card has to shrink to the slot. Account popover actions were
+    still ~32px after the avatar grew.
+  */
+  .sign-in-page {
+    overflow-x: hidden;
+  }
+
+  .sign-in-page .cl-rootBox,
+  .sign-in-page .cl-cardBox,
+  .sign-in-page .cl-card {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .cl-formFieldInput,
+  .cl-otpCodeFieldInput,
+  .cl-phoneInputInput,
+  .cl-input {
+    font-size: 16px;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
+  }
+
+  .cl-formButtonPrimary,
+  .cl-socialButtonsBlockButton,
+  .cl-userButtonPopoverActionButton {
+    min-height: 2.75rem;
   }
 
   .deck-form input,
