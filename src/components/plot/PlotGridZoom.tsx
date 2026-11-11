@@ -67,9 +67,10 @@ const PAN_SLOP_PX = 8
  * iPhone tap jitter often exceeds 8px. Fit zoom skipped empty-space
  * tracking so double-tap zoom-in could fire. After a leftover 1.2-2.1x
  * pinch, covering pan is unlocked, so that same 8px slop treats a tap as
- * a pan and cancels double-tap zoom-in (or zoom-out-to-fit at 2.2x).
- * 20px is still under DOUBLE_TAP_PX (28) and about 0.3 cells at 2.2x on
- * a ~370px square. Mouse keeps 8px so Figma-style drag-pan stays snappy.
+ * a pan and cancels double-tap zoom-in (or zoom-out-to-fit once titles
+ * are on). 20px is still under DOUBLE_TAP_PX (28) and about 0.25 cells
+ * at labels-visible zoom (~80px). Mouse keeps 8px so Figma-style
+ * drag-pan stays snappy.
  */
 const TOUCH_PAN_SLOP_PX = 20
 const DOUBLE_TAP_MS = 350
@@ -456,8 +457,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // unconstrained pan translation, so a leftover finger past that
     // edge does not stick from double-compressing the painted rubber-band.
     // Fit zoom never pans, so the default 0-10 square stays locked. Double-tap
-    // eases to title-visible zoom (~2.2x) from any scale below that,
-    // including a 1.2-2.1x leftover pinch, or back to fit once titles
+    // eases to title-visible zoom (~2.6x on a 370px square) from any
+    // scale below that, including a leftover pinch, or back to fit once titles
     // are on screen. The selected fit-zoom title (pointer-events: none)
     // is also that zoom-in gesture: it is the movie you tapped to read,
     // and empty space around a 32cqw pill can be scarce. That zoom aims
@@ -942,10 +943,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const fit = fitTransform()
         const canvas = canvasRef.current
         if (!fit || !canvas) return
-        // Zoom far enough that 3.75rem pills fit one cell on this square.
-        // A 370px portrait plot stays at 2.2x; a ~280px landscape plot
-        // needs closer to 2.9x or titles overlap 1-unit neighbors.
-        // Sub-detail leftover pinches (1.2-2.1x) still zoom in: titles
+        // Zoom far enough that 3.75rem six-line pills fit one cell.
+        // A 370px portrait plot needs ~2.6x; a ~280px landscape plot
+        // needs ~3.4x or titles overlap 1-unit neighbors.
+        // Sub-detail leftover pinches still zoom in: titles
         // are hidden there, so reset-to-fit would undo the closer look.
         // Overlay-marker taps pass ghost-label scale (~3.2x) so one
         // double-tap on a compare dot reaches that movie's name.

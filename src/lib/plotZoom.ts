@@ -28,9 +28,9 @@ export const GRID_DETAIL_SCALE = 1.4
 /**
  * Floor for double-tap zoom-in and unselected titles. 1.4x on a ~370px
  * square is only ~43px per score unit, so 0.8rem / 7.25rem pills still
- * cover the grid you zoomed in to read. Smaller landscape squares need
- * more than 2.2x so the same 3.75rem pills still fit one cell; see
- * labelsVisibleScale().
+ * cover the grid you zoomed in to read. One-line 3.75rem pills needed
+ * ~2.2x there; six-line wrap is taller, so labelsVisibleScale() raises
+ * double-tap until a cell is TARGET_LABEL_UNIT_PX.
  */
 export const DOUBLE_TAP_SCALE = 2.2
 /** Unselected mobile titles appear at double-tap zoom, not at 1.4x. */
@@ -43,10 +43,13 @@ export const LABELS_VISIBLE_SCALE = DOUBLE_TAP_SCALE
 export const GHOST_LABELS_VISIBLE_SCALE = 3.2
 /**
  * Screen-px per score unit at which 3.75rem zoomed pills sit in one cell.
- * 2.2x on a ~370px portrait square is ~68px; a ~280px landscape square
- * only reaches ~51px at 2.2x, so titles overlap until zoom goes higher.
+ * One-line pills needed ~68px of width. Unstacked titles wrap six lines
+ * at labels-visible zoom (~79px tall), so the cell has to match that
+ * height or 1-unit Fun neighbors overlap. 2.2x on a ~370px portrait
+ * square is only ~68px; labelsVisibleScale raises double-tap to ~2.6x
+ * there. A ~280px landscape square needs ~3.4x for the same unit.
  */
-export const TARGET_LABEL_UNIT_PX = 68
+export const TARGET_LABEL_UNIT_PX = 80
 const GHOST_LABELS_AFTER_PRIMARY = 1
 const FIT_SCALE_EPSILON = 0.05
 const FIT_PAN_EPSILON_PX = 8
@@ -105,9 +108,9 @@ export function rubberBandTranslate(
 }
 
 /**
- * Zoom at which unselected titles can sit one-per-cell. Never below 2.2x
- * (portrait ~370px already fits). On a smaller filled square, raise it so
- * double-tap / pinch-to-read does not dump overlapping 3.75rem pills.
+ * Zoom at which unselected titles can sit one-per-cell. Never below 2.2x.
+ * On a typical phone square, TARGET_LABEL_UNIT_PX binds first so six-line
+ * 3.75rem pills fit one Fun cell. Smaller filled squares raise it further.
  */
 export function labelsVisibleScale(canvasWidth: number): number {
   const unitAtFit = canvasWidth / GRID_CANVAS
@@ -390,8 +393,9 @@ export function isLeftoverFitScale(
 /**
  * Toggle the readable 0-10 overview vs a detail zoom aimed at `point`.
  *
- * Titles stay hidden until `detailScale` (~2.2x, higher on small squares).
- * A 1.2-2.1x leftover pinch is still that overview: treating it as
+ * Titles stay hidden until `detailScale` (~2.6x on a 370px square, higher
+ * on small squares) so six-line pills fit one cell.
+ * A leftover pinch below that scale is still that overview: treating it as
  * "already zoomed" made one-handed double-tap reset to fit instead of
  * finishing the zoom you use to read names. Once titles are visible,
  * double-tap returns to the locked 0-10 square.
