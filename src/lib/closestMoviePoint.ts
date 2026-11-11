@@ -4,34 +4,76 @@
  */
 export const MOVIE_HIT_RADIUS_PX = 22
 
-/**
- * On-canvas title pills that are visible on iPhone. Those labels use
- * pointer-events: none so nearby markers stay tappable, which also lets a
- * tap fall through to empty grid and deselect or double-tap zoom.
- */
-export const VISIBLE_MOVIE_LABEL_SELECTOR =
-  '.movie-point--selected > .movie-label, .movie-point.dragging > .movie-label, .movie-point--highlighted > .movie-label'
-
-/** True when a screen-space point lands inside an element matching `selector`. */
-export function pointerHitsSelector(
-  root: ParentNode,
-  selector: string,
+function pointInRect(
+  rect: DOMRect,
   clientX: number,
   clientY: number,
 ): boolean {
-  for (const node of root.querySelectorAll(selector)) {
-    if (!(node instanceof HTMLElement)) continue
-    const rect = node.getBoundingClientRect()
-    if (
-      clientX >= rect.left &&
-      clientX <= rect.right &&
-      clientY >= rect.top &&
-      clientY <= rect.bottom
-    ) {
-      return true
+  return (
+    clientX >= rect.left &&
+    clientX <= rect.right &&
+    clientY >= rect.top &&
+    clientY <= rect.bottom
+  )
+}
+
+/** True when the label is actually painted, not an opacity-0 fit-zoom pill. */
+function isPainted(el: HTMLElement): boolean {
+  const rect = el.getBoundingClientRect()
+  if (rect.width <= 0 || rect.height <= 0) return false
+  const style = getComputedStyle(el)
+  if (style.visibility === 'hidden' || style.display === 'none') return false
+  return parseFloat(style.opacity) > 0
+}
+
+/**
+ * Movie whose on-canvas title (or the pill that contains it) the pointer is
+ * over. iPhone labels stay pointer-events: none so nearby 44px markers remain
+ * tappable; callers that need the title itself have to hit-test screen rects.
+ *
+ * Fit-zoom unselected pills are opacity 0 and skipped. After pinch/double-tap
+ * every title is painted, so this is how you select the movie you just read
+ * instead of missing it or double-tap zooming.
+ */
+export function movieIdAtVisibleLabel(
+  root: ParentNode,
+  clientX: number,
+  clientY: number,
+): string | null {
+  let pillFallback: string | null = null
+
+  for (const point of root.querySelectorAll('.movie-point:not(.ghost-point)')) {
+    const label = point.querySelector(':scope > .movie-label')
+    if (!(label instanceof HTMLElement) || !isPainted(label)) continue
+    if (!pointInRect(label.getBoundingClientRect(), clientX, clientY)) continue
+
+    for (const title of label.querySelectorAll('[data-movie-id]')) {
+      if (!(title instanceof HTMLElement) || !isPainted(title)) continue
+      if (!pointInRect(title.getBoundingClientRect(), clientX, clientY)) continue
+      return title.getAttribute('data-movie-id')
+    }
+
+    if (pillFallback === null) {
+      const selected = label.querySelector(
+        '.movie-label-line--selected [data-movie-id]',
+      )
+      const any = selected ?? label.querySelector('[data-movie-id]')
+      if (any instanceof HTMLElement) {
+        pillFallback = any.getAttribute('data-movie-id')
+      }
     }
   }
-  return false
+
+  return pillFallback
+}
+
+/** True when a screen-space point lands on a painted movie title pill. */
+export function pointerHitsVisibleMovieLabel(
+  root: ParentNode,
+  clientX: number,
+  clientY: number,
+): boolean {
+  return movieIdAtVisibleLabel(root, clientX, clientY) !== null
 }
 
 function movieIdsInPoint(point: Element): string[] {
@@ -66,8 +108,9 @@ export function nextMovieIdInGroup(
  * iPhone grid is often not the dot you aimed at.
  *
  * Movies that share a Fun/Good score render as one marker. A second tap on
- * that marker advances to the next title; labels are pointer-events: none
- * on iPhone so the titles in the stack cannot be tapped directly.
+ * that marker advances to the next title. After pinch, movieIdAtVisibleLabel
+ * can select a listed title directly because the pills stay pointer-events:
+ * none so they cannot receive the tap themselves.
  */
 export function closestMovieId(
   grid: HTMLElement,

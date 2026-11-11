@@ -7,8 +7,7 @@ import {
 } from 'react'
 import {
   MOVIE_HIT_RADIUS_PX,
-  VISIBLE_MOVIE_LABEL_SELECTOR,
-  pointerHitsSelector,
+  pointerHitsVisibleMovieLabel,
 } from '../../lib/closestMoviePoint'
 import { scoringRegionScreenRect } from '../../lib/gridCanvas'
 import {
@@ -377,17 +376,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           lastTapRef.current = null
           return false
         }
-        // Visible title pills are pointer-events: none, so a tap on the
-        // selected readout hits the grid. Counting that as double-tap
-        // would zoom while the user is trying to read the title.
-        if (
-          pointerHitsSelector(
-            capturedSlot,
-            VISIBLE_MOVIE_LABEL_SELECTOR,
-            clientX,
-            clientY,
-          )
-        ) {
+        // Painted title pills are pointer-events: none, so a tap on the
+        // selected readout or a zoomed title hits the grid. Counting that
+        // as double-tap would zoom while the user is trying to read it.
+        if (pointerHitsVisibleMovieLabel(capturedSlot, clientX, clientY)) {
           lastTapRef.current = null
           return false
         }

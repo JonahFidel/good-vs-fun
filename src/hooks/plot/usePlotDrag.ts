@@ -9,6 +9,7 @@ import {
 } from 'react'
 import {
   closestMovieId,
+  movieIdAtVisibleLabel,
   MOVIE_HIT_RADIUS_PX,
   nextMovieIdInGroup,
 } from '../../lib/closestMoviePoint'
@@ -141,13 +142,24 @@ export function usePlotDrag({
       if (event.pointerType !== 'touch') {
         return
       }
-      const id = closestMovieId(
-        plot,
-        event.clientX,
-        event.clientY,
-        MOVIE_HIT_RADIUS_PX,
-        selectedMovieId,
-      )
+      // After pinch, titles are visible but pointer-events: none. Prefer
+      // the painted title so a tap on "Kill Bill" selects that movie
+      // instead of a nearby 44px ring or cycling the stack. At fit zoom
+      // keep marker-first so the selected pill does not steal taps aimed
+      // at a covered neighbor.
+      const zoomed = Boolean(plot.closest('.grid-zoom-slot--zoomed'))
+      const fromLabel = zoomed
+        ? movieIdAtVisibleLabel(plot, event.clientX, event.clientY)
+        : null
+      const id =
+        fromLabel ??
+        closestMovieId(
+          plot,
+          event.clientX,
+          event.clientY,
+          MOVIE_HIT_RADIUS_PX,
+          selectedMovieId,
+        )
       if (!id) {
         return
       }
