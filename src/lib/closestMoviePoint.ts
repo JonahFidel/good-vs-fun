@@ -92,11 +92,13 @@ function idFromLabelAtPoint(
  * the first DOM hit would switch away from the title you are reading; prefer
  * the selected pill when it contains the tap, otherwise the closest title.
  *
- * PlotGridZoom keeps this movie-point from the first tap of a fit-zoom
- * double-tap. The 32cqw wrap can cover an overlay dot, and iPhone jitter
- * often misses the pill, so the follow-up must still zoom this marker to
- * 2.2x instead of 3.2x toward the ghost or toward the tap on the wrap.
- * Jitter toward the marker lands in the 44px ring; that follow-up still
+ * PlotGridZoom keeps this movie-point from the first tap of a title
+ * double-tap. Below 2.2x the 32cqw wrap can cover an overlay dot, and
+ * iPhone jitter often misses the pill, so the follow-up must still zoom
+ * this marker to 2.2x instead of 3.2x toward the ghost or toward the
+ * tap on the wrap. At 2.2x/3.2x the same stored point eases home, and
+ * blocks overlay 3.2x steal when that name covers a ghost. Jitter
+ * toward the marker lands in the 44px ring; that follow-up still
  * zooms this point instead of cancelling as select/cycle, and its
  * pointerdown must not select/cycle either or a stack advances / the
  * Selected bar switches while the ease runs.
@@ -147,8 +149,10 @@ export function movieIdAtVisibleLabel(
 /**
  * True when a screen-space point lands on a painted title pill, including
  * compare overlay names. Those pills are pointer-events: none, so a tap
- * would otherwise count as empty grid (deselect / double-tap zoom-out)
- * or fall through to a nearby primary 44px ring and change selection.
+ * would otherwise count as empty grid (deselect) or fall through to a
+ * nearby primary 44px ring and change selection. At 2.2x/3.2x a first
+ * tap on that pill starts one-handed zoom-out; overlay names have no
+ * movie id, so this check is also what keeps that tap from deselecting.
  *
  * Ghost titles have no data-movie-id, so moviePointAtVisibleLabel cannot
  * see them; this only needs a painted box. Opacity-0 pills (fit-zoom
@@ -183,13 +187,15 @@ export function pointerHitsVisibleMovieLabel(
  * first tap. Completing an overlay double-tap must keep this point
  * even when the follow-up lands in that nearby ring, or 28px jitter
  * selects the primary instead of finishing 3.2x. Completing
- * empty-space zoom-out is the same: those rings sit under 2.2x
- * titles, so marker-first on the follow-up cancelled the way back
- * to fit. That follow-up pointerdown must not onTouchSelect the
- * primary either. A ghost under the second tap of an empty-space
+ * empty-space or painted-title zoom-out is the same: those rings sit
+ * under 2.2x titles, so marker-first on the follow-up cancelled the
+ * way back to fit. That follow-up pointerdown must not onTouchSelect
+ * the primary either. A ghost under the second tap of an empty-space
  * pair must not start overlay zoom-in: that follow-up is 28px
  * jitter, and at 2.2x it would steal 3.2x instead of zooming back
- * to the locked 0-10 square.
+ * to the locked 0-10 square. A first tap on a painted name that
+ * covers this marker stores the title so the same steal cannot
+ * start from the name itself.
  *
  * Below 3.2x the overlay name is still hidden, so callers zoom toward
  * this marker's center (not the tap) until ghost titles appear. The
