@@ -96,6 +96,8 @@ function idFromLabelAtPoint(
  * double-tap. The 32cqw wrap can cover an overlay dot, and iPhone jitter
  * often misses the pill, so the follow-up must still zoom this marker to
  * 2.2x instead of 3.2x toward the ghost or toward the tap on the wrap.
+ * Jitter toward the marker lands in the 44px ring; that follow-up still
+ * zooms this point instead of cancelling as select/cycle.
  */
 export function moviePointAtVisibleLabel(
   root: ParentNode,
@@ -175,7 +177,10 @@ export function pointerHitsVisibleMovieLabel(
  * empty space one-handed double-tap zoom needs on a 40-film compare.
  *
  * Isolated overlay movies are the hole. A ghost sitting inside a
- * primary 44px ring still loses to marker-first select/cycle.
+ * primary 44px ring still loses to marker-first select/cycle on a
+ * first tap. Completing an overlay double-tap must keep this point
+ * even when the follow-up lands in that nearby ring, or 28px jitter
+ * selects the primary instead of finishing 3.2x.
  *
  * Below 3.2x the overlay name is still hidden, so callers zoom toward
  * this marker's center (not the tap) until ghost titles appear. The
