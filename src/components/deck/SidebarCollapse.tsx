@@ -46,7 +46,9 @@ export function SidebarCollapse({
         className="deck-sidebar-collapse-summary"
         onClick={preventToggleFromActions}
       >
-        <span className="deck-sidebar-collapse-title">{title}</span>
+        <span className="deck-sidebar-collapse-title">
+          <span className="deck-sidebar-collapse-title-text">{title}</span>
+        </span>
         {meta ? <span className="deck-sidebar-collapse-meta">{meta}</span> : null}
         {actions}
       </summary>

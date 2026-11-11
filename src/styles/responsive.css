@@ -568,6 +568,19 @@
     white-space: nowrap;
   }
 
+  /*
+    Nested text node so Selected can clip to the last two wrapped
+    lines (inner flex-none block plus outer flex-end). Inherit
+    nowrap ellipsis here so Add/Compare summaries stay one line.
+  */
+  .deck-sidebar-collapse-title-text {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: inherit;
+  }
+
   .deck-sidebar-collapse-meta {
     flex: 1;
     min-width: 0;
@@ -618,10 +631,33 @@
     white-space: normal;
     overflow-wrap: break-word;
     line-height: 1.25;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    /*
+      Line-clamp paints the first two wrapped lines, so the namesake-
+      corner title that justified this wrap (Pirates of the Carribean:
+      Curse of the Black Pearl) still never reached Black Pearl on the
+      ~12-15.5rem landscape rail: ~20-24 characters per line is three
+      wraps, and the 32cqw canvas pill already clips to the last two.
+      Same column flex-end plus overflow as that pill and 3.2x overlay
+      names. Two line-heights (1.25); height stays auto so Heat does
+      not sit in an empty two-line box. The inner text must keep its
+      content height so flex-end can hide the start.
+    */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    max-height: 2.5em;
+    overflow: hidden;
+  }
+
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title > .deck-sidebar-collapse-title-text {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: unset;
+    flex: none;
   }
 
   .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta {
