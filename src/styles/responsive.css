@@ -522,40 +522,20 @@
   }
 
   /*
-    Inline rename lives in the summary title cell. Hide Aa/× so the 16px
-    field can use that leftover width. Drop the chevron too: collapsing
-    during an edit would only hide already-hidden sliders, and the
-    caret should keep the full title track.
+    Add Movie types in the sheet body, not the summary. Keep rename on
+    that same path: hide the disclosure row so iOS is focusing a normal
+    16px field instead of an input jammed into <summary>, which is what
+    dropped the keyboard in 107-108. Sliders stay hidden because the
+    live grid is already gone for this session.
   */
   .deck-sidebar .movie-selection-panel--renaming > .deck-sidebar-collapse-summary,
-  .deck-sidebar .movie-selection-panel--renaming[open] > .deck-sidebar-collapse-summary {
-    position: static;
-    margin-bottom: 0;
-    border-bottom: none;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
-    min-height: 2.75rem;
-    padding: 0 0.65rem;
-    align-content: center;
-  }
-
-  .movie-selection-panel--renaming[open] > .deck-sidebar-collapse-summary > .movie-selection-actions {
-    display: none;
-  }
-
-  .movie-selection-panel--renaming > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta,
-  .movie-selection-panel--renaming > .deck-sidebar-collapse-summary::after {
-    display: none;
-  }
-
+  .deck-sidebar .movie-selection-panel--renaming[open] > .deck-sidebar-collapse-summary,
   .deck-sidebar .movie-selection-panel--renaming[open] > .score-sliders--selected,
   .deck-sidebar .movie-selection-panel--renaming[open] > .movie-selection-bar {
     display: none;
   }
 
-  .movie-selection-panel > .deck-sidebar-collapse-summary > .movie-selection-rename-input {
-    grid-column: 1;
-    grid-row: 1;
+  .movie-selection-panel--renaming > .movie-selection-rename-input {
     min-width: 0;
     width: 100%;
     font-weight: 600;
@@ -874,8 +854,7 @@
     is a div, so [open] is a no-op there. Selected score sliders live in
     a different panel and still keep the grid on screen.
 
-    Selected rename is the exception: that 16px field sits in the bottom
-    overlay, so the keyboard covers it unless the plot yields the same
+    Selected rename is the exception: that 16px field needs the same
     leftover Add already uses. Hide for the whole --renaming session, not
     :focus: focusing the new field used to display:none the square, iOS
     blurred the caret on that layout shift, and blur committed the title
@@ -890,9 +869,8 @@
     Hiding the plot is not enough: Selected stays a bottom overlay with
     Fun/Good still open, so the 16px field sits under the keyboard the
     same way Add did before it lived at the top of the leftover. Take
-    Selected out of that overlay, hide the list and tools, and drop
-    sliders (the live grid is already gone) so the field sits under the
-    header like Add Movie's title input.
+    Selected out of that overlay, hide the list and tools, and put the
+    field in the sheet body under the header like Add Movie's title input.
   */
   .deck-sidebar:has(.movie-selection-panel--renaming) .deck-sidebar-tools-row,
   .deck-sidebar:has(.movie-selection-panel--renaming) .deck-sidebar-section--list.movie-list {
@@ -1373,7 +1351,7 @@
   /*
     Inline rename replaces window.prompt, which is a tiny native field on
     iPhone. Same 16px / 44px padding-box as Add Movie so Safari does not
-    page-zoom, and the caret is a real tap target in the Selected sheet.
+    page-zoom, and the caret is a real tap target in the sheet body.
   */
   .movie-selection-rename-input {
     min-height: 2.75rem;

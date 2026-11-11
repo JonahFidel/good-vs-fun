@@ -105,6 +105,10 @@ export function MovieSelectionPanel({
       renameArmedRef.current = false
       return
     }
+    // Keep the sheet open so the body field stays visible after the
+    // summary is hidden. Native <details> would otherwise have no
+    // disclosure row to keep [open] latched.
+    inputRef.current?.closest('details')?.setAttribute('open', '')
     inputRef.current?.focus()
     inputRef.current?.select()
     // Ignore blur from the plot-hide layout shift so iOS cannot
@@ -197,7 +201,6 @@ export function MovieSelectionPanel({
   return (
     <SidebarCollapse
       title={movie.title}
-      titleContent={!isWide && isRenaming ? renameInput : undefined}
       meta={scoreMeta}
       className={
         isRenaming
@@ -206,6 +209,7 @@ export function MovieSelectionPanel({
       }
       actions={actionButtons}
     >
+      {!isWide && isRenaming ? renameInput : null}
       <div className="movie-selection-bar">
         <div className="movie-selection-info">
           <span className="movie-selection-label">Selected</span>
