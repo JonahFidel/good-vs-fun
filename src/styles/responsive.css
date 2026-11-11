@@ -1791,15 +1791,36 @@
   /*
     Manage account is Clerk's default ~55rem modal. On a 375px iPhone
     that overflows horizontally. Cap to the viewport like Sign in,
-    scoped to UserProfile so UserButton popover stays auto-sized.
+    including notch/home-indicator insets, scoped to UserProfile so
+    UserButton popover stays auto-sized. A fixed height without a
+    scrolling scrollBox clips Account/Security; min-width: 0 plus
+    overflow-wrap keeps long emails from forcing a horizontal pan.
     Appearance inline styles are the cascade that beats Clerk's
     injected sheet; these rules match that sizing when they win.
   */
   .cl-modalContent:has(.cl-userProfile-root) {
     width: 100%;
-    max-width: min(55rem, calc(100vw - 1.5rem));
-    height: min(44rem, calc(100dvh - 1.5rem));
-    max-height: min(44rem, calc(100dvh - 1.5rem));
+    max-width: min(
+      55rem,
+      calc(
+        100vw - 1.5rem - env(safe-area-inset-left, 0px) -
+          env(safe-area-inset-right, 0px)
+      )
+    );
+    height: min(
+      44rem,
+      calc(
+        100dvh - 1.5rem - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
+    max-height: min(
+      44rem,
+      calc(
+        100dvh - 1.5rem - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
     margin: 0;
   }
 
@@ -1809,14 +1830,55 @@
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .cl-userProfile-root .cl-card {
+    overflow: hidden;
+  }
+
+  .cl-userProfile-root .cl-scrollBox,
+  .cl-userProfile-root .cl-pageScrollBox {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cl-userProfile-root .cl-profileSection,
+  .cl-userProfile-root .cl-profileSectionContent,
+  .cl-userProfile-root .cl-profileSectionItemList,
+  .cl-userProfile-root .cl-profileSectionItem {
+    min-width: 0;
+  }
+
+  .cl-userProfile-root .cl-profileSectionItem {
+    min-height: 2.75rem;
+    overflow-wrap: anywhere;
   }
 
   .cl-navbarButton,
   .cl-navbarMobileMenuButton,
+  .cl-navbarMobileMenuRow,
   .cl-profileSectionPrimaryButton,
   .cl-accordionTriggerButton,
+  .cl-formButtonReset,
+  .cl-menuButton,
+  .cl-menuItem,
+  .cl-formFieldInputShowPasswordButton,
   .cl-modalCloseButton {
     min-height: 2.75rem;
+  }
+
+  .cl-menuButton,
+  .cl-formFieldInputShowPasswordButton,
+  .cl-modalCloseButton {
+    min-width: 2.75rem;
+  }
+
+  .cl-menuList {
+    max-width: min(20rem, calc(100vw - 1.5rem));
   }
 
   .cl-formFieldInput,

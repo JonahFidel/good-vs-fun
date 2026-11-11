@@ -9,7 +9,8 @@
  * wrapper, so signed-in /decks account chrome overflows a 375px header.
  *
  * Manage account is a separate ~55rem modal. Cap it to the viewport so
- * a 375px iPhone can use it, and keep 44px hits on its nav/actions.
+ * a 375px iPhone can use it, keep 44px hits on its nav/actions, and let
+ * Account/Security scroll inside that height instead of clipping.
  */
 const clerkAuthCardFill = {
   rootBox: {
@@ -26,12 +27,24 @@ const clerkAuthCardFill = {
   },
 } as const
 
+const clerkUserProfileViewportMax =
+  'min(55rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)))'
+const clerkUserProfileViewportHeight =
+  'min(44rem, calc(100dvh - 1.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)))'
+
+const clerkScrollBoxFit = {
+  flex: '1 1 auto',
+  minHeight: '0',
+  overflowY: 'auto',
+  WebkitOverflowScrolling: 'touch',
+} as const
+
 const clerkUserProfileFit = {
   modalContent: {
     width: '100%',
-    maxWidth: 'min(55rem, calc(100vw - 1.5rem))',
-    height: 'min(44rem, calc(100dvh - 1.5rem))',
-    maxHeight: 'min(44rem, calc(100dvh - 1.5rem))',
+    maxWidth: clerkUserProfileViewportMax,
+    height: clerkUserProfileViewportHeight,
+    maxHeight: clerkUserProfileViewportHeight,
     margin: '0',
   },
   rootBox: {
@@ -50,17 +63,46 @@ const clerkUserProfileFit = {
     width: '100%',
     maxWidth: '100%',
     minWidth: '0',
+    minHeight: '0',
+    height: '100%',
+    overflow: 'hidden',
   },
+  scrollBox: clerkScrollBoxFit,
+  pageScrollBox: clerkScrollBoxFit,
   navbarButton: {
     minHeight: '2.75rem',
   },
   navbarMobileMenuButton: {
     minHeight: '2.75rem',
   },
+  navbarMobileMenuRow: {
+    minHeight: '2.75rem',
+  },
+  profileSection: {
+    minWidth: '0',
+  },
+  profileSectionContent: {
+    minWidth: '0',
+  },
+  profileSectionItem: {
+    minWidth: '0',
+    minHeight: '2.75rem',
+    overflowWrap: 'anywhere',
+  },
   profileSectionPrimaryButton: {
     minHeight: '2.75rem',
   },
   accordionTriggerButton: {
+    minHeight: '2.75rem',
+  },
+  formButtonReset: {
+    minHeight: '2.75rem',
+  },
+  menuButton: {
+    minWidth: '2.75rem',
+    minHeight: '2.75rem',
+  },
+  menuItem: {
     minHeight: '2.75rem',
   },
   modalCloseButton: {
@@ -83,6 +125,13 @@ export const clerkAppearance = {
       minHeight: '2.75rem',
     },
     formButtonPrimary: {
+      minHeight: '2.75rem',
+    },
+    formButtonReset: {
+      minHeight: '2.75rem',
+    },
+    formFieldInputShowPasswordButton: {
+      minWidth: '2.75rem',
       minHeight: '2.75rem',
     },
     socialButtonsBlockButton: {
