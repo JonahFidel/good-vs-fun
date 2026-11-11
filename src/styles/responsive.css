@@ -1502,6 +1502,51 @@
     line-height: 1.2;
   }
 
+  /*
+    The collapsed Selected bar is the default-zoom title+score readout
+    after a grid tap. Portrait leftover is wide enough for 2-line wrap
+    beside F/G. Landscape leftover is the same ~12-15.5rem rail as the
+    list: title | F 9.55 · G 9.83 | chevron leaves about 5-8 characters
+    per line, so Pirates of the Caribbean still reads as "Pirates of t…".
+    Stack F/G under the title (chevron stays on the name row) so the
+    name uses the rail minus the disclosure control. Taller overlay is
+    the same height tradeoff as stacked list rows; bump list padding so
+    the last title is not under the bar.
+  */
+  .movie-selection-panel > .deck-sidebar-collapse-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    align-content: center;
+    column-gap: 0.35rem;
+    row-gap: 0.08rem;
+    min-height: 2.75rem;
+    padding: 0.25rem 0.65rem;
+  }
+
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta {
+    grid-column: 1;
+    grid-row: 2;
+    text-align: left;
+    justify-self: start;
+  }
+
+  .movie-selection-panel > .deck-sidebar-collapse-summary::after {
+    grid-column: 2;
+    grid-row: 1;
+    margin-left: 0;
+  }
+
+  .deck-sidebar:has(.movie-selection-panel) .deck-sidebar-section--list.movie-list ul {
+    padding-bottom: 4.25rem;
+  }
+
   /* Landscape sidebar is ~12-15rem; two 44px sliders would have ~90px tracks. */
   .score-sliders--add,
   .score-sliders--selected {
