@@ -455,7 +455,8 @@ function pickTowardShared<T>(
  * toward the shared slot, and move the other into the
  * unused adjacent quadrant along the pair's larger
  * separation (Fun for those two Naked Guns). Overlay
- * copies of this triangle stay put until a later increment.
+ * copies of this triangle get the same split at
+ * ghost-label zoom.
  */
 function interiorCloseGoodTriangleStagger(
   groups: PositionGroup[],
