@@ -9,6 +9,7 @@ import { DRAG_HOLD_MS } from '../../hooks/plot/useHoldToDrag'
 import {
   MOVIE_HIT_RADIUS_PX,
   ghostPointAtMarker,
+  listedMovieIdAtPoint,
   movieIdAtVisibleLabel,
   moviePointAtVisibleLabel,
   pointerHitsVisibleMovieLabel,
@@ -180,8 +181,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // Movie id from that first title tap. At 2.2x a stacked pill
       // lists every truncated name, so tap-A-then-tap-B is inside
       // DOUBLE_TAP_PX of the same point, including a miss in the
-      // 0.2rem gap. Completing as zoom-out would hide the other
-      // stacked title instead of selecting it.
+      // 0.2rem gap or an overshoot past the last line. Completing
+      // as zoom-out would hide the other stacked title instead of
+      // selecting it.
       titleId: string | null
     } | null>(null)
     const emptyTapTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(
@@ -491,8 +493,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // contact left no one-handed way home. Single tap still
     // reads/selects. A follow-up on a different listed name in that
     // same stacked pill is tap-A-then-tap-B select, not zoom-out:
-    // 28px always covers those lines, and jitter onto a neighbor
-    // movie's title still eases home. Overlay zoom-in still requires
+    // 28px always covers those lines, including an overshoot past
+    // the ~31px pill, and jitter onto a neighbor movie's title still
+    // eases home. Overlay zoom-in still requires
     // that stored overlay contact and no stored title, so a 2.2x name
     // that covers a ghost cannot steal 3.2x. A second-tap ghost hit
     // cannot retarget an empty-space pair. Overflowed
@@ -1044,17 +1047,35 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // A follow-up on a different listed name in the same stacked
       // pill is not that jitter: 2.2x paints every stacked title in
       // one box, so 28px always covers tap-A-then-tap-B, including a
-      // miss in the 0.2rem gap that resolves to the closer name.
-      // Leave this false so onTouchSelect can switch to that name
-      // instead of zooming home.
-      function isStackedTitleRetarget(clientX: number, clientY: number) {
+      // miss in the 0.2rem gap that resolves to the closer name, and
+      // a follow-up that overshoots the last line past the ~31px pill.
+      // movieIdAtVisibleLabel cannot see that miss; listedMovieIdAtPoint
+      // on the stored stack still can. Jitter onto a neighboring
+      // movie's title still eases home. Leave this false so
+      // onTouchSelect can switch to that name instead of zooming home.
+      // The outside-pill miss also has no fromLabel, so pointerdown
+      // writes data-stacked-retarget-id for onTouchSelect; otherwise
+      // closestMovieId would cycle the shared marker.
+      function stackedRetargetId(clientX: number, clientY: number) {
         const last = lastTapRef.current
         if (!last?.title || !last.titleId || !last.title.isConnected) {
-          return false
+          return null
         }
-        const secondId = movieIdAtVisibleLabel(capturedSlot, clientX, clientY)
-        if (!secondId || secondId === last.titleId) return false
-        return moviePointAtVisibleLabel(capturedSlot, clientX, clientY) === last.title
+        const secondPoint = moviePointAtVisibleLabel(
+          capturedSlot,
+          clientX,
+          clientY,
+        )
+        if (secondPoint && secondPoint !== last.title) {
+          return null
+        }
+        const secondId = listedMovieIdAtPoint(last.title, clientX, clientY)
+        if (!secondId || secondId === last.titleId) return null
+        return secondId
+      }
+
+      function isStackedTitleRetarget(clientX: number, clientY: number) {
+        return stackedRetargetId(clientX, clientY) != null
       }
 
       function isCompletingDoubleTap(clientX: number, clientY: number) {
@@ -1192,7 +1213,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // tap on a painted name now starts that same zoom-out pair
         // instead of returning as read-not-zoom-out. Completing skips
         // a different listed name in that same stacked pill so
-        // tap-A-then-tap-B can still select instead of easing home.
+        // tap-A-then-tap-B can still select instead of easing home,
+        // including a 28px follow-up that overshoots the last line.
         if (completing) {
           cancelEmptyTap()
           lastTapRef.current = null
@@ -1205,16 +1227,23 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           }
           return true
         }
+        // tap-A-then-tap-B that overshoots the stacked pill has no
+        // in-box labelMovie. Keep the stored stack as lastTap so a
+        // third tap can still zoom out or retarget, and so this miss
+        // does not count as empty-grid deselect 350ms later.
+        const retargetId = stackedRetargetId(clientX, clientY)
         lastTapRef.current = {
           t: now,
           x: clientX,
           y: clientY,
-          ghost: primaryTitleZoomIn ? null : ghostPoint,
+          ghost: retargetId || primaryTitleZoomIn ? null : ghostPoint,
           // Keep the movie-point at 2.2x too: a name that covers a
           // ghost must not start overlay 3.2x, and a miss still aims
           // at the marker. At already-detail scale this eases home.
-          title: labelMovie,
-          titleId: movieIdAtVisibleLabel(capturedSlot, clientX, clientY),
+          title: retargetId && storedTitle ? storedTitle : labelMovie,
+          titleId:
+            retargetId ??
+            movieIdAtVisibleLabel(capturedSlot, clientX, clientY),
         }
         // Wrapper pointerdown would deselect on the first finger of a
         // pinch, pan, or double-tap, hiding the only fit-zoom title.
@@ -1236,7 +1265,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           !caughtMotionRef.current &&
           !labelMovie &&
           !ghostPoint &&
-          !hitVisibleLabel
+          !hitVisibleLabel &&
+          !retargetId
         ) {
           scheduleEmptyTap(now)
         }
@@ -1252,6 +1282,16 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           // cycle a stack. Empty-space completing is included: at 2.2x
           // that pair is zoom-out, and a 44px ring under a title would
           // otherwise switch the Selected bar while going home.
+          // Stacked tap-A-then-tap-B that overshoots the pill still has
+          // to select: onTouchSelect's in-pill hit is empty, and the
+          // shared 44px ring would cycle. Hand the closer listed id to
+          // that listener before capture continues into the grid.
+          const grid = gridRef.current
+          if (grid) delete grid.dataset.stackedRetargetId
+          const retargetId = stackedRetargetId(e.clientX, e.clientY)
+          if (retargetId && grid) {
+            grid.dataset.stackedRetargetId = retargetId
+          }
           if (isCompletingDoubleTap(e.clientX, e.clientY)) {
             e.stopPropagation()
           }

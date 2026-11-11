@@ -69,6 +69,10 @@ function idFromLabelAtPoint(
   // line treated tap-A-then-tap-B as same-title zoom-out; the closest
   // painted name is the other listed movie. Fit-zoom stacks hide
   // inactive lines, so closest is the only painted title.
+  // Completing tap-A-then-tap-B is also allowed 28px off the first
+  // tap, and a two-line 2.2x stack is only ~31px tall, so that
+  // follow-up often sits outside this pill; listedMovieIdAtPoint
+  // still returns the closer name from the stored point.
   return closestContaining ?? closestTitle
 }
 
@@ -97,7 +101,11 @@ function idFromLabelAtPoint(
  * listed name in that same stacked pill is select, not zoom-out: 2.2x
  * stacks paint every truncated title in one box, so DOUBLE_TAP_PX always
  * covers tap-A-then-tap-B, including a miss in the pill gap that
- * belongs to the closer name.
+ * belongs to the closer name, and a follow-up that overshoots the last
+ * line past the pill. That outside-pill miss still belongs to this
+ * stored point: listedMovieIdAtPoint reads it without requiring the
+ * pointer to stay in the box. Jitter onto a neighboring movie's title
+ * still has to ease home.
  */
 export function moviePointAtVisibleLabel(
   root: ParentNode,
@@ -131,6 +139,8 @@ export function moviePointAtVisibleLabel(
  * the pointer is over. Used to select the name you just read after titles
  * appear, and to tell a stacked 2.2x tap-A-then-tap-B from a same-title
  * double-tap zoom, including when the tap sits in the gap between lines.
+ * A follow-up that overshoots the pill is outside this hit test; use
+ * listedMovieIdAtPoint on the stored stacked point instead.
  */
 export function movieIdAtVisibleLabel(
   root: ParentNode,
@@ -139,6 +149,24 @@ export function movieIdAtVisibleLabel(
 ): string | null {
   const point = moviePointAtVisibleLabel(root, clientX, clientY)
   if (!point) return null
+  return listedMovieIdAtPoint(point, clientX, clientY)
+}
+
+/**
+ * Closest painted listed name in this movie-point's pill, even when the
+ * pointer is outside the box. Completing tap-A-then-tap-B is allowed
+ * 28px of jitter, and a 2.2x two-line stack is only ~31px tall, so the
+ * second tap often overshoots the last title. Inflating every stacked
+ * pill by that 28px would steal a neighboring movie's title (and its
+ * 44px ring) on a 68px-per-cell zoomed square; keep the hit on this
+ * stored point instead. Fit-zoom stacks hide inactive lines, so this
+ * is the selected title and same-title zoom-in still fires.
+ */
+export function listedMovieIdAtPoint(
+  point: HTMLElement,
+  clientX: number,
+  clientY: number,
+): string | null {
   const label = point.querySelector(':scope > .movie-label')
   if (!(label instanceof HTMLElement)) return null
   return idFromLabelAtPoint(label, clientX, clientY)?.id ?? null

@@ -147,8 +147,16 @@ export function usePlotDrag({
       // (it is painted on top). Below label zoom, keep marker-first so
       // a selected pill does not steal taps aimed at a covered neighbor.
       const zoomed = Boolean(plot.closest('.grid-zoom-slot--labels'))
+      // PlotGridZoom writes this when tap-A-then-tap-B overshoots the
+      // stacked pill: the follow-up is outside movieIdAtVisibleLabel,
+      // and closestMovieId would cycle the shared marker.
+      const stackedRetargetId = plot.dataset.stackedRetargetId
+      if (stackedRetargetId) {
+        delete plot.dataset.stackedRetargetId
+      }
       const fromLabel = zoomed
-        ? movieIdAtVisibleLabel(plot, event.clientX, event.clientY)
+        ? stackedRetargetId ||
+          movieIdAtVisibleLabel(plot, event.clientX, event.clientY)
         : null
       // Compare overlay names have no movie id and pointer-events none,
       // so a tap on a ghost title at 3.2x would otherwise fall through
