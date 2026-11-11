@@ -11,7 +11,13 @@
  * Manage account is a separate ~55rem modal. Cap it to the viewport so
  * a 375px iPhone can use it, keep 44px hits on its nav/actions, and let
  * Account/Security scroll inside that height instead of clipping.
+ *
+ * After email, Sign in still uses ~32px text links for edit-identifier,
+ * resend, use-another-method, and Sign up. Those need the same 44px
+ * padding-box as Continue, or the second step is harder to tap than the
+ * first. Inline <a> tags ignore min-height unless they are flex.
  */
+
 const clerkAuthCardFill = {
   rootBox: {
     width: '100%',
@@ -37,6 +43,12 @@ const clerkScrollBoxFit = {
   minHeight: '0',
   overflowY: 'auto',
   WebkitOverflowScrolling: 'touch',
+} as const
+
+const clerk44pxTextHit = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  minHeight: '2.75rem',
 } as const
 
 const clerkUserProfileFit = {
@@ -135,6 +147,33 @@ export const clerkAppearance = {
       minHeight: '2.75rem',
     },
     socialButtonsBlockButton: {
+      minHeight: '2.75rem',
+    },
+    socialButtonsIconButton: {
+      minWidth: '2.75rem',
+      minHeight: '2.75rem',
+    },
+    alternativeMethodsBlockButton: {
+      minHeight: '2.75rem',
+    },
+    identityPreview: {
+      minWidth: '0',
+      maxWidth: '100%',
+    },
+    identityPreviewText: {
+      minWidth: '0',
+      overflowWrap: 'anywhere',
+    },
+    identityPreviewEditButton: {
+      minWidth: '2.75rem',
+      minHeight: '2.75rem',
+    },
+    footerActionLink: clerk44pxTextHit,
+    formResendCodeLink: clerk44pxTextHit,
+    formFieldAction: clerk44pxTextHit,
+    headerBackLink: clerk44pxTextHit,
+    backLink: clerk44pxTextHit,
+    selectButton: {
       minHeight: '2.75rem',
     },
     userButtonPopoverActionButton: {

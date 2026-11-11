@@ -1758,8 +1758,10 @@
     beats the generic input 16px rule, so focusing email Safari-zooms
     the page. The default card is also ~400px, wider than a 375px
     leftover after #root padding. 16px / 44px matches create-deck, and
-    the card has to shrink to the slot. Account popover actions were
-    still ~32px after the avatar grew.
+    the card has to shrink to the slot. After email, edit-identifier,
+    resend, use-another-method, and Sign up stay ~32px text links unless
+    those inner steps get the same 44px padding-box as Continue.
+    Account popover actions were still ~32px after the avatar grew.
     Card fill stays on .sign-in-page: the same .cl-card/.cl-rootBox
     classes wrap UserButton, and 100% there overflows the signed-in
     header plus the Manage account popover.
@@ -1892,7 +1894,43 @@
 
   .cl-formButtonPrimary,
   .cl-socialButtonsBlockButton,
-  .cl-userButtonPopoverActionButton {
+  .cl-socialButtonsIconButton,
+  .cl-alternativeMethodsBlockButton,
+  .cl-userButtonPopoverActionButton,
+  .cl-selectButton {
+    min-height: 2.75rem;
+  }
+
+  .cl-socialButtonsIconButton,
+  .cl-identityPreviewEditButton {
+    min-width: 2.75rem;
+  }
+
+  /*
+    Sign-in step two still uses text <a> hits (edit identifier, resend,
+    Forgot password, Back, Sign up). min-height on an inline link does
+    not grow the box; inline-flex matches Continue's 44px padding-box.
+    Long emails in the identity chip wrap so the 44px pencil stays on a
+    375px leftover instead of forcing a horizontal pan.
+  */
+  .cl-identityPreview {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .cl-identityPreviewText {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .cl-identityPreviewEditButton,
+  .cl-footerActionLink,
+  .cl-formResendCodeLink,
+  .cl-formFieldAction,
+  .cl-headerBackLink,
+  .cl-backLink {
+    display: inline-flex;
+    align-items: center;
     min-height: 2.75rem;
   }
 
