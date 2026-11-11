@@ -100,8 +100,10 @@ export function fillsSlot(slot: ViewSize, canvas: ViewSize): boolean {
 
 /**
  * Keep a fitted square covering the slot: no empty gutters while zoomed in,
- * and centered while the scaled canvas is smaller than the slot (including
- * fit). Skip that clamp when the canvas is letterboxed, or wheel-zoom toward
+ * centered at fit, and never smaller than fit. Inverse-scale holds ticks
+ * and markers at screen size, so pinch-out below 1x would explode those
+ * labels over a shrinking grid and hide the readable 0-10 default view.
+ * Skip that clamp when the canvas is letterboxed, or wheel-zoom toward
  * the cursor is immediately forced back to center on the leftover axis.
  */
 export function clampToSlot(
@@ -115,10 +117,11 @@ export function clampToSlot(
   if (!fillsSlot(slot, canvas)) {
     return state
   }
+  const scale = Math.min(MAX_SCALE, Math.max(INITIAL_SCALE, state.scale))
   return {
-    scale: state.scale,
-    tx: clampAxis(state.tx, slot.width, canvas.width * state.scale),
-    ty: clampAxis(state.ty, slot.height, canvas.height * state.scale),
+    scale,
+    tx: clampAxis(state.tx, slot.width, canvas.width * scale),
+    ty: clampAxis(state.ty, slot.height, canvas.height * scale),
   }
 }
 
