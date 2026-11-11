@@ -85,10 +85,15 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       const slot = slotRef.current
       if (!canvas) return
       if (slot) {
+        // lockFit matches the coarse-pointer inverse-scale CSS: iPhone
+        // pinch stays at or above the readable 1x grid. A mouse must not
+        // use the filled-square geometry as a stand-in, or a square or
+        // narrow desktop window loses Figma zoom-out and fit pan.
         stateRef.current = clampToSlot(
           stateRef.current,
           { width: slot.offsetWidth, height: slot.offsetHeight },
           { width: canvas.offsetWidth, height: canvas.offsetHeight },
+          isCoarsePointer(),
         )
       }
       const { scale, tx, ty } = stateRef.current
@@ -287,7 +292,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       function beginPan(id: number, clientX: number, clientY: number) {
         const sizes = viewSizes()
-        if (!sizes || !canPan(stateRef.current, sizes.slot, sizes.canvas)) return
+        if (
+          !sizes ||
+          !canPan(stateRef.current, sizes.slot, sizes.canvas, isCoarsePointer())
+        ) {
+          return
+        }
         panRef.current = {
           pointerId: id,
           x: clientX,
@@ -451,9 +461,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const touch = e.touches[0]
         pinchOccurredRef.current = false
         noteGestureStart(touch.clientX, touch.clientY)
-        // beginPan is a no-op at fit zoom on a filled square; when zoomed it
+        // beginPan is a no-op at fit zoom on coarse pointers; when zoomed it
         // must start even if the finger landed on a movie, or the 44px
-        // targets block pan. Desktop letterboxed slots can pan at fit.
+        // targets block pan. A mouse can pan at fit, including a square plot.
         beginPan(touch.identifier, touch.clientX, touch.clientY)
       }
 

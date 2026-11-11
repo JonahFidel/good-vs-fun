@@ -76,8 +76,6 @@ export function centeredTransform(
   }
 }
 
-const FILL_EPSILON_PX = 1
-
 function clampAxis(translate: number, slotSize: number, scaledSize: number): number {
   if (scaledSize <= slotSize) {
     return (slotSize - scaledSize) / 2
@@ -87,34 +85,25 @@ function clampAxis(translate: number, slotSize: number, scaledSize: number): num
 }
 
 /**
- * True when the unscaled canvas is the slot (iPhone square). Desktop leaves a
- * square plot letterboxed in a wider/taller slot; that extra space is not a
- * gutter to close, it is the pan/zoom room the Figma-style grid needs.
- */
-export function fillsSlot(slot: ViewSize, canvas: ViewSize): boolean {
-  return (
-    Math.abs(canvas.width - slot.width) <= FILL_EPSILON_PX &&
-    Math.abs(canvas.height - slot.height) <= FILL_EPSILON_PX
-  )
-}
-
-/**
- * Keep a fitted square covering the slot: no empty gutters while zoomed in,
- * centered at fit, and never smaller than fit. Inverse-scale holds ticks
- * and markers at screen size, so pinch-out below 1x would explode those
- * labels over a shrinking grid and hide the readable 0-10 default view.
- * Skip that clamp when the canvas is letterboxed, or wheel-zoom toward
- * the cursor is immediately forced back to center on the leftover axis.
+ * Coarse-pointer fit lock: never shrink below 1x, and keep a zoomed canvas
+ * covering the slot. Inverse-scale holds ticks and markers at screen size,
+ * so pinch-out below fit would explode those labels over a shrinking grid.
+ *
+ * Gated on the pointer, not on whether the canvas fills the slot. A mouse
+ * still needs Figma-style zoom-out and drag-pan when the plot happens to
+ * be square (narrow window, or a square desktop panel). Treating a filled
+ * slot as iPhone also matched those mouse layouts and killed desktop zoom.
  */
 export function clampToSlot(
   state: ZoomState,
   slot: ViewSize,
   canvas: ViewSize,
+  lockFit = false,
 ): ZoomState {
   if (slot.width <= 0 || slot.height <= 0 || canvas.width <= 0 || canvas.height <= 0) {
     return state
   }
-  if (!fillsSlot(slot, canvas)) {
+  if (!lockFit) {
     return state
   }
   const scale = Math.min(MAX_SCALE, Math.max(INITIAL_SCALE, state.scale))
@@ -130,11 +119,12 @@ export function canPan(
   state: ZoomState,
   slot: ViewSize,
   canvas: ViewSize,
+  lockFit = false,
 ): boolean {
   if (slot.width <= 0 || slot.height <= 0 || canvas.width <= 0 || canvas.height <= 0) {
     return false
   }
-  if (!fillsSlot(slot, canvas)) {
+  if (!lockFit) {
     return true
   }
   return (
