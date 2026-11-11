@@ -1349,6 +1349,10 @@
     At Good <= 1 / Good >= 9 that other side is off-canvas (the
     namesake Good 9-10 corner especially), so those stay on the
     primary's side and shift north/south toward the scoring region.
+    Two overlays at that same score still share one slot, so the
+    second (teal) takes the next vertical opening toward the
+    interior: south/north of the opposite-side purple at interior
+    Good, or one pill farther at the edge.
   */
   .grid-zoom-slot--ghost-labels .ghost-point {
     opacity: 1;
@@ -1401,6 +1405,22 @@
 
   .ghost-point.ghost-point--label-north.ghost-point--label-start > .movie-label {
     transform: translate(calc(-100% - 9px), calc(-150% - 4px));
+  }
+
+  .ghost-point.ghost-point--label-south-far > .movie-label {
+    transform: translate(calc(100% + 9px), calc(150% + 8px));
+  }
+
+  .ghost-point.ghost-point--label-south-far.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), calc(150% + 8px));
+  }
+
+  .ghost-point.ghost-point--label-north-far > .movie-label {
+    transform: translate(calc(100% + 9px), calc(-250% - 8px));
+  }
+
+  .ghost-point.ghost-point--label-north-far.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), calc(-250% - 8px));
   }
 
   /*

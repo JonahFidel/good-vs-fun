@@ -93,6 +93,8 @@ export function PlotPanel({
   }
 
   const primaryKeys = new Set(movieGroups.map((group) => group.key))
+  const ghostKeys = new Set(ghostGroups.map((group) => group.key))
+  const ghost2Keys = new Set(ghost2Groups.map((group) => group.key))
   const raisedPrimaryKeys = new Set(
     movieGroups
       .filter((group) => {
@@ -145,6 +147,7 @@ export function PlotPanel({
               variant={1}
               primaryKeys={primaryKeys}
               raisedPrimaryKeys={raisedPrimaryKeys}
+              siblingKeys={ghost2Keys}
             />
           )}
           {ghost2DeckId && (
@@ -153,6 +156,7 @@ export function PlotPanel({
               variant={2}
               primaryKeys={primaryKeys}
               raisedPrimaryKeys={raisedPrimaryKeys}
+              siblingKeys={ghostKeys}
             />
           )}
           <MoviePoints

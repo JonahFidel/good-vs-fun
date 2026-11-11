@@ -79,6 +79,9 @@
   the title does not leave the square. Sit fully below/above the
   centered primary pill (same height, 4px gap) toward the scoring
   region: south toward Fun 0, north toward Fun 10.
+
+  A second overlay at that same score takes the next opening in the
+  same direction so purple and teal do not share one pill.
 */
 .ghost-point.ghost-point--label-south > .movie-label {
   transform: translate(calc(100% + 7px), calc(50% + 4px));
@@ -94,6 +97,22 @@
 
 .ghost-point.ghost-point--label-north.ghost-point--label-start > .movie-label {
   transform: translate(calc(-100% - 7px), calc(-150% - 4px));
+}
+
+.ghost-point.ghost-point--label-south-far > .movie-label {
+  transform: translate(calc(100% + 7px), calc(150% + 8px));
+}
+
+.ghost-point.ghost-point--label-south-far.ghost-point--label-start > .movie-label {
+  transform: translate(calc(-100% - 7px), calc(150% + 8px));
+}
+
+.ghost-point.ghost-point--label-north-far > .movie-label {
+  transform: translate(calc(100% + 7px), calc(-250% - 8px));
+}
+
+.ghost-point.ghost-point--label-north-far.ghost-point--label-start > .movie-label {
+  transform: translate(calc(-100% - 7px), calc(-250% - 8px));
 }
 
 .ghost-point--1 > .movie-label {

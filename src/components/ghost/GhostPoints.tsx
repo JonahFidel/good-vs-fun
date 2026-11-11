@@ -11,16 +11,69 @@ const EDGE_GOOD_HIGH = 9
 /** When staying on the primary's side, sit toward Fun 0 in the upper half. */
 const OFFSET_SOUTH_FUN = 5
 
+function overlayLabelPlacement({
+  good,
+  fun,
+  variant,
+  coincident,
+  sharedSlot,
+}: {
+  good: number
+  fun: number
+  variant: 1 | 2
+  coincident: boolean
+  sharedSlot: boolean
+}) {
+  let labelOnLeft = good > LABEL_FLIP_GOOD
+  let labelBelow = false
+  let labelAbove = false
+  let labelFarBelow = false
+  let labelFarAbove = false
+  if (!coincident) {
+    return { labelOnLeft, labelBelow, labelAbove, labelFarBelow, labelFarAbove }
+  }
+
+  const primaryOnRight = good < PRIMARY_LABEL_FLIP_GOOD
+  const oppositeWouldClip = primaryOnRight
+    ? good <= EDGE_GOOD_LOW
+    : good >= EDGE_GOOD_HIGH
+  const towardSouth = fun >= OFFSET_SOUTH_FUN
+  // Two overlays at this score share one slot unless the second
+  // takes the next open vertical opening toward the interior.
+  const staggerSecond = sharedSlot && variant === 2
+
+  if (oppositeWouldClip) {
+    labelOnLeft = !primaryOnRight
+    if (staggerSecond) {
+      labelFarBelow = towardSouth
+      labelFarAbove = !towardSouth
+    } else {
+      labelBelow = towardSouth
+      labelAbove = !towardSouth
+    }
+  } else {
+    labelOnLeft = primaryOnRight
+    if (staggerSecond) {
+      labelBelow = towardSouth
+      labelAbove = !towardSouth
+    }
+  }
+
+  return { labelOnLeft, labelBelow, labelAbove, labelFarBelow, labelFarAbove }
+}
+
 export function GhostPoints({
   groups,
   variant = 1,
   primaryKeys,
   raisedPrimaryKeys,
+  siblingKeys,
 }: {
   groups: PositionGroup[]
   variant?: 1 | 2
   primaryKeys: ReadonlySet<string>
   raisedPrimaryKeys: ReadonlySet<string>
+  siblingKeys: ReadonlySet<string>
 }) {
   const variantClass = variant === 2 ? 'ghost-point--2' : 'ghost-point--1'
   return (
@@ -30,25 +83,19 @@ export function GhostPoints({
         const top = scoreToPlotPercent(group.fun, 'y')
         const coincident = primaryKeys.has(group.key)
         const underSelected = raisedPrimaryKeys.has(group.key)
-        // Same-score overlay titles share a side at Good < 5 and Good > 7.
-        // Put them on the other side of the primary so both names read,
-        // except at Good 0 / Good 10 where that other side is off-canvas.
-        let labelOnLeft = group.good > LABEL_FLIP_GOOD
-        let labelBelow = false
-        let labelAbove = false
-        if (coincident) {
-          const primaryOnRight = group.good < PRIMARY_LABEL_FLIP_GOOD
-          const oppositeWouldClip = primaryOnRight
-            ? group.good <= EDGE_GOOD_LOW
-            : group.good >= EDGE_GOOD_HIGH
-          if (oppositeWouldClip) {
-            labelOnLeft = !primaryOnRight
-            labelBelow = group.fun >= OFFSET_SOUTH_FUN
-            labelAbove = !labelBelow
-          } else {
-            labelOnLeft = primaryOnRight
-          }
-        }
+        const {
+          labelOnLeft,
+          labelBelow,
+          labelAbove,
+          labelFarBelow,
+          labelFarAbove,
+        } = overlayLabelPlacement({
+          good: group.good,
+          fun: group.fun,
+          variant,
+          coincident,
+          sharedSlot: siblingKeys.has(group.key),
+        })
 
         return (
           <div
@@ -60,6 +107,8 @@ export function GhostPoints({
               labelOnLeft ? 'ghost-point--label-start' : '',
               labelBelow ? 'ghost-point--label-south' : '',
               labelAbove ? 'ghost-point--label-north' : '',
+              labelFarBelow ? 'ghost-point--label-south-far' : '',
+              labelFarAbove ? 'ghost-point--label-north-far' : '',
               underSelected ? 'ghost-point--under-selected' : '',
             ]
               .filter(Boolean)
