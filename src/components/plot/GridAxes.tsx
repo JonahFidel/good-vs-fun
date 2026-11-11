@@ -4,6 +4,8 @@ import { GRID_CANVAS, GRID_MARGIN } from '../../lib/gridCanvas'
 // Canvas spans –margin..(scoreMax + margin). Ticks use the same math as the scoring region.
 
 const MAJOR_TICKS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+/** Origin 0 on the Fun=0 / Good=0 axes only; top/right already skip that corner. */
+const ORIGIN_AND_MAJOR_TICKS = [0, ...MAJOR_TICKS]
 
 const MINOR_TICKS = Array.from({ length: 99 }, (_, index) => (index + 1) / 10).filter(
   (value) => Math.round(value * 10) % 10 !== 0,
@@ -36,7 +38,7 @@ function Tick({
 export function GridAxes() {
   return (
     <>
-      {MAJOR_TICKS.map((value) => (
+      {ORIGIN_AND_MAJOR_TICKS.map((value) => (
         <Tick
           key={`tick-x-${value}`}
           className="grid-tick grid-tick-x"
@@ -44,7 +46,7 @@ export function GridAxes() {
           style={{ left: pct(value) }}
         />
       ))}
-      {MAJOR_TICKS.map((value) => (
+      {ORIGIN_AND_MAJOR_TICKS.map((value) => (
         <Tick
           key={`tick-y-${value}`}
           className="grid-tick grid-tick-y"

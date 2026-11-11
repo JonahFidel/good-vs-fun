@@ -501,7 +501,20 @@
   }
 
   /*
-    1-10 along a ~160-280px axis collides in the gutter. Keep 2/4/5/6/8/10
+    Two origin 0s share the Fun=0 / Good=0 corner. Centered labels overlap
+    in the 2-4px mobile gutter ("10" already fills it). Sit Good 0 to the
+    right of the origin and Fun 0 above it. Notches are already hidden.
+  */
+  .grid-tick-x[data-tick='0'] > .grid-tick-label {
+    transform: translate(0, 0);
+  }
+
+  .grid-tick-y[data-tick='0'] > .grid-tick-label {
+    transform: translate(0, -100%);
+  }
+
+  /*
+    0-10 along a ~160-280px axis collides in the gutter. Keep 0/2/4/5/6/8/10
     at fit zoom; restore 1/3/7/9 after pinch so a zoomed corner still has
     unit precision.
   */
