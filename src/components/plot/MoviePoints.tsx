@@ -32,6 +32,9 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * partner. Remaining degree-1 ends of longer close-Good chains
  * (28 Years Later / Alexander / Bone Temple / Pizza) get that
  * flip next, so the two-partner interiors do not block the ends.
+ * Odd-length leftovers of those peels (Indiana Jones after
+ * Bourne / Black Panther) flip opposite the claimed partner so
+ * the leftover does not keep covering the unflipped middle.
  * Reuse of label-end would also flip the fit-zoom selected pill.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
@@ -138,6 +141,15 @@ function closeGoodAwayFromPartner(
   return { key: higherGood.key, side: 'good-10' }
 }
 
+function resolvedGoodSide(
+  group: PositionGroup,
+  assigned: 'good-10' | 'good-0' | undefined,
+): 'left' | 'right' {
+  if (assigned === 'good-10') return 'right'
+  if (assigned === 'good-0') return 'left'
+  return group.good < LABEL_FLIP_GOOD ? 'right' : 'left'
+}
+
 function closeGoodPartners(
   candidates: PositionGroup[],
 ): Map<string, PositionGroup[]> {
@@ -177,7 +189,25 @@ function applyCloseGoodEndFlips(
     const list = partners.get(group.key) ?? []
     if (list.length !== 1) continue
     const other = list[0]
-    if (used.has(other.key)) continue
+    if (used.has(other.key)) {
+      // Odd-length leftover: the partner was already claimed by
+      // the other end of a 3-chain. closeGoodAwayFromPartner
+      // would move that claimed middle (Indiana Jones vs Black
+      // Panther would restack Black Panther on Bourne). Flip
+      // only the leftover, opposite the partner's resolved side.
+      if (!requireBothDegreeOne) {
+        const otherSide = resolvedGoodSide(other, stagger.get(other.key))
+        const mySide = resolvedGoodSide(group, undefined)
+        if (mySide === otherSide) {
+          stagger.set(
+            group.key,
+            otherSide === 'left' ? 'good-10' : 'good-0',
+          )
+        }
+      }
+      used.add(group.key)
+      continue
+    }
     if (
       requireBothDegreeOne &&
       (partners.get(other.key) ?? []).length !== 1
@@ -224,7 +254,10 @@ function interiorIsolatedCloseGoodHorizontalStagger(
  * interiors have two partners. Peel remaining degree-1 ends with the
  * same away-from-partner flip so Alexander (toward 28 Years Later)
  * and Pizza Movie (toward Bone Temple) sit on the opposite Good side
- * instead of covering the chain. Odd-length leftovers stay put.
+ * instead of covering the chain. Odd-length leftovers of those peels
+ * (Indiana Jones after Bourne / Black Panther) then flip opposite
+ * the claimed partner. Clique interiors with two leftover partners
+ * stay put.
  */
 function interiorCloseGoodChainHorizontalStagger(
   groups: PositionGroup[],
