@@ -1,6 +1,17 @@
 import { SidebarCollapse } from '../deck/SidebarCollapse'
 import type { Deck } from '../../lib/types'
 
+/** Phone Compare is a <details> sheet that hides the plot. Desktop is a div. */
+function closePhoneSheet(target: EventTarget | null) {
+  if (!(target instanceof Element)) return
+  const details = target.closest('details')
+  if (!details) return
+  // Let the native iOS picker finish dismissing before collapsing the sheet.
+  window.setTimeout(() => {
+    details.removeAttribute('open')
+  }, 0)
+}
+
 type GhostCompareControlsProps = {
   primaryName: string
   primaryIsExample: boolean
@@ -47,7 +58,10 @@ export function GhostCompareControls({
             <select
               id="ghost-deck-select"
               value={ghostDeckId}
-              onChange={(event) => onGhostDeckChange(event.target.value)}
+              onChange={(event) => {
+                onGhostDeckChange(event.target.value)
+                closePhoneSheet(event.currentTarget)
+              }}
             >
               <option value="">None</option>
               {otherDecks
@@ -59,7 +73,14 @@ export function GhostCompareControls({
                 ))}
             </select>
             {ghostDeckId && (
-              <button type="button" className="btn-swap" onClick={() => onSwap(1)}>
+              <button
+                type="button"
+                className="btn-swap"
+                onClick={(event) => {
+                  onSwap(1)
+                  closePhoneSheet(event.currentTarget)
+                }}
+              >
                 ⇄ Swap primary
               </button>
             )}
@@ -74,7 +95,10 @@ export function GhostCompareControls({
             <select
               id="ghost2-deck-select"
               value={ghost2DeckId}
-              onChange={(event) => onGhost2DeckChange(event.target.value)}
+              onChange={(event) => {
+                onGhost2DeckChange(event.target.value)
+                closePhoneSheet(event.currentTarget)
+              }}
             >
               <option value="">None</option>
               {otherDecks
@@ -86,7 +110,14 @@ export function GhostCompareControls({
                 ))}
             </select>
             {ghost2DeckId && (
-              <button type="button" className="btn-swap" onClick={() => onSwap(2)}>
+              <button
+                type="button"
+                className="btn-swap"
+                onClick={(event) => {
+                  onSwap(2)
+                  closePhoneSheet(event.currentTarget)
+                }}
+              >
                 ⇄ Swap primary
               </button>
             )}
