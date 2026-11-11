@@ -1418,6 +1418,36 @@
   }
 
   /*
+    Stacked overlay names stay one-line so a two-film compare
+    (Code 3 + Kill Bill V2) does not become a four-line pill.
+    End ellipsis then hides the sequel: "Back to the Future 2"
+    and "Kill Bill V2" read as "Back to t…" / "Kill Bill…", and
+    overlays have no Selected bar to recover the ending. Clip
+    from the start instead: RTL overflow on the line, LTR
+    isolate on the title, so the same 3.75rem box shows
+    "…Future 2" / "…Bill V2". Short names like Code 3 still
+    fit and stay left-aligned. min-width: 0 so the flex line
+    actually shrinks to that box instead of painting past it.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point--stacked .movie-label-line {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: rtl;
+    text-align: left;
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point--stacked .movie-label-title {
+    display: inline;
+    direction: ltr;
+    unicode-bidi: isolate;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  /*
     Keep right-side titles on the right; the rule above would pull them left.
     .movie-label only - the floating score pill is also a child span.
   */
