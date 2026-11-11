@@ -397,7 +397,7 @@
   }
 
   .deck-sidebar:has(.movie-selection-panel) .deck-sidebar-section--list.movie-list ul {
-    padding-bottom: 3.25rem;
+    padding-bottom: 4.25rem;
   }
 
   .movie-selection-actions {
@@ -439,20 +439,34 @@
   }
 
   /*
-    Fit-zoom Good/Fun live in this bar, not on the canvas. The summary
-    used to be "Selected" plus "title · scores" in one ellipsizing meta
-    string, so a tap on Pirates of the Caribbean (Fun 9.55 / Good 9.83)
-    hid the only default-zoom score readout. F/G stay on one line; the
-    title can wrap. Undo the uppercase summary so the movie name stays
-    readable.
+    Fit-zoom Good/Fun live in this bar, not on the canvas. Title beside
+    F/G still truncates the namesake-corner title even with 2-line wrap:
+    0.8rem "F 9.55 · G 9.83" leaves ~16-18 characters per line on a
+    375px phone, so Pirates of the Caribbean: Curse of the Black Pearl
+    reads as "Pirates of the Carribean: Curs…". Stack F/G under the
+    title (chevron stays on the name row) so the name uses the bar
+    minus the disclosure control. Taller overlay is the same height
+    tradeoff landscape already made; list padding is 4.25rem so the
+    last title is not under the bar.
 
-    One nowrap line in this leftover width is still ~12-26 characters,
-    so that same Pirates title reads as "Pirates of the Caribbe…". Two
-    lines of 0.8rem / 1.25 fit the existing 44px bar and show the rest
-    of the name without covering the 0-10 grid.
+    Portrait list rows keep title beside F/G: stacking every row would
+    cost visible movies on the leftover strip. This overlay is one bar.
   */
+  .movie-selection-panel > .deck-sidebar-collapse-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    align-content: center;
+    column-gap: 0.35rem;
+    row-gap: 0.08rem;
+    min-height: 2.75rem;
+    padding: 0.25rem 0.65rem;
+  }
+
   .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
-    flex: 1 1 0;
+    grid-column: 1;
+    grid-row: 1;
     min-width: 0;
     font-size: 0.8rem;
     letter-spacing: 0;
@@ -468,21 +482,31 @@
   }
 
   .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta {
-    flex: 0 0 auto;
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    text-align: left;
+    flex: none;
     overflow: visible;
     text-overflow: unset;
     /*
       The summary is 0.68rem uppercase for Add/Compare labels. F/G is the
       only default-zoom score readout after the canvas dropped Good/Fun,
-      so it needs the same 0.8rem as the title beside it, not that chrome
-      size. tabular-nums keeps 9.55 / 10 from shifting the title as you
-      drag the Selected sliders. line-height 1.2 stays inside the 44px bar.
+      so it needs the same 0.8rem as the title above it, not that chrome
+      size. tabular-nums keeps 9.55 / 10 from shifting as you drag the
+      Selected sliders.
     */
     font-size: 0.8rem;
     font-weight: 700;
     line-height: 1.2;
     font-variant-numeric: tabular-nums;
     color: #1e3a8a;
+  }
+
+  .movie-selection-panel > .deck-sidebar-collapse-summary::after {
+    grid-column: 2;
+    grid-row: 1;
+    margin-left: 0;
   }
 
   .deck-sidebar-collapse-summary::after {
@@ -1488,51 +1512,6 @@
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
-  }
-
-  /*
-    The collapsed Selected bar is the default-zoom title+score readout
-    after a grid tap. Portrait leftover is wide enough for 2-line wrap
-    beside F/G. Landscape leftover is the same ~12-15.5rem rail as the
-    list: title | F 9.55 · G 9.83 | chevron leaves about 5-8 characters
-    per line, so Pirates of the Caribbean still reads as "Pirates of t…".
-    Stack F/G under the title (chevron stays on the name row) so the
-    name uses the rail minus the disclosure control. Taller overlay is
-    the same height tradeoff as stacked list rows; bump list padding so
-    the last title is not under the bar.
-  */
-  .movie-selection-panel > .deck-sidebar-collapse-summary {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto auto;
-    align-items: center;
-    align-content: center;
-    column-gap: 0.35rem;
-    row-gap: 0.08rem;
-    min-height: 2.75rem;
-    padding: 0.25rem 0.65rem;
-  }
-
-  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta {
-    grid-column: 1;
-    grid-row: 2;
-    text-align: left;
-    justify-self: start;
-  }
-
-  .movie-selection-panel > .deck-sidebar-collapse-summary::after {
-    grid-column: 2;
-    grid-row: 1;
-    margin-left: 0;
-  }
-
-  .deck-sidebar:has(.movie-selection-panel) .deck-sidebar-section--list.movie-list ul {
-    padding-bottom: 4.25rem;
   }
 
   /* Landscape sidebar is ~12-15rem; two 44px sliders would have ~90px tracks. */
