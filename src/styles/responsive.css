@@ -1737,22 +1737,30 @@
     (8.67 / 9.25) in the namesake corner. Grow into the Fun 10 /
     Fun 0 gutter instead (the inverse of fit-zoom) so those names
     stay identifiable without covering the cluster pinch-to-read
-    just uncovered. Interior titles stay centered. Stacked stay
-    one-line and do not need this.
+    just uncovered. Interior same-Good pairs closer than one Fun
+    unit (Grizzly Man and 28 Days Later at 8.32) reuse that
+    vertical growth so both seven-line pills fit instead of
+    covering each other; that stagger is labels-visible only so
+    fit-zoom selected wrap stays centered. Other interior titles
+    stay centered. Stacked stay one-line and do not need this.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10 > .movie-label {
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--label-end > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10.movie-point--label-end > .movie-label {
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0 > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--label-end > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0.movie-point--label-end > .movie-label {
     transform: translate(calc(100% + 9px), 0);
   }
 

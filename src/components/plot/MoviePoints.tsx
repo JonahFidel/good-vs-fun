@@ -13,8 +13,46 @@ const LABEL_NORTH_FUN = 1
 const LABEL_GUTTER_GOOD_HIGH = 9
 /** Grow into the Good 0 gutter at labels-visible zoom (CSS), matching Fun 0-1. */
 const LABEL_GUTTER_GOOD_LOW = 1
+/**
+ * Centered 7-line pills extend ±0.5 Fun units at labels-visible zoom, so
+ * same-Good neighbors closer than one unit cover each other. Pair them
+ * instead of using the Fun 9-10 / Fun 0-1 edge classes, which would also
+ * move the fit-zoom selected pill into the square.
+ */
+const INTERIOR_SAME_GOOD_FUN_GAP = 1
 /** Slide the stack-count chip left so Fun/Good ≈10 does not clip it in the 1-unit margin. */
 const COUNT_WEST_GOOD = 9
+
+function interiorSameGoodVerticalStagger(
+  groups: PositionGroup[],
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const interiorUnstacked = groups.filter(
+    (group) =>
+      group.items.length === 1 &&
+      group.fun > LABEL_NORTH_FUN &&
+      group.fun < LABEL_SOUTH_FUN &&
+      group.good > LABEL_GUTTER_GOOD_LOW &&
+      group.good < LABEL_GUTTER_GOOD_HIGH,
+  )
+  const byGood = new Map<number, PositionGroup[]>()
+  for (const group of interiorUnstacked) {
+    const list = byGood.get(group.good)
+    if (list) list.push(group)
+    else byGood.set(group.good, [group])
+  }
+  for (const list of byGood.values()) {
+    if (list.length !== 2) continue
+    const [higher, lower] =
+      list[0].fun >= list[1].fun ? [list[0], list[1]] : [list[1], list[0]]
+    const gap = higher.fun - lower.fun
+    if (gap > 0 && gap <= INTERIOR_SAME_GOOD_FUN_GAP) {
+      stagger.set(higher.key, 'fun-10')
+      stagger.set(lower.key, 'fun-0')
+    }
+  }
+  return stagger
+}
 
 export function MoviePoints({
   groups,
@@ -41,6 +79,8 @@ export function MoviePoints({
   onHighlight: (id: string) => void
   onClearHover: () => void
 }) {
+  const verticalStagger = interiorSameGoodVerticalStagger(groups)
+
   return (
     <>
       {groups.map((group) => {
@@ -56,6 +96,8 @@ export function MoviePoints({
         const labelOnRight = group.good < LABEL_FLIP_GOOD
         const labelBelow = group.fun >= LABEL_SOUTH_FUN
         const labelAbove = !labelBelow && group.fun <= LABEL_NORTH_FUN
+        const staggerTowardFun10 = verticalStagger.get(group.key) === 'fun-10'
+        const staggerTowardFun0 = verticalStagger.get(group.key) === 'fun-0'
         const gutterIntoGood10 = group.good >= LABEL_GUTTER_GOOD_HIGH
         const gutterIntoGood0 =
           !gutterIntoGood10 && group.good <= LABEL_GUTTER_GOOD_LOW
@@ -73,6 +115,8 @@ export function MoviePoints({
               labelOnRight ? 'movie-point--label-end' : '',
               labelBelow ? 'movie-point--label-south' : '',
               labelAbove ? 'movie-point--label-north' : '',
+              staggerTowardFun10 ? 'movie-point--stagger-fun-10' : '',
+              staggerTowardFun0 ? 'movie-point--stagger-fun-0' : '',
               gutterIntoGood10 ? 'movie-point--gutter-good-10' : '',
               gutterIntoGood0 ? 'movie-point--gutter-good-0' : '',
               countOnLeft ? 'movie-point--count-west' : '',
