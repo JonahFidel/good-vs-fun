@@ -1649,17 +1649,21 @@
 
     Line-clamp would paint the first wrapped lines. Clip to
     the last instead so a longer wrap still reaches the
-    distinctive ending. Two lines only covered ~10-18
+    distinctive ending. Last-N-lines only helps when a
+    title overflows the box. Two lines only covered ~10-18
     character names in this ~9-character cell. 19-27
-    character names are three wraps: "Sicario: Day of the
-    Soldado", "28 Years Later Bone Temple", "One Battle
-    After Another". Last-two-lines then hid the identifying
-    start (Sicario / 28 Years / One Battle), and unselected
-    primaries have no Selected bar to recover it. Three
-    line-heights (1.2) fit those. Longer namesake titles
-    still last-clip to the distinctive ending.
+    character names are three wraps and already fit. 28-35
+    character names are four wraps: "Monty Python and the
+    Holy Grail", "Indiana Jones and the Last Crusade",
+    "Pop Star: Never Stop Never Stopping", "Crouching
+    Tiger, Hidden Dragon". Last-three-lines then hid the
+    identifying start (Monty Python / Indiana Jones / Pop
+    Star / Crouching Tiger), and unselected primaries have
+    no Selected bar to recover it. Four line-heights (1.2)
+    fit those. Longer namesake titles still last-clip to
+    the distinctive ending.
 
-    A 3-line pill is ~40px vs ~68px per unit at labels-visible
+    A 4-line pill is ~52px vs ~68px per unit at labels-visible
     zoom, so the extra line stays inside one Fun cell. Short
     names still shrink-to-fit.
   */
@@ -1675,11 +1679,11 @@
     min-width: 0;
     max-width: 100%;
     /*
-      Three line-heights (1.2 on .movie-label) so 3-wrap
+      Four line-heights (1.2 on .movie-label) so 4-wrap
       names fit in this cell. Height stays auto so a
-      one-line name does not sit in an empty three-line box.
+      one-line name does not sit in an empty four-line box.
     */
-    max-height: 3.6em;
+    max-height: 4.8em;
     overflow: hidden;
     display: flex;
     flex-direction: column;
