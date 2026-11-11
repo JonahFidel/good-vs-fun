@@ -850,10 +850,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const canvas = canvasRef.current
         if (!fit || !canvas) return
         // Zoom far enough for the chosen title threshold. On a 370px
-        // portrait plot this is about 2.6x; smaller plots need more.
+        // portrait plot this is about 2.9x; smaller plots need more.
         // Sub-detail leftover pinches still zoom in: titles
         // are hidden there, so reset-to-fit would undo the closer look.
-        // Overlay-marker taps pass ghost-label scale (~3.2x) so one
+        // Overlay-marker taps pass ghost-label scale (~3.9x there) so one
         // double-tap on a compare dot reaches that movie's name.
         const next = doubleTapTransform(
           stateRef.current,

@@ -2740,6 +2740,7 @@
   /* The canvas grows in CSS pixels, so retain native-size borders and ticks. */
   .deck-page-layout .grid::before,
   .deck-page-layout .grid-wrapper--example .grid::before {
+    border-color: #111827;
     background-image: none;
   }
 
