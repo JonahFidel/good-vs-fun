@@ -50,7 +50,6 @@ type WebKitGestureEvent = Event & {
   clientY: number
 }
 
-const PAN_DEAD_ZONE_PX = MOVIE_HIT_RADIUS_PX
 const PAN_SLOP_PX = 8
 const DOUBLE_TAP_MS = 350
 const DOUBLE_TAP_PX = 28
@@ -225,15 +224,18 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // One-finger pan; two-finger pinch-zoom on touch devices. Double-tap on
     // empty grid toggles fit vs a 2.2x zoom toward the tap (one-handed
     // iPhone zoom, and a way back after pinch). Taps on movies select.
-    // Mouse/pen use Pointer Events and still skip
-    // pan when the cursor is on a movie so hold-to-drag can start. Touch uses
-    // Touch Events because iOS Safari does not deliver pointerdown for a
-    // second finger, so pointer-only pinch never starts on iPhone. Skipping
-    // pointer capture for touch also keeps the first finger from eating the
-    // rest of the gesture. Touch pan is allowed to start on a movie: moving
-    // points is mouse-only, and the ~44px hit areas would otherwise eat most
-    // of a zoomed one-finger pan. Touch listeners sit on the plot card so a
-    // pinch that starts on a Fun/Good axis still zooms the grid.
+    // Mouse/pen use Pointer Events and skip pan only when the cursor is on
+    // a .movie-point so hold-to-drag can start. The 44px iPhone hit ring is
+    // not a mouse pan hole: desktop markers are 7px, and after wheel-zoom
+    // into a cluster a 22px radius around every dot would block pan.
+    // Touch uses Touch Events because iOS Safari does not deliver
+    // pointerdown for a second finger, so pointer-only pinch never starts
+    // on iPhone. Skipping pointer capture for touch also keeps the first
+    // finger from eating the rest of the gesture. Touch pan is allowed to
+    // start on a movie: moving points is mouse-only, and the ~44px hit
+    // areas would otherwise eat most of a zoomed one-finger pan. Touch
+    // listeners sit on the plot card so a pinch that starts on a Fun/Good
+    // axis still zooms the grid.
     useEffect(() => {
       const slot = slotRef.current
       if (!slot) return
@@ -264,6 +266,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         }, DOUBLE_TAP_MS)
       }
 
+      // iPhone tap-to-select uses a 44px ring around the 11px marker
+      // (::before does not expand getBoundingClientRect). Double-tap zoom
+      // must treat those taps as select/cycle, not zoom-in.
       function isNearMoviePoint(clientX: number, clientY: number) {
         for (const pt of capturedSlot.querySelectorAll(
           '.movie-point:not(.ghost-point)',
@@ -271,7 +276,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           const r = pt.getBoundingClientRect()
           const dx = clientX - (r.left + r.width / 2)
           const dy = clientY - (r.top + r.height / 2)
-          if (dx * dx + dy * dy < PAN_DEAD_ZONE_PX * PAN_DEAD_ZONE_PX) return true
+          if (
+            dx * dx + dy * dy <
+            MOVIE_HIT_RADIUS_PX * MOVIE_HIT_RADIUS_PX
+          ) {
+            return true
+          }
         }
         return false
       }
@@ -456,9 +466,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
 
+        // Hold-to-drag starts from the 7px marker (and its title). Do not
+        // also skip the 22px iPhone hit ring or wheel-zoom into a cluster
+        // leaves pan holes around every movie.
         const target = e.target as Element | null
         if (target?.closest('.movie-point')) return
-        if (isNearMoviePoint(e.clientX, e.clientY)) return
 
         beginPan(e.pointerId, e.clientX, e.clientY)
       }
