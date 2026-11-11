@@ -150,8 +150,8 @@ export function usePlotDrag({
       // PlotGridZoom writes this when tap-A-then-tap-B overshoots the
       // stacked pill inside the double-tap window: the follow-up is
       // outside movieIdAtVisibleLabel, and closestMovieId would cycle
-      // the shared marker. A later tap, or a follow-up in a neighboring
-      // movie's 44px ring, must not inherit that id.
+      // the shared marker. A later tap, or a follow-up in a 44px ring
+      // (neighbor or this stack's own marker), must not inherit that id.
       const stackedRetargetId = plot.dataset.stackedRetargetId
       if (stackedRetargetId) {
         delete plot.dataset.stackedRetargetId

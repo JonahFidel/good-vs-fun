@@ -105,7 +105,7 @@ function idFromLabelAtPoint(
  * line past the pill. That outside-pill miss still belongs to this
  * stored point: listedMovieIdAtPoint reads it without requiring the
  * pointer to stay in the box. Jitter onto a neighboring movie's title
- * or its 44px ring still has to ease home.
+ * or any 44px ring still has to ease home.
  */
 export function moviePointAtVisibleLabel(
   root: ParentNode,
@@ -162,12 +162,14 @@ export function movieIdAtVisibleLabel(
  * stored point instead. Callers must still require the double-tap
  * window: this has no max distance, so a later empty-space tap in the
  * half-plane closer to the other listed name would otherwise steal
- * selection. A follow-up in a neighboring movie's 44px ring is the
- * same steal inside that window: at 2.2x a cell is ~68px, so 28px
- * from a stacked title toward the next film lands in that ring, and
- * the closer listed name would switch selection instead of easing
- * home the way a neighboring title already does. Skip that other
- * marker; only a second listed line of this stored point is select.
+ * selection. A follow-up in a 44px ring is the same steal inside
+ * that window: at 2.2x a cell is ~68px, so 28px from a stacked title
+ * toward the next film lands in that neighbor's ring, and jitter
+ * toward this movie lands in this stack's own ring. The marker sits
+ * between stacked names, so the closer listed line would switch
+ * selection instead of easing home the way a neighboring title
+ * already does. Skip any ring; only a second listed line of this
+ * stored point, off the marker, is select.
  * Fit-zoom stacks hide inactive lines, so this is the
  * selected title and same-title zoom-in still fires.
  */
@@ -288,9 +290,10 @@ export function nextMovieIdInGroup(
 
 /**
  * Nearest non-ghost movie-point whose 44px hit ring contains the pointer.
- * Stacked tap-A-then-tap-B must not treat a neighboring film's ring as
- * the other listed name: listedMovieIdAtPoint has no max distance, and
- * 28px from a 2.2x stacked title toward the next cell lands in that ring.
+ * Stacked tap-A-then-tap-B must not treat a 44px ring as the other listed
+ * name: listedMovieIdAtPoint has no max distance, 28px from a 2.2x stacked
+ * title toward the next cell lands in that neighbor's ring, and jitter
+ * toward this movie lands in this stack's own ring between the names.
  */
 export function moviePointAtHit(
   root: ParentNode,

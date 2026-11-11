@@ -496,7 +496,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // same stacked pill is tap-A-then-tap-B select, not zoom-out:
     // 28px always covers those lines, including an overshoot past
     // the ~31px pill, and jitter onto a neighbor movie's title or
-    // its 44px ring still eases home. Overlay zoom-in still requires
+    // any 44px ring still eases home. Overlay zoom-in still requires
     // that stored overlay contact and no stored title, so a 2.2x name
     // that covers a ghost cannot steal 3.2x. A second-tap ghost hit
     // cannot retarget an empty-space pair. Overflowed
@@ -1052,7 +1052,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // a follow-up that overshoots the last line past the ~31px pill.
       // movieIdAtVisibleLabel cannot see that miss; listedMovieIdAtPoint
       // on the stored stack still can. Jitter onto a neighboring
-      // movie's title or its 44px ring still eases home. Leave this
+      // movie's title or any 44px ring still eases home. Leave this
       // false so onTouchSelect can switch to that name instead of
       // zooming home.
       // The outside-pill miss also has no fromLabel, so pointerdown
@@ -1064,12 +1064,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // ring) in the half-plane closer to the other listed title would
       // still write that id and steal selection instead of deselecting
       // or selecting the movie you actually tapped.
-      // Inside that window a neighboring movie's 44px ring is the same
-      // steal: 28px from a 2.2x stacked title toward the next ~68px
-      // cell lands in that ring, and the closer listed name would
-      // switch selection. A neighboring title already eases home;
-      // skip that other marker too so only a second listed line of
-      // this stored point is select.
+      // Inside that window a 44px ring is the same steal: 28px from a
+      // 2.2x stacked title toward the next ~68px cell lands in that
+      // neighbor's ring, and jitter toward this movie (the zoom origin)
+      // lands in this stack's own ring. The marker sits between stacked
+      // names, so the closer listed line would switch selection instead
+      // of easing home. Skip any ring so only a second listed line of
+      // this stored point, off the marker, is select.
       function stackedRetargetId(clientX: number, clientY: number) {
         const last = lastTapRef.current
         if (!last?.title || !last.titleId || !last.title.isConnected) {
@@ -1089,8 +1090,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (secondPoint && secondPoint !== last.title) {
           return null
         }
-        const hitPoint = moviePointAtHit(capturedSlot, clientX, clientY)
-        if (hitPoint && hitPoint !== last.title) {
+        if (moviePointAtHit(capturedSlot, clientX, clientY)) {
           return null
         }
         const secondId = listedMovieIdAtPoint(last.title, clientX, clientY)
@@ -1239,9 +1239,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // a different listed name in that same stacked pill so
         // tap-A-then-tap-B can still select instead of easing home,
         // including a 28px follow-up that overshoots the last line.
-        // A follow-up in a neighboring movie's 44px ring is not that
-        // overshoot: listedMovieIdAtPoint would steal the other listed
-        // name, so that ring eases home like a neighboring title.
+        // A follow-up in a 44px ring is not that overshoot: the next
+        // film's ring and this stack's own marker would both steal the
+        // other listed name, so those taps ease home like a neighboring
+        // title.
         if (completing) {
           cancelEmptyTap()
           lastTapRef.current = null
