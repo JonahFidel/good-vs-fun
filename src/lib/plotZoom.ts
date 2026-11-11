@@ -21,6 +21,12 @@ export const MAX_SCALE = 8
 export const LABELS_VISIBLE_SCALE = 1.4
 /** Double-tap zoom-in; above LABELS_VISIBLE_SCALE so titles appear. */
 export const DOUBLE_TAP_SCALE = 2.2
+/**
+ * Ghost compare titles wait until after double-tap zoom. Example decks
+ * are 40+ movies, so revealing that overlay at 1.4x covers the primary
+ * titles pinch-to-read is for.
+ */
+export const GHOST_LABELS_VISIBLE_SCALE = 3.2
 const FIT_SCALE_EPSILON = 0.05
 const FIT_PAN_EPSILON_PX = 8
 

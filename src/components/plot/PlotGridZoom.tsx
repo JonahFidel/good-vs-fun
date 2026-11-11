@@ -11,6 +11,7 @@ import {
 } from '../../lib/closestMoviePoint'
 import { scoringRegionScreenRect } from '../../lib/gridCanvas'
 import {
+  GHOST_LABELS_VISIBLE_SCALE,
   INITIAL_SCALE,
   LABELS_VISIBLE_SCALE,
   canPan,
@@ -105,6 +106,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       slot?.classList.toggle(
         'grid-zoom-slot--zoomed',
         scale >= LABELS_VISIBLE_SCALE,
+      )
+      slot?.classList.toggle(
+        'grid-zoom-slot--ghost-labels',
+        scale >= GHOST_LABELS_VISIBLE_SCALE,
       )
       // Coarse pointers paint unit lines on this unscaled overlay so 1px
       // strokes stay 1px while pinch scales the canvas. A mouse hides the

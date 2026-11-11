@@ -767,7 +767,7 @@
   .movie-point--selected > .movie-label,
   .movie-point.dragging > .movie-label,
   .movie-point--highlighted > .movie-label,
-  .grid-zoom-slot--zoomed .movie-point > .movie-label {
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) > .movie-label {
     opacity: 1;
     /*
       A selected wrapping pill is up to half the square. Capturing taps would
@@ -777,8 +777,14 @@
     pointer-events: none;
   }
 
-  /* Ghost titles are decorative; leave them out of pan / double-tap hit testing. */
-  .grid-zoom-slot--zoomed .ghost-point > .movie-label {
+  /*
+    Ghosts are .movie-point too, so the zoomed title restore would dump a
+    second 40-movie overlay onto the square you just pinched to read.
+    Keep compare as color-dots through double-tap 2.2x; names wait until
+    a deeper pinch (grid-zoom-slot--ghost-labels at 3.2x).
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point > .movie-label {
+    opacity: 1;
     pointer-events: none;
   }
 
