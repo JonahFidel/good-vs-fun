@@ -784,11 +784,14 @@
     including the selected one, to about one cell. Compact the selected
     readout at 1.4x too: a wrapping half-square pill would cover the
     region you just pinched into before other titles appear at 2.2x.
+    Ghost names wait until 3.2x; they still used the 7.25rem fit size, so
+    a compare overlay covered the cluster that deep pinch is for.
   */
   .grid-zoom-slot--zoomed .movie-point--selected > .movie-label,
   .grid-zoom-slot--zoomed .movie-point.dragging > .movie-label,
   .grid-zoom-slot--zoomed .movie-point--highlighted > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point) > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point) > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point > .movie-label {
     font-size: 0.65rem;
     padding: 0.08rem 0.28rem;
     max-width: 3.75rem;
