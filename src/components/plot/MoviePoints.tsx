@@ -53,7 +53,13 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * remaining 3 occupy triangle slots. The leftover size-2
  * (Challengers / Logan Lucky) then splits vertically so
  * that pair does not keep covering after the Good flip is
- * skipped.
+ * skipped. Interior Fun-plus-Good slots that grow into
+ * the Good 10 / Good 0 gutter still cover a gutter title
+ * in that same slot (Mickey 17 at Fun 0 / Good 10 vs
+ * Stand by Me), so those gutter neighbors then take Fun
+ * stagger: higher Fun grows toward Fun 10, lower toward
+ * Fun 0. Fun 0-1 / Fun 9-10 gutter titles (Manchester by
+ * the Sea) stay put until a later edge pass.
  * Reuse of label-end would also flip the fit-zoom
  * selected pill.
  */
@@ -74,6 +80,16 @@ function isInteriorUnstacked(group: PositionGroup): boolean {
     group.fun < LABEL_SOUTH_FUN &&
     group.good > LABEL_GUTTER_GOOD_LOW &&
     group.good < LABEL_GUTTER_GOOD_HIGH
+  )
+}
+
+function isGoodGutterUnstacked(group: PositionGroup): boolean {
+  return (
+    group.items.length === 1 &&
+    group.fun > LABEL_NORTH_FUN &&
+    group.fun < LABEL_SOUTH_FUN &&
+    (group.good >= LABEL_GUTTER_GOOD_HIGH ||
+      group.good <= LABEL_GUTTER_GOOD_LOW)
   )
 }
 
@@ -859,6 +875,78 @@ function interiorCloseGoodLeftoverPairVerticalStagger(
   return stagger
 }
 
+/**
+ * Interior Fun-plus-Good slots that grow into the Good 10 /
+ * Good 0 gutter still cover a 1-unit gutter title already
+ * parked there: Mickey 17 (7.58 / 8.78, Fun 0 / Good 10)
+ * covers Stand by Me (7.13 / 9.19). Pair each gutter title
+ * with the nearest interior that already occupies that
+ * Good slot and has a Fun class, then grow the gutter
+ * title toward Fun 10 if it sits higher or Fun 0 if
+ * lower so both seven-line pills fit. Skip Fun 9-10 /
+ * Fun 0-1 titles (Manchester by the Sea) so this does
+ * not fight edge-gutter CSS, and skip interiors that
+ * only have a Good class (Stalin) so Kill Bill V1 stays
+ * in the namesake Good 10 gutter. Overlay copies of
+ * these gutter neighbors wait for ghost-label zoom.
+ */
+function interiorGutterNeighborFunStagger(
+  groups: PositionGroup[],
+  interiorFun: Map<string, 'fun-10' | 'fun-0'>,
+  interiorGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const gutters = groups.filter(isGoodGutterUnstacked)
+  const interiors = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      interiorFun.has(group.key) &&
+      interiorGood.has(group.key),
+  )
+  const pairs: {
+    gutter: PositionGroup
+    interior: PositionGroup
+    dist: number
+  }[] = []
+  for (const gutter of gutters) {
+    const wantGood: 'good-10' | 'good-0' =
+      gutter.good >= LABEL_GUTTER_GOOD_HIGH ? 'good-10' : 'good-0'
+    for (const interior of interiors) {
+      if (interiorGood.get(interior.key) !== wantGood) continue
+      const dFun = Math.abs(gutter.fun - interior.fun)
+      const dGood = Math.abs(gutter.good - interior.good)
+      if (
+        dFun > INTERIOR_SAME_GOOD_FUN_GAP ||
+        dGood > INTERIOR_CLOSE_GOOD_GAP
+      ) {
+        continue
+      }
+      pairs.push({
+        gutter,
+        interior,
+        dist: Math.hypot(dFun, dGood),
+      })
+    }
+  }
+  pairs.sort((a, b) => a.dist - b.dist)
+  const usedGutter = new Set<string>()
+  const usedInterior = new Set<string>()
+  for (const pair of pairs) {
+    if (
+      usedGutter.has(pair.gutter.key) ||
+      usedInterior.has(pair.interior.key)
+    ) {
+      continue
+    }
+    const side: 'fun-10' | 'fun-0' =
+      pair.gutter.fun >= pair.interior.fun ? 'fun-10' : 'fun-0'
+    stagger.set(pair.gutter.key, side)
+    usedGutter.add(pair.gutter.key)
+    usedInterior.add(pair.interior.key)
+  }
+  return stagger
+}
+
 function computeMoviePointStagger(groups: PositionGroup[]) {
   const verticalStagger = interiorSameGoodVerticalStagger(groups)
   const neighborStagger = interiorCloseGoodHorizontalStagger(
@@ -935,7 +1023,7 @@ function computeMoviePointStagger(groups: PositionGroup[]) {
     leftoverMeshStagger.fun,
     leftoverMeshStagger.good,
   )
-  const funStagger = new Map([
+  const interiorFun = new Map([
     ...verticalStagger,
     ...sameSideVertical,
     ...cliqueStagger.fun,
@@ -944,14 +1032,20 @@ function computeMoviePointStagger(groups: PositionGroup[]) {
     ...leftoverMeshStagger.fun,
     ...leftoverPairVertical,
   ])
-  const goodStagger = new Map([
+  const interiorGood = new Map([
     ...horizontalStagger,
     ...cliqueStagger.good,
     ...triangleStagger.good,
     ...meshStagger.good,
     ...leftoverMeshStagger.good,
   ])
-  return { funStagger, goodStagger }
+  const gutterNeighborFun = interiorGutterNeighborFunStagger(
+    groups,
+    interiorFun,
+    interiorGood,
+  )
+  const funStagger = new Map([...interiorFun, ...gutterNeighborFun])
+  return { funStagger, goodStagger: interiorGood }
 }
 
 export function MoviePoints({

@@ -1802,6 +1802,32 @@
   }
 
   /*
+    Good-gutter transform is vertically centered and would undo
+    Fun 10 / Fun 0 growth on a gutter neighbor of an interior
+    Fun-plus-Good slot. Combine so Stand by Me (Good 10, Fun 0)
+    sits below Mickey 17 (Good 10, Fun 0) instead of covering
+    it, matching label-south / label-north combos already used
+    at Fun 9-10 / Fun 0-1. Overlay gutter neighbors wait for
+    ghost-label zoom. Fit-zoom selected wrap is unchanged
+    because both classes are labels-visible only.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--stagger-fun-10 > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--stagger-fun-0 > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--stagger-fun-10 > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--stagger-fun-0 > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
     Same-Good Fun stagger still leaves a 3.75rem pill covering a
     close-Good neighbor on the default label side: Grizzly Man
     (7.59 / 8.32, toward Fun 10) covers The Death of Stalin
@@ -1869,7 +1895,11 @@
     peel reuses three of those slots so Knives Out 3
     (Fun 10 / Good 0), The Vvitch (Fun 10 / Good 10),
     and The Killer (Fun 0 / Good 10) sit apart instead
-    of covering. Fit-zoom selected wrap is unchanged
+    of covering. Good-gutter neighbors of those slots
+    (Stand by Me next to Mickey 17) reuse Fun stagger
+    with the gutter-good combo above so the centered
+    Good 10 transform does not re-center them.
+    Fit-zoom selected wrap is unchanged
     because both classes are labels-visible only.
   */
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label {
