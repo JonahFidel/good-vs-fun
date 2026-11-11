@@ -30,8 +30,8 @@
   }
 
   .nav-link {
-    min-height: 2.25rem;
-    padding: 0.35rem 0.7rem;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.85rem;
     font-size: 0.78rem;
     touch-action: manipulation;
   }
@@ -1358,9 +1358,33 @@
   narrow desktop window.
 */
 @media (max-width: 900px), (pointer: coarse) {
+  /*
+    /decks is the only account path after the deck-page header hide.
+    Nav pills were 2.25rem, Clerk's avatar is 2rem, and create/sort still
+    used padding iOS ignores on native controls. 44px padding-box so the
+    entry page matches Sort/Compare on the grid.
+  */
+  .header {
+    --nav-user-size: 2.75rem;
+  }
+
+  .nav-link {
+    min-height: 2.75rem;
+    padding: 0.55rem 0.85rem;
+  }
+
+  .cl-userButtonTrigger,
+  .cl-userButtonAvatarBox,
+  .cl-userButtonTrigger .cl-avatarBox {
+    width: var(--nav-user-size);
+    height: var(--nav-user-size);
+  }
+
   .deck-form input,
   .deck-toolbar select {
     font-size: 16px;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
   }
 
   .deck-form button {
@@ -1375,11 +1399,6 @@
   */
   .decks-panel .subhead {
     display: none;
-  }
-
-  .deck-toolbar select {
-    min-height: 2.75rem;
-    padding: 0.45rem 0.7rem;
   }
 
   .deck-list li {
