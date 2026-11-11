@@ -46,38 +46,30 @@ function idFromLabelAtPoint(
   clientY: number,
 ): { id: string; dist: number } | null {
   let closestTitle: { id: string; dist: number } | null = null
+  let closestContaining: { id: string; dist: number } | null = null
 
   for (const title of label.querySelectorAll('[data-movie-id]')) {
     if (!(title instanceof HTMLElement) || !isPainted(title)) continue
-    const titleRect = title.getBoundingClientRect()
-    if (!pointInRect(titleRect, clientX, clientY)) continue
     const id = title.getAttribute('data-movie-id')
     if (!id) continue
+    const titleRect = title.getBoundingClientRect()
     const dist = distanceToRectCenter(titleRect, clientX, clientY)
     if (!closestTitle || dist < closestTitle.dist) {
       closestTitle = { id, dist }
     }
+    if (!pointInRect(titleRect, clientX, clientY)) continue
+    if (!closestContaining || dist < closestContaining.dist) {
+      closestContaining = { id, dist }
+    }
   }
 
-  if (closestTitle) {
-    return closestTitle
-  }
-
-  const selected = label.querySelector(
-    '.movie-label-line--selected [data-movie-id]',
-  )
-  const any = selected ?? label.querySelector('[data-movie-id]')
-  if (!(any instanceof HTMLElement)) {
-    return null
-  }
-  const id = any.getAttribute('data-movie-id')
-  if (!id) {
-    return null
-  }
-  return {
-    id,
-    dist: distanceToRectCenter(label.getBoundingClientRect(), clientX, clientY),
-  }
+  // Prefer a title the pointer is actually on. A 2.2x stacked pill
+  // lists every name with a 0.2rem gap, and iPhone jitter often lands
+  // in that gap or the pill padding. Falling back to the selected
+  // line treated tap-A-then-tap-B as same-title zoom-out; the closest
+  // painted name is the other listed movie. Fit-zoom stacks hide
+  // inactive lines, so closest is the only painted title.
+  return closestContaining ?? closestTitle
 }
 
 /**
@@ -104,7 +96,8 @@ function idFromLabelAtPoint(
  * Selected bar switches while the ease runs. A follow-up on a different
  * listed name in that same stacked pill is select, not zoom-out: 2.2x
  * stacks paint every truncated title in one box, so DOUBLE_TAP_PX always
- * covers tap-A-then-tap-B.
+ * covers tap-A-then-tap-B, including a miss in the pill gap that
+ * belongs to the closer name.
  */
 export function moviePointAtVisibleLabel(
   root: ParentNode,
@@ -134,9 +127,10 @@ export function moviePointAtVisibleLabel(
 }
 
 /**
- * Movie whose on-canvas title (or the pill that contains it) the pointer is
- * over. Used to select the name you just read after titles appear, and to
- * tell a stacked 2.2x tap-A-then-tap-B from a same-title double-tap zoom.
+ * Movie whose on-canvas title (or the closest listed name in that pill)
+ * the pointer is over. Used to select the name you just read after titles
+ * appear, and to tell a stacked 2.2x tap-A-then-tap-B from a same-title
+ * double-tap zoom, including when the tap sits in the gap between lines.
  */
 export function movieIdAtVisibleLabel(
   root: ParentNode,

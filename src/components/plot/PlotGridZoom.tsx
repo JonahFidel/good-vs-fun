@@ -179,8 +179,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       title: HTMLElement | null
       // Movie id from that first title tap. At 2.2x a stacked pill
       // lists every truncated name, so tap-A-then-tap-B is inside
-      // DOUBLE_TAP_PX of the same point. Completing as zoom-out
-      // would hide the other stacked title instead of selecting it.
+      // DOUBLE_TAP_PX of the same point, including a miss in the
+      // 0.2rem gap. Completing as zoom-out would hide the other
+      // stacked title instead of selecting it.
       titleId: string | null
     } | null>(null)
     const emptyTapTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(
@@ -1042,9 +1043,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // zoom-out under the titles 152 already ignored.
       // A follow-up on a different listed name in the same stacked
       // pill is not that jitter: 2.2x paints every stacked title in
-      // one box, so 28px always covers tap-A-then-tap-B. Leave this
-      // false so onTouchSelect can switch to that name instead of
-      // zooming home.
+      // one box, so 28px always covers tap-A-then-tap-B, including a
+      // miss in the 0.2rem gap that resolves to the closer name.
+      // Leave this false so onTouchSelect can switch to that name
+      // instead of zooming home.
       function isStackedTitleRetarget(clientX: number, clientY: number) {
         const last = lastTapRef.current
         if (!last?.title || !last.titleId || !last.title.isConnected) {
