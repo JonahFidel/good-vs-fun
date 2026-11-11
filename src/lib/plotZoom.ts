@@ -51,12 +51,11 @@ const GHOST_LABELS_AFTER_PRIMARY = 1
 const FIT_SCALE_EPSILON = 0.05
 const FIT_PAN_EPSILON_PX = 8
 /**
- * Pinch-out this close to 1x eases back to the readable square.
- * Wider than FIT_SCALE_EPSILON so a 1.1x leftover (tiny pan unlock)
- * still lands on the locked 0-10 view.
+ * Pinch-out this close to 1x eases back to the readable square,
+ * even if that leftover view was panned. Wider than FIT_SCALE_EPSILON
+ * so a 1.1x leftover (tiny pan unlock) still lands on the locked 0-10 view.
  */
 export const PINCH_SETTLE_SCALE_EPSILON = 0.15
-export const PINCH_SETTLE_PAN_EPSILON_PX = 24
 /** How hard pinch/pan resist past min/max. 0.55 matches iOS rubber-band. */
 const RUBBER_BAND_CONSTANT = 0.55
 
@@ -373,6 +372,19 @@ export function isNearFit(
     Math.abs(state.tx - fit.tx) <= panEpsilon &&
     Math.abs(state.ty - fit.ty) <= panEpsilon
   )
+}
+
+/**
+ * True when scale is close enough to fit that covering pan should not
+ * unlock. Pan offset is ignored: a 1.1x view dragged a few cells is
+ * still an almost-home leftover, not a deliberate zoomed corner.
+ */
+export function isLeftoverFitScale(
+  scale: number,
+  fitScale: number,
+  epsilon = PINCH_SETTLE_SCALE_EPSILON,
+): boolean {
+  return Math.abs(scale - fitScale) <= epsilon
 }
 
 /** Toggle fit vs a detail zoom aimed at `point` (slot coordinates). */

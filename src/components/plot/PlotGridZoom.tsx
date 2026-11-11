@@ -15,13 +15,12 @@ import {
   GRID_DETAIL_SCALE,
   INITIAL_SCALE,
   MAX_SCALE,
-  PINCH_SETTLE_PAN_EPSILON_PX,
-  PINCH_SETTLE_SCALE_EPSILON,
   canPan,
   centeredTransform,
   clampToSlot,
   doubleTapTransform,
   ghostLabelsVisibleScale,
+  isLeftoverFitScale,
   isNearFit,
   labelsVisibleScale,
   pinchTransform,
@@ -418,11 +417,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // resumes from that unconstrained translation and does not count as
     // an empty-grid tap, so a finger-down to stop the grid is not sticky
     // and does not hide the selected title. Catching a zoom-out ease
-    // (or a leftover ~1.1x) still eases home on lift so covering pan
-    // cannot unlock for a few pixels of overflow. Catching a zoom-in
-    // ease completes that zoom before pan or pinch, so a double-tap then
-    // immediate drag or two-finger plant is not left at ~1.1x and snapped
-    // back to fit.
+    // (or a leftover ~1.1x, even after a short pan) still eases home on
+    // lift so covering pan cannot unlock for a few pixels of overflow.
+    // Catching a zoom-in ease completes that zoom before pan or pinch, so
+    // a double-tap then immediate drag or two-finger plant is not left at
+    // ~1.1x and snapped back to fit.
     // Mouse pan, like wheel and Touch Events, sits on the
     // plot card so a drag that starts on a Fun/Good axis still pans the
     // zoomed grid. Safari GestureEvents listen on window capture because
@@ -857,7 +856,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       // Pinch-out past 1x rubber-bands during the gesture; on lift, ease
       // back to the locked 0-10 square. A 1.1x leftover is also settled
-      // so pan does not unlock for a few pixels of overflow. Same settle
+      // so pan does not unlock for a few pixels of overflow, including
+      // when that leftover was dragged (isNearFit's pan epsilon used to
+      // keep a 1.1x corner and leave covering pan unlocked). Same settle
       // runs after catching a zoom-out ease or a flicked coast: those
       // paths never set pinchRef, so gating on pinch would leave the
       // square slightly overflowed and pan-unlocked.
@@ -870,13 +871,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const current = stateRef.current
         const overshotMin = current.scale < INITIAL_SCALE
         const overshotMax = current.scale > MAX_SCALE
-        const nearFit = isNearFit(
-          current,
-          fit,
-          PINCH_SETTLE_SCALE_EPSILON,
-          PINCH_SETTLE_PAN_EPSILON_PX,
-        )
-        if (!overshotMin && !overshotMax && !nearFit) return false
+        const leftoverScale = isLeftoverFitScale(current.scale, fit.scale)
+        if (!overshotMin && !overshotMax && !leftoverScale) return false
         // Already on the readable square: a fit-zoom tap must not count
         // as a settle or every empty-grid tap would start a no-op ease.
         if (
@@ -1146,8 +1142,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           // unconstrained pinch translation. Count only plot-card contacts:
           // e.touches also includes a sidebar thumb, which would restart
           // pinch against that off-grid finger or skip this handoff
-          // entirely (length stays >= 2). Rubber-band or near-fit pinch-out
-          // settles to 1x instead of handing off a sub-fit pan. A leftover
+          // entirely (length stays >= 2). Rubber-band, leftover ~1.1x
+          // (even after the pinch panned), or sub-fit pinch-out settles
+          // to 1x instead of handing off an almost-home pan. A leftover
           // finger past a covering/keep-visible edge must not take the
           // compressed paint as pan origin, or each move double-compresses.
           const wasPinch = Boolean(pinchRef.current)
