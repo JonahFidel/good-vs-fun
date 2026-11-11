@@ -76,8 +76,7 @@ function rubberBandOffset(overshoot: number, dimension: number): number {
 
 /**
  * Resist past min/max so a pinch can overshoot, then settle on release.
- * Applied before pinch pan math so overshoot stays finger-anchored and
- * inverse-scaled labels cannot explode on a shrinking grid.
+ * Applied before pinch pan math so overshoot stays finger-anchored.
  */
 export function rubberBandScale(scale: number, min: number, max: number): number {
   if (scale < min) {

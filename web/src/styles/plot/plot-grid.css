@@ -142,8 +142,8 @@
   width: calc(100% * var(--grid-score-max) / var(--grid-canvas) - var(--grid-axis-stroke));
   height: calc(100% * var(--grid-score-max) / var(--grid-canvas) - var(--grid-axis-stroke));
   /*
-    A fine pointer never zooms, so these borders stay as drawn. Coarse
-    pointers re-apply inverse-scale so pinch does not bury origin movies.
+    Coarse-pointer zoom grows the canvas in CSS pixels, so these borders
+    keep their drawn width at any zoom and do not bury origin movies.
     Keep content-box: the width and height above subtract the axis stroke
     so the right and top strokes land outside the score-10 edges
     (universal * does not match ::before).

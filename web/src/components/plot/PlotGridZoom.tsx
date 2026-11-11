@@ -364,7 +364,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // unconstrained pan translation, so a leftover finger past that
     // edge does not stick from double-compressing the painted rubber-band.
     // Fit zoom never pans, so the default 0-10 square stays locked. Double-tap
-    // eases to title-visible zoom (~3.0x on a 370px square) from any
+    // eases to title-visible zoom (~2.9x on a 370px square) from any
     // scale below that, including a leftover pinch, or back to fit once titles
     // are on screen. The selected fit-zoom title (pointer-events: none)
     // is also that zoom-in gesture: it is the movie you tapped to read,

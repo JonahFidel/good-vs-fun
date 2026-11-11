@@ -14,12 +14,9 @@
 }
 
 /*
-  Tick anchors sit on the axis. A fine pointer never zooms, so numbers keep
-  their drawn size. Coarse pointers re-apply inverse-scale on the
-  anchor so pinch keeps 0-10 numbers screen-sized while the label child's
-  margin offset stays in screen pixels. Combining those on one transform
-  made pinch drift the numbers off the axes. Gated on pointer: coarse, not
-  900px, because only a coarse pointer can zoom.
+  Tick anchors sit on the axis. Coarse-pointer zoom grows the canvas in CSS
+  pixels instead of transforming it, so 0-10 numbers keep their drawn size
+  and the label child's margin offset stays in screen pixels at any zoom.
 */
 .grid-tick {
   position: absolute;
