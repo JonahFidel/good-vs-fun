@@ -159,8 +159,11 @@ export function movieIdAtVisibleLabel(
  * second tap often overshoots the last title. Inflating every stacked
  * pill by that 28px would steal a neighboring movie's title (and its
  * 44px ring) on a 68px-per-cell zoomed square; keep the hit on this
- * stored point instead. Fit-zoom stacks hide inactive lines, so this
- * is the selected title and same-title zoom-in still fires.
+ * stored point instead. Callers must still require the double-tap
+ * window: this has no max distance, so a later empty-space tap in the
+ * half-plane closer to the other listed name would otherwise steal
+ * selection. Fit-zoom stacks hide inactive lines, so this is the
+ * selected title and same-title zoom-in still fires.
  */
 export function listedMovieIdAtPoint(
   point: HTMLElement,

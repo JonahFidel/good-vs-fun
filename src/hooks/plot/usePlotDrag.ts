@@ -148,8 +148,9 @@ export function usePlotDrag({
       // a selected pill does not steal taps aimed at a covered neighbor.
       const zoomed = Boolean(plot.closest('.grid-zoom-slot--labels'))
       // PlotGridZoom writes this when tap-A-then-tap-B overshoots the
-      // stacked pill: the follow-up is outside movieIdAtVisibleLabel,
-      // and closestMovieId would cycle the shared marker.
+      // stacked pill inside the double-tap window: the follow-up is
+      // outside movieIdAtVisibleLabel, and closestMovieId would cycle
+      // the shared marker. A later tap must not inherit that id.
       const stackedRetargetId = plot.dataset.stackedRetargetId
       if (stackedRetargetId) {
         delete plot.dataset.stackedRetargetId

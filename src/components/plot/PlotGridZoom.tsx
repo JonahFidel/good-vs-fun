@@ -1056,9 +1056,21 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // The outside-pill miss also has no fromLabel, so pointerdown
       // writes data-stacked-retarget-id for onTouchSelect; otherwise
       // closestMovieId would cycle the shared marker.
+      // listedMovieIdAtPoint has no max distance: it is the closest
+      // painted name in the stored stack, even 200px away. Without the
+      // double-tap window, a later empty-space tap (or a nearby 44px
+      // ring) in the half-plane closer to the other listed title would
+      // still write that id and steal selection instead of deselecting
+      // or selecting the movie you actually tapped.
       function stackedRetargetId(clientX: number, clientY: number) {
         const last = lastTapRef.current
         if (!last?.title || !last.titleId || !last.title.isConnected) {
+          return null
+        }
+        if (
+          performance.now() - last.t > DOUBLE_TAP_MS ||
+          Math.hypot(clientX - last.x, clientY - last.y) > DOUBLE_TAP_PX
+        ) {
           return null
         }
         const secondPoint = moviePointAtVisibleLabel(
