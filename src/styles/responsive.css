@@ -385,16 +385,16 @@
   }
 
   /*
-    On an 11rem leftover the 9rem floor still has to scroll to reach
-    Rename/Delete. Keep the summary stuck so the sheet can be closed
-    without scrolling back to the top.
+    Keep the summary stuck so the sheet can be closed without scrolling
+    back to the top.
 
     The collapsed bar is a 4.25rem stacked title + F/G so a grid tap
     can read a long name. That same summary stayed sticky when open, so
     on the 9rem SE floor (~144px) the extra ~24px plus the open
     border-bottom clipped Fun/Good - the only iPhone way to move a
     point. Collapse the open summary to a 44px title+chevron; the
-    sliders below already show live Fun/Good.
+    sliders below already show live Fun/Good. Portrait folds Rename/
+    Delete into that same 44px row so they are not below the fold.
   */
   .deck-sidebar .movie-selection-panel[open] > .deck-sidebar-collapse-summary {
     position: sticky;
@@ -461,10 +461,60 @@
     ) .movie-list-header {
       display: none;
     }
+
+    /*
+      On an 11rem leftover the 9rem floor fits 44px summary + side-by-side
+      Fun/Good, so Rename/Delete sat below the fold. After the list × was
+      hidden, that scroll is the only phone remove path. Fold those 44px
+      actions into the open summary (F/G is already hidden there) so the
+      editor can rename/delete without scrolling. Landscape leftover is
+      tall, so it keeps the full-width action row under the stacked
+      sliders; both buttons in a 12rem summary would leave about three
+      letters of title.
+    */
+    .movie-selection-panel[open] > .movie-selection-bar {
+      display: none;
+    }
+
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .movie-selection-actions {
+      display: flex;
+      width: auto;
+      flex: none;
+      grid-column: 2;
+      grid-row: 1;
+      align-items: center;
+      gap: 0.3rem;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary::after {
+      grid-column: 3;
+      grid-row: 1;
+    }
+
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .movie-selection-actions > .btn-rename-selected,
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .movie-selection-actions > .btn-delete-selected {
+      flex: none;
+      padding: 0.35rem 0.55rem;
+    }
   }
 
   .movie-selection-actions {
     width: 100%;
+  }
+
+  /*
+    Actions also live in the summary so portrait can show them in the
+    44px open row. Hide that copy until [open], or the collapsed 2-line
+    title + F/G readout loses width the same way the list × did.
+  */
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .movie-selection-actions {
+    display: none;
   }
 
   .btn-rename-selected,
