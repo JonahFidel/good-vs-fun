@@ -8,7 +8,7 @@ import {
 import { DRAG_HOLD_MS } from '../../hooks/plot/useHoldToDrag'
 import {
   MOVIE_HIT_RADIUS_PX,
-  pointerHitsVisibleMovieLabel,
+  moviePointAtVisibleLabel,
 } from '../../lib/closestMoviePoint'
 import { scoringRegionScreenRect } from '../../lib/gridCanvas'
 import {
@@ -423,11 +423,15 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // including a 1.2-2.1x leftover pinch, or back to fit once titles
     // are on screen. The selected fit-zoom title (pointer-events: none)
     // is also that zoom-in gesture: it is the movie you tapped to read,
-    // and empty space around a 32cqw pill can be scarce. Marker rings
-    // still select/cycle instead of zooming. Overflowed scales unlock pan,
-    // so touch pan slop is 20px (not the 8px mouse value) or iPhone tap
-    // jitter cancels that double-tap the same way empty-space jitter did
-    // at fit before movement tracking was skipped there.
+    // and empty space around a 32cqw pill can be scarce. That zoom aims
+    // at the marker, not the tap on the pill: a 32cqw wrap sits up to
+    // ~3.8 units off the dot (and flips south/north at Fun 9-10 / 0-1),
+    // so zoom-toward-tap can throw the movie off a filled iPhone square.
+    // Marker rings still select/cycle instead of zooming. Overflowed
+    // scales unlock pan, so touch pan slop is 20px (not the 8px mouse
+    // value) or iPhone tap jitter cancels that double-tap the same way
+    // empty-space jitter did at fit before movement tracking was skipped
+    // there.
     // Pinch-out past 1x and zoomed pan past a covering or
     // keep-visible edge rubber-band, then ease back on lift, so getting
     // home or hitting an edge is not a wall. Catching a flicked coast
@@ -976,9 +980,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // Painted title pills are pointer-events: none, so a tap on the
         // selected readout or a zoomed title hits the grid. Below
         // title-visible zoom that selected pill is the movie you want
-        // to read: double-tap it to zoom in toward the name. After
+        // to read: double-tap it to zoom in toward the marker. A 32cqw
+        // wrap can sit ~3.8 units off the dot, so aiming at the tap
+        // would keep the name and throw the movie off-screen. After
         // titles appear, a tap on a name is select/read, not zoom-out.
-        const onLabel = pointerHitsVisibleMovieLabel(
+        const labelMovie = moviePointAtVisibleLabel(
           capturedSlot,
           clientX,
           clientY,
@@ -987,7 +993,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const labelsOn =
           canvas != null &&
           stateRef.current.scale >= labelsVisibleScale(canvas.offsetWidth)
-        if (onLabel && labelsOn) {
+        if (labelMovie && labelsOn) {
           cancelEmptyTap()
           lastTapRef.current = null
           return false
@@ -1001,7 +1007,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         ) {
           cancelEmptyTap()
           lastTapRef.current = null
-          applyDoubleTap(slotPoint(clientX, clientY))
+          if (labelMovie) {
+            const r = labelMovie.getBoundingClientRect()
+            applyDoubleTap(slotPoint(r.left + r.width / 2, r.top + r.height / 2))
+          } else {
+            applyDoubleTap(slotPoint(clientX, clientY))
+          }
           return true
         }
         lastTapRef.current = { t: now, x: clientX, y: clientY }
@@ -1012,7 +1023,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // caught inertia or a zoom ease still records lastTap so a
         // follow-up can double-tap, but must not deselect. A tap on
         // the selected fit-zoom pill is also not empty space.
-        if (!caughtMotionRef.current && !onLabel) {
+        if (!caughtMotionRef.current && !labelMovie) {
           scheduleEmptyTap(now)
         }
         return false

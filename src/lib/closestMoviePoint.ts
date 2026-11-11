@@ -81,27 +81,27 @@ function idFromLabelAtPoint(
 }
 
 /**
- * Movie whose on-canvas title (or the pill that contains it) the pointer is
- * over. iPhone labels stay pointer-events: none so nearby 44px markers remain
- * tappable; callers that need the title itself have to hit-test screen rects.
+ * Marker whose painted title pill contains the pointer. iPhone labels stay
+ * pointer-events: none so nearby 44px markers remain tappable; callers
+ * that need the title itself have to hit-test screen rects.
  *
  * Fit-zoom and light-pinch unselected pills are opacity 0 and skipped.
- * After double-tap / deep pinch every title is painted, so this is how
- * you select the movie you just read instead of missing it or zooming.
+ * After double-tap / deep pinch every title is painted.
  *
  * A selected wrapping pill can cover a neighbor's truncated title. Returning
  * the first DOM hit would switch away from the title you are reading; prefer
  * the selected pill when it contains the tap, otherwise the closest title.
  */
-export function movieIdAtVisibleLabel(
+export function moviePointAtVisibleLabel(
   root: ParentNode,
   clientX: number,
   clientY: number,
-): string | null {
-  let selectedHit: string | null = null
-  let closest: { id: string; dist: number } | null = null
+): HTMLElement | null {
+  let selectedPoint: HTMLElement | null = null
+  let closest: { point: HTMLElement; dist: number } | null = null
 
   for (const point of root.querySelectorAll('.movie-point:not(.ghost-point)')) {
+    if (!(point instanceof HTMLElement)) continue
     const label = point.querySelector(':scope > .movie-label')
     if (!(label instanceof HTMLElement) || !isPainted(label)) continue
     if (!pointInRect(label.getBoundingClientRect(), clientX, clientY)) continue
@@ -109,14 +109,30 @@ export function movieIdAtVisibleLabel(
     const hit = idFromLabelAtPoint(label, clientX, clientY)
     if (!hit) continue
     if (point.classList.contains('movie-point--selected')) {
-      selectedHit = hit.id
+      selectedPoint = point
     }
     if (!closest || hit.dist < closest.dist) {
-      closest = hit
+      closest = { point, dist: hit.dist }
     }
   }
 
-  return selectedHit ?? closest?.id ?? null
+  return selectedPoint ?? closest?.point ?? null
+}
+
+/**
+ * Movie whose on-canvas title (or the pill that contains it) the pointer is
+ * over. Used to select the name you just read after titles appear.
+ */
+export function movieIdAtVisibleLabel(
+  root: ParentNode,
+  clientX: number,
+  clientY: number,
+): string | null {
+  const point = moviePointAtVisibleLabel(root, clientX, clientY)
+  if (!point) return null
+  const label = point.querySelector(':scope > .movie-label')
+  if (!(label instanceof HTMLElement)) return null
+  return idFromLabelAtPoint(label, clientX, clientY)?.id ?? null
 }
 
 /** True when a screen-space point lands on a painted movie title pill. */
@@ -125,7 +141,7 @@ export function pointerHitsVisibleMovieLabel(
   clientX: number,
   clientY: number,
 ): boolean {
-  return movieIdAtVisibleLabel(root, clientX, clientY) !== null
+  return moviePointAtVisibleLabel(root, clientX, clientY) !== null
 }
 
 function movieIdsInPoint(point: Element): string[] {
