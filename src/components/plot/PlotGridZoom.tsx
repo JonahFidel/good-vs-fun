@@ -69,7 +69,7 @@ const PAN_SLOP_PX = 8
  * pinch, covering pan is unlocked, so that same 8px slop treats a tap as
  * a pan and cancels double-tap zoom-in (or zoom-out-to-fit once titles
  * are on). 20px is still under DOUBLE_TAP_PX (28) and about 0.25 cells
- * at labels-visible zoom (~80px). Mouse keeps 8px so Figma-style
+ * at labels-visible zoom (~93px). Mouse keeps 8px so Figma-style
  * drag-pan stays snappy.
  */
 const TOUCH_PAN_SLOP_PX = 20
@@ -457,7 +457,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // unconstrained pan translation, so a leftover finger past that
     // edge does not stick from double-compressing the painted rubber-band.
     // Fit zoom never pans, so the default 0-10 square stays locked. Double-tap
-    // eases to title-visible zoom (~2.6x on a 370px square) from any
+    // eases to title-visible zoom (~3.0x on a 370px square) from any
     // scale below that, including a leftover pinch, or back to fit once titles
     // are on screen. The selected fit-zoom title (pointer-events: none)
     // is also that zoom-in gesture: it is the movie you tapped to read,
@@ -943,9 +943,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const fit = fitTransform()
         const canvas = canvasRef.current
         if (!fit || !canvas) return
-        // Zoom far enough that 3.75rem six-line pills fit one cell.
-        // A 370px portrait plot needs ~2.6x; a ~280px landscape plot
-        // needs ~3.4x or titles overlap 1-unit neighbors.
+        // Zoom far enough that 3.75rem seven-line pills fit one cell.
+        // A 370px portrait plot needs ~3.0x; a ~280px landscape plot
+        // needs ~4.0x or titles overlap 1-unit neighbors.
         // Sub-detail leftover pinches still zoom in: titles
         // are hidden there, so reset-to-fit would undo the closer look.
         // Overlay-marker taps pass ghost-label scale (~3.2x) so one

@@ -29,7 +29,7 @@ export const GRID_DETAIL_SCALE = 1.4
  * Floor for double-tap zoom-in and unselected titles. 1.4x on a ~370px
  * square is only ~43px per score unit, so 0.8rem / 7.25rem pills still
  * cover the grid you zoomed in to read. One-line 3.75rem pills needed
- * ~2.2x there; six-line wrap is taller, so labelsVisibleScale() raises
+ * ~2.2x there; seven-line wrap is taller, so labelsVisibleScale() raises
  * double-tap until a cell is TARGET_LABEL_UNIT_PX.
  */
 export const DOUBLE_TAP_SCALE = 2.2
@@ -43,13 +43,13 @@ export const LABELS_VISIBLE_SCALE = DOUBLE_TAP_SCALE
 export const GHOST_LABELS_VISIBLE_SCALE = 3.2
 /**
  * Screen-px per score unit at which 3.75rem zoomed pills sit in one cell.
- * One-line pills needed ~68px of width. Unstacked titles wrap six lines
- * at labels-visible zoom (~79px tall), so the cell has to match that
+ * One-line pills needed ~68px of width. Unstacked titles wrap seven lines
+ * at labels-visible zoom (~92px tall), so the cell has to match that
  * height or 1-unit Fun neighbors overlap. 2.2x on a ~370px portrait
- * square is only ~68px; labelsVisibleScale raises double-tap to ~2.6x
- * there. A ~280px landscape square needs ~3.4x for the same unit.
+ * square is only ~68px; labelsVisibleScale raises double-tap to ~3.0x
+ * there. A ~280px landscape square needs ~4.0x for the same unit.
  */
-export const TARGET_LABEL_UNIT_PX = 80
+export const TARGET_LABEL_UNIT_PX = 93
 const GHOST_LABELS_AFTER_PRIMARY = 1
 const FIT_SCALE_EPSILON = 0.05
 const FIT_PAN_EPSILON_PX = 8
@@ -109,7 +109,7 @@ export function rubberBandTranslate(
 
 /**
  * Zoom at which unselected titles can sit one-per-cell. Never below 2.2x.
- * On a typical phone square, TARGET_LABEL_UNIT_PX binds first so six-line
+ * On a typical phone square, TARGET_LABEL_UNIT_PX binds first so seven-line
  * 3.75rem pills fit one Fun cell. Smaller filled squares raise it further.
  */
 export function labelsVisibleScale(canvasWidth: number): number {
@@ -393,8 +393,8 @@ export function isLeftoverFitScale(
 /**
  * Toggle the readable 0-10 overview vs a detail zoom aimed at `point`.
  *
- * Titles stay hidden until `detailScale` (~2.6x on a 370px square, higher
- * on small squares) so six-line pills fit one cell.
+ * Titles stay hidden until `detailScale` (~3.0x on a 370px square, higher
+ * on small squares) so seven-line pills fit one cell.
  * A leftover pinch below that scale is still that overview: treating it as
  * "already zoomed" made one-handed double-tap reset to fit instead of
  * finishing the zoom you use to read names. Once titles are visible,
