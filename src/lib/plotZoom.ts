@@ -387,14 +387,22 @@ export function isLeftoverFitScale(
   return Math.abs(scale - fitScale) <= epsilon
 }
 
-/** Toggle fit vs a detail zoom aimed at `point` (slot coordinates). */
+/**
+ * Toggle the readable 0-10 overview vs a detail zoom aimed at `point`.
+ *
+ * Titles stay hidden until `detailScale` (~2.2x, higher on small squares).
+ * A 1.2-2.1x leftover pinch is still that overview: treating it as
+ * "already zoomed" made one-handed double-tap reset to fit instead of
+ * finishing the zoom you use to read names. Once titles are visible,
+ * double-tap returns to the locked 0-10 square.
+ */
 export function doubleTapTransform(
   state: ZoomState,
   point: ZoomPoint,
   fit: ZoomState,
   detailScale = DOUBLE_TAP_SCALE,
 ): ZoomState {
-  if (isNearFit(state, fit)) {
+  if (state.scale < detailScale) {
     return zoomTowardPoint(state, point, detailScale / state.scale)
   }
   return fit

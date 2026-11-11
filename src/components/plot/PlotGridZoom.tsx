@@ -410,8 +410,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // unconstrained pan translation, so a leftover finger past that
     // edge does not stick from double-compressing the painted rubber-band.
     // Fit zoom never pans, so the default 0-10 square stays locked. Double-tap
-    // eases to 2.2x or back to fit instead of jumping, matching that
-    // coast. Pinch-out past 1x and zoomed pan past a covering or
+    // eases to title-visible zoom (~2.2x) from any scale below that,
+    // including a 1.2-2.1x leftover pinch, or back to fit once titles
+    // are on screen. Pinch-out past 1x and zoomed pan past a covering or
     // keep-visible edge rubber-band, then ease back on lift, so getting
     // home or hitting an edge is not a wall. Catching a flicked coast
     // resumes from that unconstrained translation and does not count as
@@ -839,6 +840,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // Zoom far enough that 3.75rem pills fit one cell on this square.
         // A 370px portrait plot stays at 2.2x; a ~280px landscape plot
         // needs closer to 2.9x or titles overlap 1-unit neighbors.
+        // Sub-detail leftover pinches (1.2-2.1x) still zoom in: titles
+        // are hidden there, so reset-to-fit would undo the closer look.
         const next = doubleTapTransform(
           stateRef.current,
           point,
