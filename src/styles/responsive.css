@@ -1288,6 +1288,22 @@
   }
 
   /*
+    Fit-zoom pills lift off anonymous dots with a 14px drop shadow.
+    Once the selected readout shrinks to one cell at 1.4x, that bloom
+    covers neighboring compact titles - and at 2.2x it covers the
+    truncated names pinch-to-read just uncovered, the same leak as
+    the title-line glow above. Keep a tight inset plus 2px edge so
+    the dark pill still separates from the grid. Beat the example-
+    deck label restore, which reapplied the 14px shadow.
+  */
+  .grid-zoom-slot--zoomed .movie-point > .movie-label,
+  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point > .movie-label {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 1px 2px rgba(15, 23, 42, 0.35);
+  }
+
+  /*
     Ghosts are .movie-point too, so the zoomed title restore would dump a
     second 40-movie overlay onto the square you just pinched to read.
     Keep compare as color-dots through double-tap 2.2x; names wait until
