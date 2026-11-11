@@ -347,9 +347,16 @@
     is ~88px, and DOM order puts 44px Rename/Delete first, so the sliders
     sat below the fold. Grow to the sidebar and put Fun/Good first so the
     editor actually fits. Desktop order is unchanged (this query only).
+
+    Growing to calc(100% - 0.5rem) also covered the sidebar header, so
+    Undo/Redo (moved off the plot so Fun≈10 stays tappable) were under
+    the sheet while dragging those sliders. Keep the 44px header row
+    clear: 0.4rem padding + 3.35rem header + 0.45rem gap. Never shrink
+    below summary+sliders on the 11rem floor, where 4.5rem reserved
+    would clip Fun/Good again.
   */
   .deck-sidebar .movie-selection-panel[open] {
-    max-height: calc(100% - 0.5rem);
+    max-height: max(9rem, calc(100% - 4.5rem));
   }
 
   .deck-sidebar .movie-selection-panel[open] > .score-sliders--selected {
@@ -358,6 +365,18 @@
 
   .deck-sidebar .movie-selection-panel[open] > .movie-selection-bar {
     order: 2;
+  }
+
+  /*
+    On an 11rem leftover the 9rem floor still has to scroll to reach
+    Rename/Delete. Keep the summary stuck so the sheet can be closed
+    without scrolling back to the top.
+  */
+  .deck-sidebar .movie-selection-panel[open] > .deck-sidebar-collapse-summary {
+    position: sticky;
+    top: -0.45rem;
+    z-index: 1;
+    background: #eff6ff;
   }
 
   .deck-sidebar:has(.movie-selection-panel) .deck-sidebar-section--list.movie-list ul {
