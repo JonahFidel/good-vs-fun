@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { scrollChildIntoAncestor } from '../../lib/scrollChildIntoAncestor'
 
 /**
  * Keep a CSS variable for how much the iOS keyboard (or URL bar) covers the
@@ -27,7 +28,7 @@ export function useVisualViewportInset() {
       if (!(target instanceof HTMLElement)) return
       if (!target.matches('input, textarea, select')) return
       window.setTimeout(() => {
-        target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        scrollChildIntoAncestor(target, { block: 'center', behavior: 'smooth' })
       }, 80)
     }
 

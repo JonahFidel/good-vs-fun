@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { alertExampleDeckReadOnly } from '../../lib/exampleDeck'
 import { formatScore } from '../../lib/format'
+import { scrollChildIntoAncestor } from '../../lib/scrollChildIntoAncestor'
 import type { Movie, MovieHover } from '../../lib/types'
 
 type MovieSort = 'title' | 'fun' | 'good'
@@ -51,9 +52,11 @@ export function MovieList({
     if (!selectedMovieId) {
       return
     }
-    document
-      .querySelector(`[data-movie-list-id="${selectedMovieId}"]`)
-      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    const row = document.querySelector(`[data-movie-list-id="${selectedMovieId}"]`)
+    if (!(row instanceof HTMLElement)) {
+      return
+    }
+    scrollChildIntoAncestor(row, { block: 'nearest', behavior: 'smooth' })
   }, [selectedMovieId])
 
   const handleExampleDelete = (event: React.MouseEvent) => {
