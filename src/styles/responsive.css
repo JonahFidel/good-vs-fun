@@ -1317,9 +1317,21 @@
     50%. After iteration 168 restored purple/teal, pinch-to-read overlay
     names were still washed-out half-opacity pills. Raise the whole
     overlay once those names paint; faded color-dots stay through 2.2x.
+
+    Ghosts stay z-index 0 through 2.2x so faded color-dots sit under
+    primary titles. Labels cannot climb out: coarse-pointer inverse-
+    scale transform on .movie-point is a stacking context, so a child
+    z-index never paints above a sibling primary (z-index 1). Primary
+    and overlay titles also share a side at Good < 5 and Good > 7, so
+    a 3.2x overlay name still sat behind the 2.2x primary pill after
+    the opacity restore. Lift the overlay point above unselected
+    primaries once names paint. Selected (4) and highlighted (3) stay
+    on top so the movie you are looking at is not buried; ghosts are
+    pointer-events: none, so paint order does not steal taps.
   */
   .grid-zoom-slot--ghost-labels .ghost-point {
     opacity: 1;
+    z-index: 2;
   }
 
   .grid-zoom-slot--ghost-labels .ghost-point > .movie-label {
