@@ -917,11 +917,53 @@
     max-width: min(7.25rem, 32cqw);
   }
 
+  /*
+    32cqw nowrap still ellipsizes real titles: "Pirates of the
+    Carribean: Curse of the Black Pearl" (~50 chars) sits at Fun 9.55 /
+    Good 9.83 - the namesake corner - and reads as "Pirates of t…".
+    Wrap up to 2 lines in that same box so the default-zoom readout can
+    be identified without bringing back 50cqw cover. Grow down at Fun
+    9-10 and up at Fun 0-1 so the taller pill stays in the scoring
+    region instead of clipping the 1-unit gutter. Zoomed one-cell
+    titles stay nowrap; this is fit-zoom only.
+  */
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    white-space: normal;
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) :is(.movie-label-line, .movie-label-title) {
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-south:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-south.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-north:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-north.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
   .grid-zoom-slot--labels .movie-point:not(.ghost-point) > .movie-label,
   .grid-zoom-slot--ghost-labels .ghost-point > .movie-label {
     font-size: 0.65rem;
     padding: 0.08rem 0.28rem;
     max-width: 3.75rem;
+    white-space: nowrap;
   }
 
   /*
