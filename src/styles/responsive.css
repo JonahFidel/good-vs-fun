@@ -555,6 +555,15 @@
     height: 11px;
   }
 
+  /* Stacked dots are anonymous at fit zoom (titles hidden). A larger
+     chip is how you can tell two movies share a score before tapping. */
+  .movie-point-count {
+    min-width: 1.15rem;
+    height: 1.15rem;
+    font-size: 0.7rem;
+    line-height: 1.15rem;
+  }
+
   /*
     30+ truncated pills on a ~370px square hide the grid. Keep dots at fit
     zoom; show the selected title, then restore all titles after a pinch-in.

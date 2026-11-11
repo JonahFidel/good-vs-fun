@@ -341,8 +341,25 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         applyTransform()
       }
 
-      function maybeDoubleTap(clientX: number, clientY: number) {
+      function isStackedMovieTouch(target: EventTarget | null) {
+        if (!(target instanceof Element)) return false
+        const point = target.closest('.movie-point:not(.ghost-point)')
+        if (!point) return false
+        return point.querySelectorAll('[data-movie-id]').length > 1
+      }
+
+      function maybeDoubleTap(
+        clientX: number,
+        clientY: number,
+        target: EventTarget | null,
+      ) {
         if (gestureMovedRef.current || pinchOccurredRef.current) {
+          lastTapRef.current = null
+          return false
+        }
+        // Stacked markers cycle titles on tap. Counting those toward
+        // double-tap would zoom on the second title instead of advancing.
+        if (isStackedMovieTouch(target)) {
           lastTapRef.current = null
           return false
         }
@@ -480,7 +497,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         }
         const ended = e.changedTouches[0]
         if (ended) {
-          if (maybeDoubleTap(ended.clientX, ended.clientY)) {
+          if (maybeDoubleTap(ended.clientX, ended.clientY, e.target)) {
             e.preventDefault()
           }
         } else {

@@ -4,18 +4,49 @@
  */
 export const MOVIE_HIT_RADIUS_PX = 22
 
+function movieIdsInPoint(point: Element): string[] {
+  const ids: string[] = []
+  for (const node of point.querySelectorAll('[data-movie-id]')) {
+    const id = node.getAttribute('data-movie-id')
+    if (id) {
+      ids.push(id)
+    }
+  }
+  return ids
+}
+
+/** Next title in a stacked group, wrapping so every movie at the dot is reachable. */
+export function nextMovieIdInGroup(
+  ids: string[],
+  selectedId: string | null,
+): string | null {
+  if (ids.length === 0) {
+    return null
+  }
+  const idx = selectedId ? ids.indexOf(selectedId) : -1
+  if (idx >= 0) {
+    return ids[(idx + 1) % ids.length]
+  }
+  return ids[0]
+}
+
 /**
  * Nearest non-ghost movie to a tap. Overlapping 44px hit rings otherwise
  * select whichever point is on top in DOM order, which on a dense fitted
  * iPhone grid is often not the dot you aimed at.
+ *
+ * Movies that share a Fun/Good score render as one marker. A second tap on
+ * that marker advances to the next title; labels are pointer-events: none
+ * on iPhone so the titles in the stack cannot be tapped directly.
  */
 export function closestMovieId(
   grid: HTMLElement,
   clientX: number,
   clientY: number,
   maxDistance = MOVIE_HIT_RADIUS_PX,
+  selectedId: string | null = null,
 ): string | null {
-  let best: { id: string; dist: number } | null = null
+  let best: { ids: string[]; dist: number } | null = null
 
   for (const point of grid.querySelectorAll('.movie-point:not(.ghost-point)')) {
     const rect = point.getBoundingClientRect()
@@ -29,11 +60,11 @@ export function closestMovieId(
     if (best && dist >= best.dist) {
       continue
     }
-    const id = point.querySelector('[data-movie-id]')?.getAttribute('data-movie-id')
-    if (id) {
-      best = { id, dist }
+    const ids = movieIdsInPoint(point)
+    if (ids.length) {
+      best = { ids, dist }
     }
   }
 
-  return best?.id ?? null
+  return best ? nextMovieIdInGroup(best.ids, selectedId) : null
 }

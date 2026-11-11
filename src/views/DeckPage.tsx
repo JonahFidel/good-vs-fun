@@ -119,6 +119,7 @@ export function DeckPage() {
     captureDragSnapshot,
     discardDragSnapshot,
     recordUndoIfChanged,
+    selectedMovieId,
     onSelectMovie: selectMovie,
   })
 

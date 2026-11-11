@@ -59,6 +59,7 @@ export function MoviePoints({
               isDragging ? 'dragging' : '',
               isGridSelected ? 'movie-point--selected' : '',
               isGridHighlighted ? 'movie-point--highlighted' : '',
+              group.items.length > 1 ? 'movie-point--stacked' : '',
               labelOnRight ? 'movie-point--label-end' : '',
               labelBelow ? 'movie-point--label-south' : '',
               labelAbove ? 'movie-point--label-north' : '',
@@ -106,6 +107,11 @@ export function MoviePoints({
                 <span>Fun {formatScore(group.fun)}</span>
               </span>
             </span>
+            {group.items.length > 1 ? (
+              <span className="movie-point-count" aria-hidden="true">
+                {group.items.length}
+              </span>
+            ) : null}
             <span className="movie-point-score" aria-hidden="true">
               Good {formatScore(group.good)} · Fun {formatScore(group.fun)}
             </span>

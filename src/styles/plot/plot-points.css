@@ -90,6 +90,30 @@
     0 0 24px 10px rgba(59, 130, 246, 0.4);
 }
 
+/* Count of movies sharing this Fun/Good score. Inverse-scales with the
+   marker on coarse pointers, so it stays readable at iPhone fit zoom. */
+.movie-point-count {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 3;
+  pointer-events: none;
+  box-sizing: border-box;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  padding: 0 0.18rem;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #ffffff;
+  font-size: 0.55rem;
+  font-weight: 800;
+  line-height: 0.95rem;
+  text-align: center;
+  transform: translate(30%, -70%);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.45);
+}
+
 .movie-label-line--selected .movie-label-title {
   border-color: #3b82f6;
   color: #eff6ff;

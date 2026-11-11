@@ -7,7 +7,11 @@ import {
   type PointerEvent as ReactPointerEvent,
   type SetStateAction,
 } from 'react'
-import { closestMovieId } from '../../lib/closestMoviePoint'
+import {
+  closestMovieId,
+  MOVIE_HIT_RADIUS_PX,
+  nextMovieIdInGroup,
+} from '../../lib/closestMoviePoint'
 import { snapScoreToStep } from '../../lib/format'
 import { scoresAtPointer } from '../../lib/findSnapTarget'
 import type { Movie } from '../../lib/types'
@@ -27,6 +31,7 @@ export function usePlotDrag({
   captureDragSnapshot,
   discardDragSnapshot,
   recordUndoIfChanged,
+  selectedMovieId,
   onSelectMovie,
 }: {
   isExampleDeck: boolean
@@ -36,6 +41,7 @@ export function usePlotDrag({
   captureDragSnapshot: (ids: string[]) => void
   discardDragSnapshot: () => void
   recordUndoIfChanged: () => void
+  selectedMovieId: string | null
   onSelectMovie: (id: string) => void
 }) {
   const gridRef = useRef<HTMLDivElement | null>(null)
@@ -135,7 +141,13 @@ export function usePlotDrag({
       if (event.pointerType !== 'touch') {
         return
       }
-      const id = closestMovieId(plot, event.clientX, event.clientY)
+      const id = closestMovieId(
+        plot,
+        event.clientX,
+        event.clientY,
+        MOVIE_HIT_RADIUS_PX,
+        selectedMovieId,
+      )
       if (!id) {
         return
       }
@@ -147,7 +159,7 @@ export function usePlotDrag({
     return () => {
       plot.removeEventListener('pointerdown', onTouchSelect, { capture: true })
     }
-  }, [onSelectMovie])
+  }, [onSelectMovie, selectedMovieId])
 
   const handlePointerDown =
     (key: string, ids: string[], primaryId: string) =>
@@ -159,7 +171,7 @@ export function usePlotDrag({
       // and, after 120ms, steals one-finger pan once the plot is zoomed. Tap
       // to select; Fun/Good still edit from the Selected sliders.
       if (event.pointerType !== 'mouse') {
-        onSelectMovie(primaryId)
+        onSelectMovie(nextMovieIdInGroup(ids, selectedMovieId) ?? primaryId)
         return
       }
       beginPendingPointer(
