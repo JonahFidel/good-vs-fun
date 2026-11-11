@@ -205,9 +205,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // Wheel / trackpad pinch → zoom toward cursor. Listen on the plot card,
     // not just the inner slot: Fun/Good axis labels live outside the slot,
     // and Chrome/Firefox trackpad pinch is wheel-only. Slot-only listening
-    // left those labels as a zoom dead zone (Safari GestureEvents and iPhone
-    // Touch Events already use the wrapper). Cursor math stays in slot space
-    // so a point on the Fun axis (negative x) still zooms toward the origin.
+    // left those labels as a zoom dead zone (Safari GestureEvents listen on
+    // window; iPhone Touch Events use the wrapper). Cursor math stays in
+    // slot space so a point on the Fun axis (negative x) still zooms toward
+    // the origin.
     useEffect(() => {
       const slot = slotRef.current
       if (!slot) return
@@ -267,10 +268,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // finger from eating the rest of the gesture. Touch pan is allowed to
     // start on a movie: moving points is mouse-only, and the ~44px hit
     // areas would otherwise eat most of a zoomed one-finger pan. Mouse pan,
-    // like wheel, Touch Events, and Safari GestureEvents, sits on the plot
-    // card so a drag that starts on a Fun/Good axis still pans the zoomed
-    // grid. Undo/Redo overlay clicks must not capture, or the button press
-    // never fires.
+    // like wheel and Touch Events, sits on the plot card so a drag that
+    // starts on a Fun/Good axis still pans the zoomed grid. Safari
+    // GestureEvents listen on window capture because WebKit often targets
+    // document. Undo/Redo overlay clicks must not capture, or the button
+    // press never fires.
     useEffect(() => {
       const slot = slotRef.current
       if (!slot) return
@@ -685,13 +687,38 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         }
       }
 
+      function clientOnPlot(clientX: number, clientY: number) {
+        if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return false
+        const rect = gestureRoot.getBoundingClientRect()
+        return (
+          clientX >= rect.left &&
+          clientX <= rect.right &&
+          clientY >= rect.top &&
+          clientY <= rect.bottom
+        )
+      }
+
+      function webkitGestureOnPlot(event: Event) {
+        const target = event.target
+        if (target instanceof Node && gestureRoot.contains(target)) {
+          return true
+        }
+        const gesture = event as WebKitGestureEvent
+        return clientOnPlot(gesture.clientX, gesture.clientY)
+      }
+
       // Safari page-zoom gestures fight custom pinch unless they are cancelled.
       // On iPhone, Touch Events own pinch (GestureEvents would double-zoom).
       // On Safari Mac, trackpad pinch is GestureEvents, not Touch Events, so
       // swallowing them without applying scale left Figma-style pinch dead.
+      // Listen on window capture: WebKit often targets document, so a plot-card
+      // listener never sees the gesture. Ctrl+wheel is already ignored as a
+      // GestureEvent shadow on Safari Mac, so missing these events would leave
+      // trackpad pinch zooming neither the grid nor the page.
       function onWebkitGestureStart(event: Event) {
         event.preventDefault()
         if (pinchRef.current || isCoarsePointer()) return
+        if (!webkitGestureOnPlot(event)) return
         const gesture = event as WebKitGestureEvent
         webkitGestureActiveRef.current = true
         webkitGestureOriginRef.current = {
@@ -728,10 +755,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       const touchOpts: AddEventListenerOptions = { passive: false, capture: true }
-      const gestureOpts: AddEventListenerOptions = { passive: false }
+      const gestureOpts: AddEventListenerOptions = { capture: true, passive: false }
 
       // Capture phase so a drag on Fun/Good axis chrome still pans, matching
-      // wheel / GestureEvent / touch listeners already on the plot card.
+      // wheel and touch listeners already on the plot card.
       gestureRoot.addEventListener('pointerdown', onPointerDown, { capture: true })
       gestureRoot.addEventListener('pointermove', onPointerMove)
       gestureRoot.addEventListener('pointerup', onPointerUp)
@@ -740,9 +767,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       gestureRoot.addEventListener('touchmove', onTouchMove, touchOpts)
       gestureRoot.addEventListener('touchend', onTouchEnd, touchOpts)
       gestureRoot.addEventListener('touchcancel', onTouchCancel, touchOpts)
-      gestureRoot.addEventListener('gesturestart', onWebkitGestureStart, gestureOpts)
-      gestureRoot.addEventListener('gesturechange', onWebkitGestureChange, gestureOpts)
-      gestureRoot.addEventListener('gestureend', onWebkitGestureEnd, gestureOpts)
+      window.addEventListener('gesturestart', onWebkitGestureStart, gestureOpts)
+      window.addEventListener('gesturechange', onWebkitGestureChange, gestureOpts)
+      window.addEventListener('gestureend', onWebkitGestureEnd, gestureOpts)
 
       return () => {
         cancelEmptyTap()
@@ -754,9 +781,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         gestureRoot.removeEventListener('touchmove', onTouchMove, touchOpts)
         gestureRoot.removeEventListener('touchend', onTouchEnd, touchOpts)
         gestureRoot.removeEventListener('touchcancel', onTouchCancel, touchOpts)
-        gestureRoot.removeEventListener('gesturestart', onWebkitGestureStart, gestureOpts)
-        gestureRoot.removeEventListener('gesturechange', onWebkitGestureChange, gestureOpts)
-        gestureRoot.removeEventListener('gestureend', onWebkitGestureEnd, gestureOpts)
+        window.removeEventListener('gesturestart', onWebkitGestureStart, gestureOpts)
+        window.removeEventListener('gesturechange', onWebkitGestureChange, gestureOpts)
+        window.removeEventListener('gestureend', onWebkitGestureEnd, gestureOpts)
       }
     }, [])
 

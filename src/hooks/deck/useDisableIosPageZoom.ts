@@ -9,8 +9,8 @@ const COARSE_POINTER_QUERY = '(pointer: coarse)'
  * axis, header, or sidebar chrome zooms the locked deck page into a clipped
  * mess. Cancel native GestureEvents on coarse pointers (iPhone) for the
  * lifetime of the deck page. Custom plot pinch uses Touch Events there.
- * Fine pointers keep GestureEvents so Safari Mac trackpad pinch can zoom
- * the grid; preventDefault on document was swallowing that gesture. Do not
+ * Safari Mac GestureEvents are handled on window by PlotGridZoom so a
+ * document-only preventDefault cannot swallow trackpad pinch. Do not
  * listen for non-passive touchmove on document - that delays sidebar scrolling.
  */
 export function useDisableIosPageZoom() {
