@@ -50,7 +50,10 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * Leftover size-5 of that peel (Challengers / Logan Lucky /
  * Knives Out 3 / The Vvitch / The Killer) then peels the
  * pair whose isolated Good flip would restack, so the
- * remaining 3 occupy triangle slots.
+ * remaining 3 occupy triangle slots. The leftover size-2
+ * (Challengers / Logan Lucky) then splits vertically so
+ * that pair does not keep covering after the Good flip is
+ * skipped.
  * Reuse of label-end would also flip the fit-zoom
  * selected pill.
  */
@@ -389,7 +392,8 @@ function closeGoodConnectedComponents(
  * line-shaped 4 does not stack two titles in one slot. Size-3
  * triangles get a 2-vs-1 split next; size-5+ meshes peel a hub
  * after that so a leftover unique-quadrant 4 can still pack.
- * Leftover size-5 of that peel packs a triangle after that.
+ * Leftover size-5 of that peel packs a triangle after that,
+ * then leftover size-2 splits vertically.
  */
 function uniqueQuadrantAssignment(
   component: PositionGroup[],
@@ -628,7 +632,8 @@ function interiorCloseGoodTriangleStagger(
  * Logan Lucky, The Vvitch / The Killer) stay put so this
  * does not restack Challengers on Some Like It Hot's
  * chain Good-10. Leftover size-5 of that peel packs a
- * triangle next. Overlay copies get the same peel at
+ * triangle next, then the leftover size-2 splits
+ * vertically. Overlay copies get the same peel at
  * ghost-label zoom.
  */
 function interiorCloseGoodMeshHubStagger(
@@ -722,9 +727,9 @@ function isolatedCloseGoodFlipRestacks(
  * The Killer leaves two size-2s. Pack the hub with the
  * size-2 whose isolated Good flip would not restack
  * (The Vvitch / The Killer) so those three occupy triangle
- * slots. Challengers / Logan Lucky stay put so Challengers
- * does not restack on Some Like It Hot. Overlay copies
- * get the same peel at ghost-label zoom.
+ * slots. Challengers / Logan Lucky get Fun stagger next so
+ * Challengers does not restack on Some Like It Hot.
+ * Overlay copies get the same peel at ghost-label zoom.
  */
 function interiorCloseGoodLeftoverMeshTriangleStagger(
   groups: PositionGroup[],
@@ -791,6 +796,69 @@ function interiorCloseGoodLeftoverMeshTriangleStagger(
   return { fun, good }
 }
 
+/**
+ * Leftover size-2 after a leftover-mesh triangle peel cannot
+ * take the isolated Good flip: Challengers vs Logan Lucky
+ * would restack Challengers on Some Like It Hot's chain
+ * Good-10 (0.33 Fun, 0.06 Good). Split them vertically on
+ * the default label side instead so both seven-line pills
+ * fit. Skip a leftover pair whose Good flip would not
+ * restack; those were packed with the hub. Overlay copies
+ * of this pair stay in a leftover size-5 until a later
+ * ghost-label increment.
+ */
+function interiorCloseGoodLeftoverPairVerticalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+  sameSideVertical: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueFun: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueGood: Map<string, 'good-10' | 'good-0'>,
+  triangleFun: Map<string, 'fun-10' | 'fun-0'>,
+  triangleGood: Map<string, 'good-10' | 'good-0'>,
+  meshFun: Map<string, 'fun-10' | 'fun-0'>,
+  meshGood: Map<string, 'good-10' | 'good-0'>,
+  leftoverMeshFun: Map<string, 'fun-10' | 'fun-0'>,
+  leftoverMeshGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const assignedGood = new Map([
+    ...horizontalStagger,
+    ...cliqueGood,
+    ...triangleGood,
+    ...meshGood,
+    ...leftoverMeshGood,
+  ])
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !horizontalStagger.has(group.key) &&
+      !sameSideVertical.has(group.key) &&
+      !cliqueFun.has(group.key) &&
+      !cliqueGood.has(group.key) &&
+      !triangleFun.has(group.key) &&
+      !triangleGood.has(group.key) &&
+      !meshFun.has(group.key) &&
+      !meshGood.has(group.key) &&
+      !leftoverMeshFun.has(group.key) &&
+      !leftoverMeshGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    if (component.length !== 2) continue
+    if (!isolatedCloseGoodFlipRestacks(component, assignedGood, groups)) {
+      continue
+    }
+    const [higher, lower] =
+      component[0].fun >= component[1].fun
+        ? [component[0], component[1]]
+        : [component[1], component[0]]
+    stagger.set(higher.key, 'fun-10')
+    stagger.set(lower.key, 'fun-0')
+  }
+  return stagger
+}
+
 function computeMoviePointStagger(groups: PositionGroup[]) {
   const verticalStagger = interiorSameGoodVerticalStagger(groups)
   const neighborStagger = interiorCloseGoodHorizontalStagger(
@@ -853,6 +921,20 @@ function computeMoviePointStagger(groups: PositionGroup[]) {
     meshStagger.fun,
     meshStagger.good,
   )
+  const leftoverPairVertical = interiorCloseGoodLeftoverPairVerticalStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+    sameSideVertical,
+    cliqueStagger.fun,
+    cliqueStagger.good,
+    triangleStagger.fun,
+    triangleStagger.good,
+    meshStagger.fun,
+    meshStagger.good,
+    leftoverMeshStagger.fun,
+    leftoverMeshStagger.good,
+  )
   const funStagger = new Map([
     ...verticalStagger,
     ...sameSideVertical,
@@ -860,6 +942,7 @@ function computeMoviePointStagger(groups: PositionGroup[]) {
     ...triangleStagger.fun,
     ...meshStagger.fun,
     ...leftoverMeshStagger.fun,
+    ...leftoverPairVertical,
   ])
   const goodStagger = new Map([
     ...horizontalStagger,
