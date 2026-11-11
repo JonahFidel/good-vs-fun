@@ -1647,12 +1647,21 @@
     into a four-line pill over the cluster pinch-to-read just
     uncovered, and last-two-lines would hide those numbers.
 
-    Line-clamp would paint the first two wrapped lines. Clip to
-    the last two instead so a longer wrap still reaches the
-    distinctive ending. Two line-heights (1.2) fit ~10-18
-    character names in this ~9-character cell. A 2-line pill is
-    ~26px vs ~68px per unit at labels-visible zoom, so it stays
-    inside one Fun cell. Short names still shrink-to-fit.
+    Line-clamp would paint the first wrapped lines. Clip to
+    the last instead so a longer wrap still reaches the
+    distinctive ending. Two lines only covered ~10-18
+    character names in this ~9-character cell. 19-27
+    character names are three wraps: "Sicario: Day of the
+    Soldado", "28 Years Later Bone Temple", "One Battle
+    After Another". Last-two-lines then hid the identifying
+    start (Sicario / 28 Years / One Battle), and unselected
+    primaries have no Selected bar to recover it. Three
+    line-heights (1.2) fit those. Longer namesake titles
+    still last-clip to the distinctive ending.
+
+    A 3-line pill is ~40px vs ~68px per unit at labels-visible
+    zoom, so the extra line stays inside one Fun cell. Short
+    names still shrink-to-fit.
   */
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked) > .movie-label {
     white-space: normal;
@@ -1665,7 +1674,12 @@
     overflow-wrap: break-word;
     min-width: 0;
     max-width: 100%;
-    max-height: 2.4em;
+    /*
+      Three line-heights (1.2 on .movie-label) so 3-wrap
+      names fit in this cell. Height stays auto so a
+      one-line name does not sit in an empty three-line box.
+    */
+    max-height: 3.6em;
     overflow: hidden;
     display: flex;
     flex-direction: column;
