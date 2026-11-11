@@ -636,7 +636,7 @@
       corner title that justified this wrap (Pirates of the Carribean:
       Curse of the Black Pearl) still never reached Black Pearl on the
       ~12-15.5rem landscape rail: ~20-24 characters per line is three
-      wraps, and the 32cqw canvas pill already clips to the last two.
+      wraps, and the 32cqw canvas pill already clips to the last three.
       Same column flex-end plus overflow as that pill and 3.2x overlay
       names. Two line-heights (1.25); height stays auto so Heat does
       not sit in an empty two-line box. The inner text must keep its
@@ -1248,30 +1248,35 @@
     32cqw nowrap still ellipsizes real titles: "Pirates of the
     Carribean: Curse of the Black Pearl" (~50 chars) sits at Fun 9.55 /
     Good 9.83 - the namesake corner - and reads as "Pirates of t…".
-    Wrap up to 2 lines in that same box so the default-zoom readout can
-    be identified without bringing back 50cqw cover. Grow down at Fun
-    9-10 and up at Fun 0-1 so the taller pill stays in the scoring
-    region instead of clipping the 1-unit gutter. Light-pinch and
-    double-tap one-cell titles stay nowrap; this is fit-zoom only
-    (:not --zoomed), not "until names appear" (:not --labels).
+    Wrap in that same box so the default-zoom readout can be identified
+    without bringing back 50cqw cover. Grow down at Fun 9-10 and up at
+    Fun 0-1 so the taller pill stays in the scoring region instead of
+    clipping the 1-unit gutter. Light-pinch and double-tap one-cell
+    titles stay nowrap; this is fit-zoom only (:not --zoomed), not
+    "until names appear" (:not --labels).
 
-    Line-clamp always paints the first two wrapped lines, so that
-    namesake-corner title became "Pirates of the / Carribean:…" and
-    never reached Black Pearl - the same start-of-wrap hole overlay
-    3.2x titles had in a 3.75rem box. Clip the line to the last two
-    wrapped lines instead (column flex-end plus overflow) so it reads
-    as Curse of the / Black Pearl. Short names still shrink-to-fit
-    and stay one or two lines; the title must keep its content height
-    so flex-end can hide the start instead of shrinking to the first
-    two lines. Fit-zoom stacks already hide inactive lines, so this
-    wrap is still one title, not a four-line pill.
+    Last-N-lines only helps when a title overflows the box. In this
+    32cqw / 0.85rem cell on a ~370px square (~15-17 characters per
+    line), Pirates is three wraps. Two lines then hid the
+    identifying start (Pirates / Carribean) and showed only Curse of
+    the / Black Pearl. Three line-heights (1.2) fit those. Longer
+    namesake titles still last-clip. Short names still shrink-to-fit;
+    the title must keep its content height so flex-end can hide the
+    start instead of shrinking to the first lines. Fit-zoom stacks
+    already hide inactive lines, so this wrap is still one title.
+
+    A 3-line selected pill is ~49px. Unselected names are hidden, and
+    Fun 9-10 already grows down / Fun 0-1 up, so the extra line stays
+    in the scoring region even on a 10rem landscape square. Overlay
+    3.2x wrap stays at six lines: a seventh would be ~91px vs ~84px
+    per unit there and would overflow the Fun 10 gutter.
   */
   .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     white-space: normal;
     /*
       The pill is abspos on a 7px marker. Shrink-to-fit plus wrapping
       reports the unwrapped title as its width, so max-width only
-      clips to one ellipsized line and the two-line clip never sees a
+      clips to one ellipsized line and the wrap clip never sees a
       narrower box. Cap the used width so wrap actually runs;
       max-content keeps short names like Heat from sitting in an
       empty 32cqw pill.
@@ -1287,10 +1292,11 @@
     min-width: 0;
     max-width: 100%;
     /*
-      Two line-heights (1.2 on .movie-label). Height stays auto so a
-      one-line name does not sit in an empty two-line box.
+      Three line-heights (1.2 on .movie-label) so 3-wrap names like
+      Pirates fit in this cell. Height stays auto so a one-line
+      name does not sit in an empty three-line box.
     */
-    max-height: 2.4em;
+    max-height: 3.6em;
     overflow: hidden;
     display: flex;
     flex-direction: column;
