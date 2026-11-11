@@ -1310,7 +1310,18 @@
     second 40-movie overlay onto the square you just pinched to read.
     Keep compare as color-dots through double-tap 2.2x; names wait until
     a deeper pinch (grid-zoom-slot--ghost-labels at 3.2x).
+
+    Overlay fade is on .ghost-point (opacity 0.5), not the marker.
+    Child .movie-label { opacity: 1 } cannot undo that: it only unhides
+    the pill from the fit-zoom 0, then the parent still composites at
+    50%. After iteration 168 restored purple/teal, pinch-to-read overlay
+    names were still washed-out half-opacity pills. Raise the whole
+    overlay once those names paint; faded color-dots stay through 2.2x.
   */
+  .grid-zoom-slot--ghost-labels .ghost-point {
+    opacity: 1;
+  }
+
   .grid-zoom-slot--ghost-labels .ghost-point > .movie-label {
     opacity: 1;
     pointer-events: none;
