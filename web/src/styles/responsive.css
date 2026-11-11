@@ -845,6 +845,53 @@
     display: none;
   }
 
+  /*
+    Portrait browsing (no movie selected, Add and Compare closed): the
+    Add/Compare row and the Movies/Sort row used to stay pinned above an
+    inner list scroller, so after the full-width square the titles only
+    got ~2 rows of the bottom strip. Scroll the whole sidebar instead and
+    keep only the deck header (back, undo, redo) pinned, so the movie
+    scroll area is the entire bottom part of the screen. Selecting a movie
+    or opening a sheet keeps the docked layouts below.
+  */
+  @media (orientation: portrait) {
+    /*
+      .deck-rail .panel zeroes the sidebar padding, so add the bottom inset
+      here: the last title scrolls clear of the home indicator and keyboard.
+    */
+    .deck-sidebar:not(:has(.movie-selection-panel)):not(:has(.deck-sidebar-tools-row [open])) {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--keyboard-inset, 0px));
+    }
+
+    .deck-sidebar:not(:has(.movie-selection-panel)):not(
+      :has(.deck-sidebar-tools-row [open])
+    ) > .deck-sidebar-section--header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      flex-shrink: 0;
+      /* Cover the gap the rows scroll through under the pinned header. */
+      box-shadow: 0 0.45rem 0 #ffffff;
+    }
+
+    .deck-sidebar:not(:has(.movie-selection-panel)):not(
+      :has(.deck-sidebar-tools-row [open])
+    ) .deck-sidebar-section--list.movie-list {
+      flex: 1 0 auto;
+      grid-template-rows: auto auto;
+      overflow: visible;
+    }
+
+    .deck-sidebar:not(:has(.movie-selection-panel)):not(
+      :has(.deck-sidebar-tools-row [open])
+    ) .deck-sidebar-section--list.movie-list ul {
+      overflow: visible;
+      mask-image: none;
+    }
+  }
+
   .grid-wrapper {
     grid-template-columns: 2rem 1fr;
     grid-template-rows: 1fr 1.5rem;
@@ -2694,10 +2741,9 @@
 
   .deck-page-layout .grid::before,
   .deck-page-layout .grid-wrapper--example .grid::before {
-    border-left: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
-    border-bottom: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
-    border-right: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
-    border-top: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
+    --grid-axis-stroke: calc(4px * var(--plot-inverse-scale, 1));
+    --grid-edge-stroke: calc(2px * var(--plot-inverse-scale, 1));
+    border-color: #111827;
     background-image: none;
   }
 
@@ -2712,11 +2758,20 @@
   */
   .deck-page-layout .grid-zoom-slot--zoomed > .grid-line-overlay,
   .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed > .grid-line-overlay {
-    background-image: linear-gradient(var(--grid-line-unit) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-line-unit) 1px, transparent 1px),
-      linear-gradient(var(--grid-line-half) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-line-half) 1px, transparent 1px);
-    background-size: 10% 10%, 10% 10%, 5% 5%, 5% 5%;
+    /* Half-unit lines at 0.5-9.5, the same untiled 1-9 recipe at 5% steps. */
+    background-image: var(--grid-unit-lines-y), var(--grid-unit-lines-x),
+      repeating-linear-gradient(
+        to bottom,
+        var(--grid-line-half) 0 1px,
+        transparent 1px calc(100% / 19)
+      ),
+      repeating-linear-gradient(
+        to right,
+        var(--grid-line-half) 0 1px,
+        transparent 1px calc(100% / 19)
+      );
+    background-size: var(--grid-unit-lines-size), 100% 95%, 95% 100%;
+    background-position: var(--grid-unit-lines-position), 0 100%, 100% 0;
   }
 
   .movie-point {
@@ -2905,8 +2960,14 @@
     this override is the stacked-score layout plus collapsed Selected
     three-line wrap, not a further list-clip bump.
   */
+  /*
+    Rows are flex items of the fixed-height list scroller. min-height: 0
+    let them shrink to ~12px and stack titles on top of each other, so
+    keep each row at its content height and let the list scroll.
+  */
   .movie-list li {
     flex-direction: column;
+    flex-shrink: 0;
     align-items: stretch;
     justify-content: center;
     gap: 0.1rem;

@@ -222,14 +222,18 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // scales because a fine pointer does not zoom.
       // Inverse-scaling a 1px background on .grid::before rounded away on
       // WebKit once zoom passed ~1.4x.
+      // Size it from the fractional layout box: offsetWidth rounds to whole
+      // pixels, which left the lines up to 0.5px off the bold outline that
+      // .grid::before draws at the exact 0-10 bounds.
       const overlay = overlayRef.current
-      if (overlay && canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
+      const canvasRect = canvas.getBoundingClientRect()
+      if (overlay && canvasRect.width > 0 && canvasRect.height > 0) {
         const region = scoringRegionScreenRect(
           scale,
           tx,
           ty,
-          canvas.offsetWidth,
-          canvas.offsetHeight,
+          canvasRect.width / scale,
+          canvasRect.height / scale,
         )
         overlay.style.transform = `translate3d(${region.left}px, ${region.top}px, 0)`
         overlay.style.width = `${region.width}px`
