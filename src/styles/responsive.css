@@ -480,6 +480,10 @@
     color: #4b5563;
     /* 4px keeps 0.85rem "10" inside the portrait ~31px 1-unit margin. */
     --grid-tick-outset-major: 4px;
+    /* Keep 0-10 numbers screen-sized while pinch spreads the grid.
+       Desktop omits this so wheel-zoom enlarges ticks with titles. */
+    transform: scale(var(--plot-inverse-scale, 1));
+    transform-origin: 0 0;
   }
 
   /*

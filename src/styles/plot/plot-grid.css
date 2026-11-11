@@ -53,7 +53,7 @@
   min-width: 700px;
   will-change: transform;
   z-index: 1;
-  /* Ticks live on the scaled canvas; inverse-scale keeps them screen-sized. */
+  /* Used by mobile tick inverse-scale and Fun/Good axis-border thickness. */
   --plot-inverse-scale: calc(1 / var(--plot-scale, 1));
 }
 
