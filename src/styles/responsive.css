@@ -2243,12 +2243,15 @@
     Combine so Manchester by the Sea (gutter-fun-0, Good 0)
     sits left of Room (Fun 0 / Good 10) instead of covering
     it in the Fun 0 gutter, matching the Fun-plus-Good
-    combos above. Include label-start so an equally specific
-    gutter-fun + label-start or stagger-good + label-start
-    rule does not grow these back onto the interior Good
-    side or re-center them. Overlay Fun-gutter neighbors
-    at Good >= 9 / <= 1 already occupy north/south when
-    coincident because the opposite side clips, so
+    combos above. Isolated Fun-gutter pairs reuse these
+    combos so Airplane (gutter-fun-10, Good 10) sits right
+    of Ghostbusters and Inglorious Basterds (gutter-fun-10,
+    Good 0) sits left of Pirates. Include label-start so an
+    equally specific gutter-fun + label-start or stagger-good
+    + label-start rule does not grow these back onto the
+    interior Good side or re-center them. Overlay Fun-gutter
+    neighbors at Good >= 9 / <= 1 already occupy north/south
+    when coincident because the opposite side clips, so
     hasVerticalSlot skips this on same-position compare;
     the split helps non-coincident overlay clusters.
   */

@@ -66,7 +66,11 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * Fun 1 / Good 9.1 beside Room at Fun 0 / Good 10)
  * then take Good stagger opposite the interior so they
  * split horizontally instead of covering in the Fun
- * gutter. Skip coincident north/south so those names do
+ * gutter. Isolated Fun-gutter close-Good pairs that
+ * are not next to those interiors (Airplane vs
+ * Ghostbusters, Inglorious Basterds vs Pirates) then
+ * take that same left/right flip at ghost-label zoom.
+ * Skip coincident north/south so those names do
  * not restack on the primary. Reuse of label-start
  * would also move every left-side overlay.
  */
@@ -1039,6 +1043,109 @@ function interiorFunGutterNeighborGoodStagger(
   return stagger
 }
 
+/**
+ * Isolated Fun-gutter close-Good pairs still cover each
+ * other after the interior-neighbor pass: Airplane
+ * (9.9 / 7.5) covers Ghostbusters (9.0 / 7.2) on the
+ * overlay left at Good > 7, and Inglorious Basterds
+ * (9.0 / 9.02) covers Pirates (9.55 / 9.83) in the
+ * namesake Good 10 gutter. Pair movies that have
+ * exactly one such partner among remaining Fun-gutter
+ * titles, then flip the title that sits toward its
+ * partner using the Fun-gutter resolved side (namesake
+ * Good 10 is already right, unlike overlay Good > 7).
+ * Skip pairs already on opposite sides, skip Fun-gutter
+ * titles already claimed by the interior neighbor pass
+ * so Furiosa stays opposite John Wick, and skip a flip
+ * that would restack on a nearby claimed or same-side
+ * Fun-gutter title. Coincident north/south stay put at
+ * class apply.
+ */
+function funGutterIsolatedFlipRestacks(
+  flipped: PositionGroup,
+  side: 'good-10' | 'good-0',
+  pairOther: PositionGroup,
+  assignedGood: Map<string, 'good-10' | 'good-0'>,
+  groups: PositionGroup[],
+): boolean {
+  const want: 'left' | 'right' = side === 'good-10' ? 'right' : 'left'
+  for (const other of groups) {
+    if (other.key === flipped.key || other.key === pairOther.key) continue
+    if (other.items.length !== 1) continue
+    const assigned = assignedGood.get(other.key)
+    const otherSide: 'left' | 'right' | null = assigned
+      ? assigned === 'good-10'
+        ? 'right'
+        : 'left'
+      : isFunGutterUnstacked(other)
+        ? funGutterResolvedGoodSide(other)
+        : null
+    if (otherSide !== want) continue
+    const dFun = Math.abs(flipped.fun - other.fun)
+    const dGood = Math.abs(flipped.good - other.good)
+    if (
+      dGood === 0 ||
+      dGood > INTERIOR_CLOSE_GOOD_GAP ||
+      dFun > INTERIOR_SAME_GOOD_FUN_GAP
+    ) {
+      continue
+    }
+    return true
+  }
+  return false
+}
+
+function funGutterIsolatedCloseGoodHorizontalStagger(
+  groups: PositionGroup[],
+  claimedGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isFunGutterUnstacked(group) && !claimedGood.has(group.key),
+  )
+  const partners = closeGoodPartners(candidates)
+  const used = new Set<string>()
+  for (const group of candidates) {
+    if (used.has(group.key)) continue
+    const list = partners.get(group.key) ?? []
+    if (list.length !== 1) continue
+    const other = list[0]
+    if (used.has(other.key)) continue
+    if ((partners.get(other.key) ?? []).length !== 1) continue
+    const groupSide = funGutterResolvedGoodSide(group)
+    const otherSide = funGutterResolvedGoodSide(other)
+    if (groupSide !== otherSide) {
+      used.add(group.key)
+      used.add(other.key)
+      continue
+    }
+    const [higherGood, lowerGood] =
+      group.good >= other.good ? [group, other] : [other, group]
+    const side: 'good-10' | 'good-0' =
+      groupSide === 'left' ? 'good-10' : 'good-0'
+    const flipped = groupSide === 'left' ? higherGood : lowerGood
+    const pairOther = flipped.key === group.key ? other : group
+    if (
+      funGutterIsolatedFlipRestacks(
+        flipped,
+        side,
+        pairOther,
+        claimedGood,
+        groups,
+      )
+    ) {
+      used.add(group.key)
+      used.add(other.key)
+      continue
+    }
+    stagger.set(flipped.key, side)
+    used.add(group.key)
+    used.add(other.key)
+  }
+  return stagger
+}
+
 function overlayLabelPlacement({
   good,
   fun,
@@ -1220,8 +1327,17 @@ export function GhostPoints({
     interiorFun,
     interiorGood,
   )
+  const claimedGood = new Map([...interiorGood, ...funGutterNeighborGood])
+  const funGutterIsolatedGood = funGutterIsolatedCloseGoodHorizontalStagger(
+    groups,
+    claimedGood,
+  )
   const funStagger = new Map([...interiorFun, ...gutterNeighborFun])
-  const goodStagger = new Map([...interiorGood, ...funGutterNeighborGood])
+  const goodStagger = new Map([
+    ...interiorGood,
+    ...funGutterNeighborGood,
+    ...funGutterIsolatedGood,
+  ])
   return (
     <>
       {groups.map((group) => {
@@ -1274,9 +1390,14 @@ export function GhostPoints({
         // interior, and Fun-gutter neighbors of those slots
         // (Manchester by the Sea next to Room) reuse Good
         // stagger opposite the interior so they do not cover
-        // in the Fun gutter. Skip coincident north/south so
-        // those names do not restack on the primary that
-        // already occupies a slot next to the marker.
+        // in the Fun gutter. Isolated Fun-gutter close-Good
+        // pairs that those neighbors skipped (Airplane next
+        // to Ghostbusters, Inglorious Basterds next to
+        // Pirates) reuse that same Good stagger from the
+        // Fun-gutter resolved side. Skip coincident
+        // north/south so those names do not restack on the
+        // primary that already occupies a slot next to the
+        // marker.
         const staggerTowardFun10 =
           !hasVerticalSlot && funStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 =
