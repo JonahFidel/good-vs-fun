@@ -102,9 +102,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       if (!canvas) return
       if (slot) {
         // lockFit matches the coarse-pointer inverse-scale CSS: iPhone
-        // pinch stays at or above the readable 1x grid. A mouse must not
-        // use the filled-square geometry as a stand-in, or a square or
-        // narrow desktop window loses Figma zoom-out and fit pan.
+        // pinch stays at or above the readable 1x grid. Overflow clamp
+        // still runs for a mouse so a zoomed grid cannot be panned off
+        // screen, without force-centering a letterboxed leftover axis
+        // (that jump was the desktop 1.2x-toward-Fun=0 bug, and it also
+        // hits iPad landscape: coarse lockFit plus a desktop letterbox).
         stateRef.current = clampToSlot(
           stateRef.current,
           { width: slot.offsetWidth, height: slot.offsetHeight },

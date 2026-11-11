@@ -92,23 +92,46 @@ export function centeredTransform(
   }
 }
 
-function clampAxis(translate: number, slotSize: number, scaledSize: number): number {
-  if (scaledSize <= slotSize) {
-    return (slotSize - scaledSize) / 2
+/**
+ * Keep a zoomed axis covering the slot. An undersized axis (letterbox
+ * gutter or zoom-out) must keep its translation: force-centering it made
+ * 1.2x wheel-zoom toward Fun=0 jump on desktop, and the same jump hits
+ * iPad landscape where lockFit is on but the canvas is still letterboxed
+ * in the desktop frame.
+ */
+function clampOverflow(
+  translate: number,
+  slotSize: number,
+  scaledSize: number,
+): number {
+  // Strictly undersized: letterbox gutter / zoom-out. Keep tx so
+  // zoom-toward-cursor on that leftover axis is not rewritten to center.
+  // Equal or overflow: keep the axis covering the slot (ty=0 when it fills).
+  if (scaledSize < slotSize - 0.5) {
+    return translate
   }
   const min = slotSize - scaledSize
   return Math.min(0, Math.max(min, translate))
 }
 
+function fitsSlot(slot: ViewSize, canvas: ViewSize, scale: number): boolean {
+  return (
+    canvas.width * scale <= slot.width + 0.5 &&
+    canvas.height * scale <= slot.height + 0.5
+  )
+}
+
 /**
- * Coarse-pointer fit lock: never shrink below 1x, and keep a zoomed canvas
- * covering the slot. Inverse-scale holds ticks and markers at screen size,
- * so pinch-out below fit would explode those labels over a shrinking grid.
+ * Coarse-pointer fit lock: never shrink below 1x, and re-center only while
+ * the canvas still fits the slot. Inverse-scale holds ticks and markers at
+ * screen size, so pinch-out below fit would explode those labels over a
+ * shrinking grid.
  *
- * Gated on the pointer, not on whether the canvas fills the slot. A mouse
- * still needs Figma-style zoom-out and drag-pan when the plot happens to
- * be square (narrow window, or a square desktop panel). Treating a filled
- * slot as iPhone also matched those mouse layouts and killed desktop zoom.
+ * Overflow clamp is pointer-agnostic: a mouse must not pan a zoomed grid
+ * off-screen, and a letterboxed leftover axis must not be force-centered
+ * (that rewrote zoom-toward-cursor). Gated min-scale stays on the pointer,
+ * not on whether the canvas fills the slot. A mouse still needs Figma-style
+ * zoom-out when the plot happens to be square.
  */
 export function clampToSlot(
   state: ZoomState,
@@ -119,14 +142,16 @@ export function clampToSlot(
   if (slot.width <= 0 || slot.height <= 0 || canvas.width <= 0 || canvas.height <= 0) {
     return state
   }
-  if (!lockFit) {
-    return state
+  const scale = lockFit
+    ? Math.min(MAX_SCALE, Math.max(INITIAL_SCALE, state.scale))
+    : clampScale(state.scale)
+  if (lockFit && fitsSlot(slot, canvas, scale)) {
+    return centeredTransform(slot, canvas, scale)
   }
-  const scale = Math.min(MAX_SCALE, Math.max(INITIAL_SCALE, state.scale))
   return {
     scale,
-    tx: clampAxis(state.tx, slot.width, canvas.width * scale),
-    ty: clampAxis(state.ty, slot.height, canvas.height * scale),
+    tx: clampOverflow(state.tx, slot.width, canvas.width * scale),
+    ty: clampOverflow(state.ty, slot.height, canvas.height * scale),
   }
 }
 
