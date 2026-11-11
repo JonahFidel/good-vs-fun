@@ -153,7 +153,16 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const gestureStartRef = useRef<GestureStart | null>(null)
     const gestureMovedRef = useRef(false)
     const pinchOccurredRef = useRef(false)
-    const lastTapRef = useRef<{ t: number; x: number; y: number } | null>(null)
+    const lastTapRef = useRef<{
+      t: number
+      x: number
+      y: number
+      // Isolated overlay marker from the first tap. The painted box is
+      // only 11px, so iPhone jitter on the second tap often misses it
+      // and empty-space double-tap at 2.2x would reset to fit instead
+      // of finishing the 3.2x overlay readout.
+      ghost: HTMLElement | null
+    } | null>(null)
     const emptyTapTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(
       null,
     )
@@ -435,7 +444,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // markers below that still zoom in: names wait until 3.2x, so a
     // 2.2x double-tap on an isolated purple/teal dot finishes the
     // overlay readout instead of staying on primary-only titles or
-    // resetting to fit. Overflowed
+    // resetting to fit. That first tap is an 11px box; the second tap
+    // is allowed 28px of jitter, so the follow-up often misses the
+    // marker and would empty-space reset to fit at 2.2x unless the
+    // first overlay contact is kept as the zoom target. Overflowed
     // scales unlock pan, so touch pan slop is 20px (not the 8px mouse
     // value) or iPhone tap jitter cancels that double-tap the same way
     // empty-space jitter did at fit before movement tracking was skipped
@@ -1003,7 +1015,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // toggle back to the locked 0-10 square. Below 3.2x the overlay
         // name is still hidden, so double-tap zooms in to that readout
         // toward the marker - including from 2.2x, where primary titles
-        // are on but compare is still color-dots.
+        // are on but compare is still color-dots. The second tap of
+        // that gesture is allowed 28px of jitter off an 11px box, so
+        // keep the first overlay marker as the zoom target or 2.2x
+        // empty-space double-tap resets to fit.
         const labelMovie = moviePointAtVisibleLabel(
           capturedSlot,
           clientX,
@@ -1026,6 +1041,41 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           clientX,
           clientY,
         )
+        const now = performance.now()
+        const last = lastTapRef.current
+        const completing =
+          last != null &&
+          now - last.t <= DOUBLE_TAP_MS &&
+          Math.hypot(clientX - last.x, clientY - last.y) <= DOUBLE_TAP_PX
+        // First tap stored the 11px overlay box. The second tap is allowed
+        // 28px of jitter, which usually misses that box, so empty-space
+        // double-tap at 2.2x would call doubleTapTransform at already-detail
+        // scale and reset to fit. Finish the overlay zoom-in from that
+        // first marker, including when this tap landed on a nearby primary
+        // title (read-not-zoom-out would otherwise cancel it).
+        const storedGhost =
+          last?.ghost != null && last.ghost.isConnected ? last.ghost : null
+        const overlayForZoom = storedGhost ?? ghostPoint
+        // A fit-zoom tap on the selected 32cqw title still zooms that
+        // primary movie. Overlay dots can sit under that pill, and
+        // treating them as the double-tap origin would steal 2.2x.
+        const primaryTitleZoomIn = Boolean(labelMovie) && !labelsOn
+        if (
+          completing &&
+          overlayForZoom &&
+          canvas &&
+          !ghostLabelsOn &&
+          !primaryTitleZoomIn
+        ) {
+          cancelEmptyTap()
+          lastTapRef.current = null
+          const r = overlayForZoom.getBoundingClientRect()
+          applyDoubleTap(
+            slotPoint(r.left + r.width / 2, r.top + r.height / 2),
+            ghostLabelsVisibleScale(canvas.offsetWidth),
+          )
+          return true
+        }
         if (
           (ghostLabelsOn && (hitVisibleLabel || ghostPoint)) ||
           (labelsOn && hitVisibleLabel)
@@ -1034,30 +1084,23 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           lastTapRef.current = null
           return false
         }
-        const now = performance.now()
-        const last = lastTapRef.current
-        if (
-          last &&
-          now - last.t <= DOUBLE_TAP_MS &&
-          Math.hypot(clientX - last.x, clientY - last.y) <= DOUBLE_TAP_PX
-        ) {
+        if (completing) {
           cancelEmptyTap()
           lastTapRef.current = null
           if (labelMovie) {
             const r = labelMovie.getBoundingClientRect()
             applyDoubleTap(slotPoint(r.left + r.width / 2, r.top + r.height / 2))
-          } else if (ghostPoint && canvas) {
-            const r = ghostPoint.getBoundingClientRect()
-            applyDoubleTap(
-              slotPoint(r.left + r.width / 2, r.top + r.height / 2),
-              ghostLabelsVisibleScale(canvas.offsetWidth),
-            )
           } else {
             applyDoubleTap(slotPoint(clientX, clientY))
           }
           return true
         }
-        lastTapRef.current = { t: now, x: clientX, y: clientY }
+        lastTapRef.current = {
+          t: now,
+          x: clientX,
+          y: clientY,
+          ghost: primaryTitleZoomIn ? null : ghostPoint,
+        }
         // Wrapper pointerdown would deselect on the first finger of a
         // pinch, pan, or double-tap, hiding the only fit-zoom title.
         // Wait out the double-tap window so a confirmed empty tap is
@@ -1066,8 +1109,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // follow-up can double-tap, but must not deselect. A tap on
         // the selected fit-zoom pill, a compare title, or an overlay
         // marker is also not empty space. Below 3.2x, overlay-marker
-        // taps still record lastTap so double-tap can zoom in to the
-        // ghost-label view; at 3.2x the marker is read-not-zoom-out.
+        // taps still record lastTap (and the marker itself) so the
+        // jittered second tap can zoom in to the ghost-label view; at
+        // 3.2x the marker is read-not-zoom-out.
         if (!caughtMotionRef.current && !labelMovie && !ghostPoint) {
           scheduleEmptyTap(now)
         }

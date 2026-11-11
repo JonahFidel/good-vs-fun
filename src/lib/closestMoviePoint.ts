@@ -173,7 +173,10 @@ export function pointerHitsVisibleMovieLabel(
  * primary 44px ring still loses to marker-first select/cycle.
  *
  * Below 3.2x the overlay name is still hidden, so callers zoom toward
- * this marker's center (not the tap) until ghost titles appear.
+ * this marker's center (not the tap) until ghost titles appear. The
+ * box is only 11px; iPhone double-tap jitter often misses it on the
+ * second tap, so PlotGridZoom keeps this element from the first tap
+ * instead of expanding the hit ring.
  */
 export function ghostPointAtMarker(
   root: ParentNode,
