@@ -458,6 +458,18 @@
     flex: 0 0 auto;
     overflow: visible;
     text-overflow: unset;
+    /*
+      The summary is 0.68rem uppercase for Add/Compare labels. F/G is the
+      only default-zoom score readout after the canvas dropped Good/Fun,
+      so it needs the same 0.8rem as the title beside it, not that chrome
+      size. tabular-nums keeps 9.55 / 10 from shifting the title as you
+      drag the Selected sliders. line-height 1.2 stays inside the 44px bar.
+    */
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    color: #1e3a8a;
   }
 
   .deck-sidebar-collapse-summary::after {
