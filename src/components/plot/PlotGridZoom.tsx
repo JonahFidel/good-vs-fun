@@ -65,6 +65,16 @@ const INERTIA_SAMPLE_MAX_DT_MS = 64
 const INERTIA_MIN_VELOCITY = 0.05
 /** Exponential friction time constant; ~260ms feels like Maps, not ice. */
 const INERTIA_FRICTION_MS = 260
+/** Ease-out duration for one-handed double-tap zoom in/out. */
+const DOUBLE_TAP_ANIM_MS = 280
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t
+}
+
+function easeOutCubic(t: number) {
+  return 1 - (1 - t) ** 3
+}
 
 function isCoarsePointer() {
   return window.matchMedia(COARSE_POINTER_QUERY).matches
@@ -142,6 +152,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     )
     const panVelocityRef = useRef({ vx: 0, vy: 0 })
     const inertiaRafRef = useRef<number | null>(null)
+    const zoomAnimRafRef = useRef<number | null>(null)
 
     useImperativeHandle(forwardedRef, () => gridRef.current as HTMLDivElement)
 
@@ -149,11 +160,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       onEmptyTapRef.current = onEmptyTap
     }, [onEmptyTap])
 
-    function applyTransform() {
+    function applyTransform(opts?: { skipClamp?: boolean }) {
       const canvas = canvasRef.current
       const slot = slotRef.current
       if (!canvas) return
-      if (slot) {
+      if (slot && !opts?.skipClamp) {
         // lockFit matches the coarse-pointer inverse-scale CSS: iPhone
         // pinch stays at or above the readable 1x grid and covering-clamps
         // axes that already filled at 1x. iPad landscape is also coarse
@@ -218,6 +229,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
     }
 
+    function stopZoomAnimation() {
+      if (zoomAnimRafRef.current != null) {
+        cancelAnimationFrame(zoomAnimRafRef.current)
+        zoomAnimRafRef.current = null
+      }
+    }
+
     function centerIfPristine() {
       const slot = slotRef.current
       const canvas = canvasRef.current
@@ -267,6 +285,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       function applyWheelZoom(clientX: number, clientY: number, factor: number) {
         stopInertia()
+        stopZoomAnimation()
         const rect = capturedSlot.getBoundingClientRect()
         stateRef.current = zoomTowardPoint(
           stateRef.current,
@@ -341,6 +360,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       return () => {
         cancelPendingShadowWheel()
         stopInertia()
+        stopZoomAnimation()
         wheelRoot.removeEventListener('wheel', onWheel)
       }
     }, [])
@@ -361,7 +381,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // areas would otherwise eat most of a zoomed one-finger pan. A flicked
     // one-finger pan coasts with friction after lift so the zoomed grid
     // does not stop dead; fit zoom never pans, so the default 0-10 square
-    // stays locked. Mouse pan, like wheel and Touch Events, sits on the
+    // stays locked. Double-tap eases to 2.2x or back to fit instead of
+    // jumping, matching that coast. Mouse pan, like wheel and Touch Events, sits on the
     // plot card so a drag that starts on a Fun/Good axis still pans the
     // zoomed grid. Safari GestureEvents listen on window capture because
     // WebKit often targets document. Undo/Redo overlay clicks must not
@@ -376,6 +397,48 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       function slotPoint(clientX: number, clientY: number): PointerPos {
         const rect = capturedSlot.getBoundingClientRect()
         return { x: clientX - rect.left, y: clientY - rect.top }
+      }
+
+      function stopTransientMotion() {
+        stopInertia()
+        stopZoomAnimation()
+      }
+
+      function animateTo(next: ZoomState, onDone?: () => void) {
+        stopTransientMotion()
+        const from = { ...stateRef.current }
+        if (
+          Math.abs(from.scale - next.scale) < 0.01 &&
+          Math.abs(from.tx - next.tx) < 0.5 &&
+          Math.abs(from.ty - next.ty) < 0.5
+        ) {
+          stateRef.current = next
+          applyTransform()
+          onDone?.()
+          return
+        }
+        const startedAt = performance.now()
+        const tick = (now: number) => {
+          zoomAnimRafRef.current = null
+          const t = Math.min(1, (now - startedAt) / DOUBLE_TAP_ANIM_MS)
+          const e = easeOutCubic(t)
+          stateRef.current = {
+            scale: lerp(from.scale, next.scale, e),
+            tx: lerp(from.tx, next.tx, e),
+            ty: lerp(from.ty, next.ty, e),
+          }
+          // Skip clamp while interpolating so lockFit recenter cannot snap
+          // the last frames of zoom-out to center before the ease finishes.
+          applyTransform({ skipClamp: t < 1 })
+          if (t < 1) {
+            zoomAnimRafRef.current = requestAnimationFrame(tick)
+            return
+          }
+          stateRef.current = next
+          applyTransform()
+          onDone?.()
+        }
+        zoomAnimRafRef.current = requestAnimationFrame(tick)
       }
 
       function resetPanVelocity() {
@@ -502,7 +565,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       function beginPinchFromPoints(a: PointerPos, b: PointerPos) {
-        stopInertia()
+        stopTransientMotion()
         resetPanVelocity()
         panRef.current = null
         setPanCursor(false)
@@ -557,7 +620,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         ) {
           return
         }
-        stopInertia()
+        stopTransientMotion()
         resetPanVelocity()
         panRef.current = {
           pointerId: id,
@@ -642,9 +705,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           fit,
           labelsVisibleScale(canvas.offsetWidth),
         )
-        stateRef.current = next
-        userTransformedRef.current = !isNearFit(next, fit)
-        applyTransform()
+        // Keep userTransformed true during the ease so a URL-bar resize
+        // cannot recenter a zoom-out mid-flight. Restore fit's pristine
+        // flag only after the animation lands on the readable square.
+        userTransformedRef.current = true
+        animateTo(next, () => {
+          userTransformedRef.current = !isNearFit(next, fit)
+        })
       }
 
       function maybeDoubleTap(clientX: number, clientY: number) {
@@ -694,7 +761,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       function onPointerDown(e: PointerEvent) {
         if (e.pointerType === 'touch') return
         if (e.pointerType === 'mouse' && e.button !== 0) return
-        stopInertia()
+        stopTransientMotion()
         const target = e.target as Element | null
         // Plot-card pan would steal Undo/Redo (and any other control on the
         // wrapper). Fun/Good axis labels are not controls; they should pan.
@@ -795,7 +862,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
         if (fingers.length !== 1) return
         const touch = fingers[0]
-        stopInertia()
+        stopTransientMotion()
         pinchOccurredRef.current = false
         // A follow-up finger may be the second half of a double-tap or a
         // pan. Cancel the pending empty-tap deselect without clearing
@@ -876,7 +943,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       function onTouchCancel() {
         cancelEmptyTap()
         lastTapRef.current = null
-        stopInertia()
+        stopTransientMotion()
         resetPanVelocity()
         endTouchGesture()
       }
@@ -923,7 +990,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         event.preventDefault()
         if (pinchRef.current || isCoarsePointer()) return
         if (!webkitGestureOnPlot(event)) return
-        stopInertia()
+        stopTransientMotion()
         const gesture = event as WebKitGestureEvent
         cancelPendingShadowWheel()
         webkitGestureActiveRef.current = true
@@ -983,7 +1050,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       return () => {
         cancelEmptyTap()
         cancelPendingShadowWheel()
-        stopInertia()
+        stopTransientMotion()
         gestureRoot.removeEventListener('pointerdown', onPointerDown, { capture: true })
         gestureRoot.removeEventListener('pointermove', onPointerMove)
         gestureRoot.removeEventListener('pointerup', onPointerUp)
