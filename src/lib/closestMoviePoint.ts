@@ -162,28 +162,39 @@ export function pointerHitsVisibleMovieLabel(
 }
 
 /**
- * True when a screen-space point lands on a compare overlay marker.
+ * Compare overlay marker whose painted 11px/7px box contains the pointer.
  * Ghosts are pointer-events: none, so a tap on that colored dot would
  * otherwise count as empty grid (fit-zoom deselect, or zoom-out once
- * titles are on at 2.2x). Use the painted 11px/7px box, not the 44px
+ * overlay names are on at 3.2x). Use the painted box, not the 44px
  * primary ring: expanding every overlay movie to 22px would eat the
  * empty space one-handed double-tap zoom needs on a 40-film compare.
  *
  * Isolated overlay movies are the hole. A ghost sitting inside a
  * primary 44px ring still loses to marker-first select/cycle.
+ *
+ * Below 3.2x the overlay name is still hidden, so callers zoom toward
+ * this marker's center (not the tap) until ghost titles appear.
  */
+export function ghostPointAtMarker(
+  root: ParentNode,
+  clientX: number,
+  clientY: number,
+): HTMLElement | null {
+  for (const point of root.querySelectorAll('.ghost-point')) {
+    if (!(point instanceof HTMLElement)) continue
+    if (pointInRect(point.getBoundingClientRect(), clientX, clientY)) {
+      return point
+    }
+  }
+  return null
+}
+
 export function pointerHitsGhostMarker(
   root: ParentNode,
   clientX: number,
   clientY: number,
 ): boolean {
-  for (const point of root.querySelectorAll('.ghost-point')) {
-    if (!(point instanceof HTMLElement)) continue
-    if (pointInRect(point.getBoundingClientRect(), clientX, clientY)) {
-      return true
-    }
-  }
-  return false
+  return ghostPointAtMarker(root, clientX, clientY) != null
 }
 
 function movieIdsInPoint(point: Element): string[] {

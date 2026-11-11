@@ -8,8 +8,8 @@ import {
 import { DRAG_HOLD_MS } from '../../hooks/plot/useHoldToDrag'
 import {
   MOVIE_HIT_RADIUS_PX,
+  ghostPointAtMarker,
   moviePointAtVisibleLabel,
-  pointerHitsGhostMarker,
   pointerHitsVisibleMovieLabel,
 } from '../../lib/closestMoviePoint'
 import { scoringRegionScreenRect } from '../../lib/gridCanvas'
@@ -431,7 +431,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // so zoom-toward-tap can throw the movie off a filled iPhone square.
     // Marker rings still select/cycle instead of zooming. Compare overlay
     // names at 3.2x are the same read-not-zoom-out gesture; they have no
-    // movie id so the primary-only hit test cannot see them. Overflowed
+    // movie id so the primary-only hit test cannot see them. Overlay
+    // markers below that still zoom in: names wait until 3.2x, so a
+    // 2.2x double-tap on an isolated purple/teal dot finishes the
+    // overlay readout instead of staying on primary-only titles or
+    // resetting to fit. Overflowed
     // scales unlock pan, so touch pan slop is 20px (not the 8px mouse
     // value) or iPhone tap jitter cancels that double-tap the same way
     // empty-space jitter did at fit before movement tracking was skipped
@@ -866,7 +870,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (catchingZoom) commitZoomInIfCaught()
       }
 
-      function applyDoubleTap(point: PointerPos) {
+      function applyDoubleTap(point: PointerPos, detailScale?: number) {
         const fit = fitTransform()
         const canvas = canvasRef.current
         if (!fit || !canvas) return
@@ -875,11 +879,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // needs closer to 2.9x or titles overlap 1-unit neighbors.
         // Sub-detail leftover pinches (1.2-2.1x) still zoom in: titles
         // are hidden there, so reset-to-fit would undo the closer look.
+        // Overlay-marker taps pass ghost-label scale (~3.2x) so one
+        // double-tap on a compare dot reaches that movie's name.
         const next = doubleTapTransform(
           stateRef.current,
           point,
           fit,
-          labelsVisibleScale(canvas.offsetWidth),
+          detailScale ?? labelsVisibleScale(canvas.offsetWidth),
         )
         // Keep userTransformed true during the ease so a URL-bar resize
         // cannot recenter a zoom-out mid-flight. Restore fit's pristine
@@ -991,17 +997,19 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // Compare overlay names wait until 3.2x and have no movie id, so
         // the primary-only hit test cannot see them; a painted ghost
         // pill is still a name you pinched to read, not empty grid.
-        // Overlay markers are the same once titles are on: ghosts are
-        // pointer-events none and excluded from the 44px select ring,
-        // so an isolated purple/teal dot at 2.2x would otherwise
-        // toggle back to the locked 0-10 square. Fit-zoom and leftover
-        // 1.2-2.1x still zoom in toward that overlay movie.
+        // Overlay markers are the same once those names are on: ghosts
+        // are pointer-events none and excluded from the 44px select
+        // ring, so an isolated purple/teal dot at 3.2x would otherwise
+        // toggle back to the locked 0-10 square. Below 3.2x the overlay
+        // name is still hidden, so double-tap zooms in to that readout
+        // toward the marker - including from 2.2x, where primary titles
+        // are on but compare is still color-dots.
         const labelMovie = moviePointAtVisibleLabel(
           capturedSlot,
           clientX,
           clientY,
         )
-        const hitGhostMarker = pointerHitsGhostMarker(
+        const ghostPoint = ghostPointAtMarker(
           capturedSlot,
           clientX,
           clientY,
@@ -1010,10 +1018,17 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const labelsOn =
           canvas != null &&
           stateRef.current.scale >= labelsVisibleScale(canvas.offsetWidth)
+        const ghostLabelsOn =
+          canvas != null &&
+          stateRef.current.scale >= ghostLabelsVisibleScale(canvas.offsetWidth)
+        const hitVisibleLabel = pointerHitsVisibleMovieLabel(
+          capturedSlot,
+          clientX,
+          clientY,
+        )
         if (
-          labelsOn &&
-          (pointerHitsVisibleMovieLabel(capturedSlot, clientX, clientY) ||
-            hitGhostMarker)
+          (ghostLabelsOn && (hitVisibleLabel || ghostPoint)) ||
+          (labelsOn && hitVisibleLabel)
         ) {
           cancelEmptyTap()
           lastTapRef.current = null
@@ -1031,6 +1046,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           if (labelMovie) {
             const r = labelMovie.getBoundingClientRect()
             applyDoubleTap(slotPoint(r.left + r.width / 2, r.top + r.height / 2))
+          } else if (ghostPoint && canvas) {
+            const r = ghostPoint.getBoundingClientRect()
+            applyDoubleTap(
+              slotPoint(r.left + r.width / 2, r.top + r.height / 2),
+              ghostLabelsVisibleScale(canvas.offsetWidth),
+            )
           } else {
             applyDoubleTap(slotPoint(clientX, clientY))
           }
@@ -1044,10 +1065,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // caught inertia or a zoom ease still records lastTap so a
         // follow-up can double-tap, but must not deselect. A tap on
         // the selected fit-zoom pill, a compare title, or an overlay
-        // marker is also not empty space. Fit-zoom and leftover
-        // 1.2-2.1x still record lastTap so double-tap can zoom in
-        // toward that ghost; at 2.2x the marker is read-not-zoom-out.
-        if (!caughtMotionRef.current && !labelMovie && !hitGhostMarker) {
+        // marker is also not empty space. Below 3.2x, overlay-marker
+        // taps still record lastTap so double-tap can zoom in to the
+        // ghost-label view; at 3.2x the marker is read-not-zoom-out.
+        if (!caughtMotionRef.current && !labelMovie && !ghostPoint) {
           scheduleEmptyTap(now)
         }
         return false
