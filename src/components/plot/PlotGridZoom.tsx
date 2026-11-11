@@ -173,8 +173,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // axes that already filled at 1x. iPad landscape is also coarse
         // but letterboxed, so leftover axes keep-visible instead of
         // left-aligning 2x-toward-Fun=0. A mouse always keep-visible.
-        // rubberBand lets a live pinch overshoot 1x / 8x with resistance;
-        // clamp must not re-floor that scale or the overshoot never paints.
+        // rubberBand lets a live pinch overshoot 1x / 8x and a zoomed pan
+        // pull past the covering edge; clamp must not re-floor scale or
+        // covering-pin pan or the overshoot never paints.
         stateRef.current = clampToSlot(
           stateRef.current,
           { width: slot.offsetWidth, height: slot.offsetHeight },
@@ -388,8 +389,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // one-finger pan coasts with friction after lift so the zoomed grid
     // does not stop dead; fit zoom never pans, so the default 0-10 square
     // stays locked. Double-tap eases to 2.2x or back to fit instead of
-    // jumping, matching that coast. Pinch-out past 1x rubber-bands then
-    // eases back to the readable square, so getting home is not a wall.
+    // jumping, matching that coast. Pinch-out past 1x and zoomed pan past
+    // the covering edge rubber-band, then ease back on lift, so getting
+    // home or hitting an edge is not a wall.
     // Mouse pan, like wheel and Touch Events, sits on the
     // plot card so a drag that starts on a Fun/Good axis still pans the
     // zoomed grid. Safari GestureEvents listen on window capture because
@@ -694,7 +696,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         stateRef.current.tx = panRef.current.tx + (clientX - panRef.current.x)
         stateRef.current.ty = panRef.current.ty + (clientY - panRef.current.y)
         userTransformedRef.current = true
-        applyTransform()
+        applyTransform({ rubberBand: isCoarsePointer() })
       }
 
       function fitTransform(): ZoomState | null {
@@ -764,6 +766,28 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         animateTo(fit, () => {
           userTransformedRef.current = false
         })
+        return true
+      }
+
+      // Zoomed covering pan rubber-bands past the edge while the finger
+      // is down; on lift, ease back onto the filled square. Skip this
+      // while a 2→1 pinch handoff still has a finger down so the remaining
+      // contact can keep the overshoot instead of fighting the ease.
+      function settlePanIfNeeded() {
+        if (!isCoarsePointer()) return false
+        const sizes = viewSizes()
+        if (!sizes) return false
+        const current = stateRef.current
+        const clamped = clampToSlot(current, sizes.slot, sizes.canvas, true)
+        if (
+          Math.abs(clamped.tx - current.tx) < 0.5 &&
+          Math.abs(clamped.ty - current.ty) < 0.5
+        ) {
+          return false
+        }
+        resetPanVelocity()
+        userTransformedRef.current = true
+        animateTo(clamped)
         return true
       }
 
@@ -982,6 +1006,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (ended) {
           if (maybeDoubleTap(ended.clientX, ended.clientY)) {
             e.preventDefault()
+            // The zoom ease is already in flight. Do not settle pan or
+            // start inertia; those would cancel animateTo.
+            endTouchGesture()
+            resetPanVelocity()
+            return
           }
         } else {
           lastTapRef.current = null
@@ -995,6 +1024,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           !pinchRef.current
         endTouchGesture()
         if (wasPinch && settlePinchIfNeeded()) return
+        if (settlePanIfNeeded()) return
         if (coast) startInertia()
         else resetPanVelocity()
       }

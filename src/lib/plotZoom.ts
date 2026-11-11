@@ -57,11 +57,21 @@ const FIT_PAN_EPSILON_PX = 8
  */
 export const PINCH_SETTLE_SCALE_EPSILON = 0.15
 export const PINCH_SETTLE_PAN_EPSILON_PX = 24
-/** How hard pinch resists past min/max. 0.55 matches iOS rubber-band. */
+/** How hard pinch/pan resist past min/max. 0.55 matches iOS rubber-band. */
 const RUBBER_BAND_CONSTANT = 0.55
 
 export function clampScale(scale: number): number {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale))
+}
+
+/**
+ * Compress an overshoot so pull-past-the-edge resists like iOS.
+ * `dimension` 1 is scale (unitless); pan uses the slot size in px so a
+ * 40px pull does not flatten the way a 40x scale overshoot would.
+ */
+function rubberBandOffset(overshoot: number, dimension: number): number {
+  const dim = Math.max(1, dimension)
+  return (overshoot * RUBBER_BAND_CONSTANT * dim) / (dim + overshoot)
 }
 
 /**
@@ -71,14 +81,28 @@ export function clampScale(scale: number): number {
  */
 export function rubberBandScale(scale: number, min: number, max: number): number {
   if (scale < min) {
-    const overshoot = min - scale
-    return min - (overshoot * RUBBER_BAND_CONSTANT) / (1 + overshoot)
+    return min - rubberBandOffset(min - scale, 1)
   }
   if (scale > max) {
-    const overshoot = scale - max
-    return max + (overshoot * RUBBER_BAND_CONSTANT) / (1 + overshoot)
+    return max + rubberBandOffset(scale - max, 1)
   }
   return scale
+}
+
+/** Resist past a covering/keep-visible pan edge while a finger is down. */
+export function rubberBandTranslate(
+  translate: number,
+  min: number,
+  max: number,
+  dimension: number,
+): number {
+  if (translate < min) {
+    return min - rubberBandOffset(min - translate, dimension)
+  }
+  if (translate > max) {
+    return max + rubberBandOffset(translate - max, dimension)
+  }
+  return translate
 }
 
 /**
@@ -217,6 +241,7 @@ function clampAxis(
   scaledSize: number,
   unscaledSize: number,
   lockFit: boolean,
+  rubberBand = false,
 ): number {
   const overflowing = scaledSize >= slotSize - 0.5
   // Covering is only safe on an axis that already filled at 1x (iPhone
@@ -224,6 +249,9 @@ function clampAxis(
   // is a gutter: covering at overflow pins 2x-toward-Fun=0 from tx≈174
   // to 0, the same left-align jump as force-centering, just later.
   if (overflowing && lockFit && fillsAxisAtFit(slotSize, unscaledSize)) {
+    if (rubberBand) {
+      return rubberBandTranslate(translate, slotSize - scaledSize, 0, slotSize)
+    }
     return clampCovering(translate, slotSize, scaledSize)
   }
   return clampKeepVisible(translate, slotSize, scaledSize)
@@ -242,13 +270,14 @@ function fitsSlot(slot: ViewSize, canvas: ViewSize, scale: number): boolean {
  * holds ticks and markers at screen size, so a settled pinch-out below
  * fit would explode those labels over a shrinking grid.
  *
- * Live pinch can pass rubberBand to paint a resisted overshoot; clamp
- * must not re-floor that scale. Zoomed iPhone axes use covering clamp
- * so the square stays filled. Covering follows unscaled fill, not
- * lockFit alone: iPad landscape is coarse (lockFit) but letterboxed,
- * so leftover axes keep-visible even after they overflow. Mouse always
- * keep-visible. Gated min-scale stays on the pointer, not on whether
- * the canvas fills the slot.
+ * Live pinch/pan can pass rubberBand to paint a resisted overshoot;
+ * clamp must not re-floor that scale or covering-pin pan. Zoomed
+ * iPhone axes use covering clamp so the square stays filled.
+ * Covering follows unscaled fill, not lockFit alone: iPad landscape
+ * is coarse (lockFit) but letterboxed, so leftover axes keep-visible
+ * even after they overflow. Mouse always keep-visible. Gated
+ * min-scale stays on the pointer, not on whether the canvas fills
+ * the slot.
  */
 export function clampToSlot(
   state: ZoomState,
@@ -261,13 +290,21 @@ export function clampToSlot(
     return state
   }
   // Rubber-band pinch already compressed scale; do not re-floor it or
-  // the overshoot never paints. Pan still covering/keep-visible clamps.
+  // the overshoot never paints. Rubber-band pan also has to skip the
+  // covering pin or pull-past-the-edge never paints.
   const scale = rubberBand
     ? state.scale
     : lockFit
       ? Math.min(MAX_SCALE, Math.max(INITIAL_SCALE, state.scale))
       : clampScale(state.scale)
-  if (lockFit && fitsSlot(slot, canvas, scale)) {
+  // Recenter a fitted coarse view, but not a live pinch-out: fitsSlot
+  // is true below 1x, and recentering would shrink from the slot center
+  // instead of the pinch midpoint.
+  if (
+    lockFit &&
+    fitsSlot(slot, canvas, scale) &&
+    !(rubberBand && scale < INITIAL_SCALE)
+  ) {
     return centeredTransform(slot, canvas, scale)
   }
   return {
@@ -278,6 +315,7 @@ export function clampToSlot(
       canvas.width * scale,
       canvas.width,
       lockFit,
+      rubberBand,
     ),
     ty: clampAxis(
       state.ty,
@@ -285,6 +323,7 @@ export function clampToSlot(
       canvas.height * scale,
       canvas.height,
       lockFit,
+      rubberBand,
     ),
   }
 }
