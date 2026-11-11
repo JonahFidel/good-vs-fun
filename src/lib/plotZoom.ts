@@ -93,25 +93,55 @@ export function centeredTransform(
 }
 
 /**
- * Keep a zoomed axis covering the slot. An undersized axis (letterbox
- * gutter or zoom-out) must keep its translation: force-centering it made
- * 1.2x wheel-zoom toward Fun=0 jump on desktop, and the same jump hits
- * iPad landscape where lockFit is on but the canvas is still letterboxed
- * in the desktop frame.
+ * Maps-style covering clamp: a zoomed axis must keep filling the slot.
+ * iPhone pinch uses this so the fitted square you zoomed into cannot be
+ * dragged away to empty space.
  */
-function clampOverflow(
+function clampCovering(
   translate: number,
   slotSize: number,
   scaledSize: number,
 ): number {
-  // Strictly undersized: letterbox gutter / zoom-out. Keep tx so
-  // zoom-toward-cursor on that leftover axis is not rewritten to center.
-  // Equal or overflow: keep the axis covering the slot (ty=0 when it fills).
-  if (scaledSize < slotSize - 0.5) {
-    return translate
-  }
   const min = slotSize - scaledSize
   return Math.min(0, Math.max(min, translate))
+}
+
+/**
+ * Keep some of the canvas in the slot without forcing it to cover.
+ *
+ * Covering clamp rewrites zoom-toward-cursor once an axis overflows:
+ * 2x toward Fun=0 wants tx≈174 on a 626px canvas in an 800px slot, but
+ * covering pins tx to 0 (left-align). That is the same jump as
+ * force-centering leftover axes, just delayed until the fill threshold,
+ * and it hits the Fun=0 / Good=0 edges this grid is for.
+ *
+ * Original desktop zoom had no clamp. This floor only stops pan from
+ * throwing the grid completely off-screen.
+ */
+const MIN_VISIBLE_PX = 48
+
+function clampKeepVisible(
+  translate: number,
+  slotSize: number,
+  scaledSize: number,
+): number {
+  const visible = Math.min(MIN_VISIBLE_PX, scaledSize, slotSize)
+  const min = visible - scaledSize
+  const max = slotSize - visible
+  return Math.min(max, Math.max(min, translate))
+}
+
+function clampAxis(
+  translate: number,
+  slotSize: number,
+  scaledSize: number,
+  lockFit: boolean,
+): number {
+  const overflowing = scaledSize >= slotSize - 0.5
+  if (overflowing && lockFit) {
+    return clampCovering(translate, slotSize, scaledSize)
+  }
+  return clampKeepVisible(translate, slotSize, scaledSize)
 }
 
 function fitsSlot(slot: ViewSize, canvas: ViewSize, scale: number): boolean {
@@ -127,11 +157,11 @@ function fitsSlot(slot: ViewSize, canvas: ViewSize, scale: number): boolean {
  * screen size, so pinch-out below fit would explode those labels over a
  * shrinking grid.
  *
- * Overflow clamp is pointer-agnostic: a mouse must not pan a zoomed grid
- * off-screen, and a letterboxed leftover axis must not be force-centered
- * (that rewrote zoom-toward-cursor). Gated min-scale stays on the pointer,
- * not on whether the canvas fills the slot. A mouse still needs Figma-style
- * zoom-out when the plot happens to be square.
+ * Zoomed iPhone axes use covering clamp so the square stays filled.
+ * Mouse (and leftover iPad letterbox axes) use keep-visible instead:
+ * covering rewrote 2x-toward-Fun=0 to left-align, and unbounded leftover
+ * pan could throw the grid into the gutter. Gated min-scale stays on the
+ * pointer, not on whether the canvas fills the slot.
  */
 export function clampToSlot(
   state: ZoomState,
@@ -150,8 +180,8 @@ export function clampToSlot(
   }
   return {
     scale,
-    tx: clampOverflow(state.tx, slot.width, canvas.width * scale),
-    ty: clampOverflow(state.ty, slot.height, canvas.height * scale),
+    tx: clampAxis(state.tx, slot.width, canvas.width * scale, lockFit),
+    ty: clampAxis(state.ty, slot.height, canvas.height * scale, lockFit),
   }
 }
 
