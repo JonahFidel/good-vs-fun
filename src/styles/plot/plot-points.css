@@ -91,7 +91,10 @@
 }
 
 /* Count of movies sharing this Fun/Good score. Inverse-scales with the
-   marker on coarse pointers, so it stays readable at iPhone fit zoom. */
+   marker on coarse pointers, so it stays readable at iPhone fit zoom.
+   Default sits up-right of the dot. Near Fun 10 / Good 10 the 1-unit
+   margin on a 10rem-floor landscape square is ~13px, smaller than the
+   chip, so flip toward the scoring region or the namesake corner clips. */
 .movie-point-count {
   position: absolute;
   left: 50%;
@@ -112,6 +115,22 @@
   text-align: center;
   transform: translate(30%, -70%);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.45);
+}
+
+.movie-point--label-south > .movie-point-count {
+  top: auto;
+  bottom: 0;
+  transform: translate(30%, 70%);
+}
+
+.movie-point--count-west > .movie-point-count {
+  left: auto;
+  right: 50%;
+  transform: translate(-30%, -70%);
+}
+
+.movie-point--label-south.movie-point--count-west > .movie-point-count {
+  transform: translate(-30%, 70%);
 }
 
 .movie-label-line--selected .movie-label-title {
