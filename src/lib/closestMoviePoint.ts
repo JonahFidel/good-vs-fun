@@ -91,6 +91,11 @@ function idFromLabelAtPoint(
  * A selected wrapping pill can cover a neighbor's truncated title. Returning
  * the first DOM hit would switch away from the title you are reading; prefer
  * the selected pill when it contains the tap, otherwise the closest title.
+ *
+ * PlotGridZoom keeps this movie-point from the first tap of a fit-zoom
+ * double-tap. The 32cqw wrap can cover an overlay dot, and iPhone jitter
+ * often misses the pill, so the follow-up must still zoom this marker to
+ * 2.2x instead of 3.2x toward the ghost or toward the tap on the wrap.
  */
 export function moviePointAtVisibleLabel(
   root: ParentNode,
