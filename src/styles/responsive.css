@@ -559,6 +559,18 @@
     min-width: 0;
   }
 
+  /*
+    The plot is flex-none above the leftover sidebar, so the iOS keyboard
+    covers that strip. --keyboard-inset padding cannot lift fields above a
+    keyboard taller than the sidebar, and the 12rem plot floor also blocks
+    shrinking enough room. Hide the plot while a text field is focused so
+    Add Movie can use the visual viewport. Range sliders do not open the
+    keyboard and must keep the grid visible for score edits.
+  */
+  .deck-page-layout:has(input:not([type='range']):focus, textarea:focus) .grid-panel {
+    display: none;
+  }
+
   /* Keep labels and ticks readable at the default (fit-to-width) zoom. */
   .grid {
     text-size-adjust: 100%;
