@@ -901,21 +901,20 @@
 
   /*
     Portrait wrapping dumped a half-square title plus Good/Fun over the
-    fitted 0-10 grid you tapped to read. Keep a one-cell width so a tap
-    does not cover ~5 units, but keep the 0.8rem type from the base
-    rule: 0.65rem is smaller than the 0.85rem axis numbers and is hard
-    to read at default zoom. The Selected bar has the full title; this
-    pill is the on-grid readout, so it has to match tick size.
+    fitted 0-10 grid you tapped to read. Match tick size (0.85rem) so the
+    only default-zoom on-canvas name is readable.
 
-    Unselected zoomed pills still used 0.8rem / 7.25rem, so even at
-    2.2x they overlapped 1-unit neighbors. Compact those (and ghosts
-    at 3.2x) only once many titles are on screen.
+    3.75rem is the zoomed one-cell size. At fit zoom other titles are
+    hidden, and 0.85rem in that box shows about four letters ("Kill...").
+    32cqw is ~3.8 score units (7.25rem on a ~370px square, less on a
+    short landscape plot) so the name can be read without the old 50cqw
+    wrap. Compact to 3.75rem only once many titles are on screen.
   */
   .movie-point--selected > .movie-label,
   .movie-point.dragging > .movie-label,
   .movie-point--highlighted > .movie-label {
     font-size: 0.85rem;
-    max-width: 3.75rem;
+    max-width: min(7.25rem, 32cqw);
   }
 
   .grid-zoom-slot--labels .movie-point:not(.ghost-point) > .movie-label,
