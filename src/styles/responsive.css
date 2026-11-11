@@ -392,9 +392,12 @@
     can read a long name. That same summary stayed sticky when open, so
     on the 9rem SE floor (~144px) the extra ~24px plus the open
     border-bottom clipped Fun/Good - the only iPhone way to move a
-    point. Collapse the open summary to a 44px title+chevron; the
-    sliders below already show live Fun/Good. Portrait folds Rename/
-    Delete into that same 44px row so they are not below the fold.
+    point. Collapse the open summary to a 44px title row; the sliders
+    below already show live Fun/Good. Two lines of 0.8rem / 1.25 are
+    32px, so the open title can keep the collapsed wrap inside 44px.
+    Nowrap plus wordy Rename/Delete left ~14 characters on SE, so
+    Pirates of the Caribbean read as "Pirates of th…". Portrait folds
+    compact 44px actions into that row so they are not below the fold.
   */
   .deck-sidebar .movie-selection-panel[open] > .deck-sidebar-collapse-summary {
     position: sticky;
@@ -405,16 +408,6 @@
     min-height: 2.75rem;
     padding: 0 0.65rem;
     align-content: center;
-  }
-
-  .deck-sidebar .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
-    display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    overflow-wrap: normal;
-    -webkit-line-clamp: unset;
-    line-clamp: unset;
   }
 
   .deck-sidebar .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta {
@@ -467,10 +460,12 @@
       Fun/Good, so Rename/Delete sat below the fold. After the list × was
       hidden, that scroll is the only phone remove path. Fold those 44px
       actions into the open summary (F/G is already hidden there) so the
-      editor can rename/delete without scrolling. Landscape leftover is
-      tall, so it keeps the full-width action row under the stacked
-      sliders; both buttons in a 12rem summary would leave about three
-      letters of title.
+      editor can rename/delete without scrolling. Wordy Rename/Delete
+      in that row leave ~14 characters on SE, so keep 44px icon hits
+      (Aa / ×, matching Undo) and 2-line wrap. Landscape leftover is
+      tall, so it keeps the full-width labeled row under the stacked
+      sliders; those same words in a 12rem summary would still clip
+      the title.
     */
     .movie-selection-panel[open] > .movie-selection-bar {
       display: none;
@@ -497,10 +492,19 @@
       grid-row: 1;
     }
 
-    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .movie-selection-actions > .btn-rename-selected,
-    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .movie-selection-actions > .btn-delete-selected {
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .movie-selection-actions--compact > .btn-rename-selected,
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .movie-selection-actions--compact > .btn-delete-selected {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       flex: none;
-      padding: 0.35rem 0.55rem;
+      width: 2.75rem;
+      min-width: 2.75rem;
+      padding: 0;
+      font-size: 0.95rem;
+      line-height: 1;
+      letter-spacing: 0;
+      text-transform: none;
     }
   }
 

@@ -10,37 +10,49 @@ function stopSummaryToggle(event: MouseEvent<HTMLButtonElement>) {
 }
 
 function SelectionActions({
+  compact = false,
   isExampleDeck,
   onRename,
   onDelete,
 }: {
+  compact?: boolean
   isExampleDeck: boolean
   onRename: () => void
   onDelete: () => void
 }) {
   return (
-    <div className="movie-selection-actions">
+    <div
+      className={
+        compact
+          ? 'movie-selection-actions movie-selection-actions--compact'
+          : 'movie-selection-actions'
+      }
+    >
       {!isExampleDeck && (
         <button
           type="button"
           className="btn-rename-selected"
+          title="Rename"
+          aria-label="Rename"
           onClick={(event) => {
             stopSummaryToggle(event)
             onRename()
           }}
         >
-          Rename
+          {compact ? 'Aa' : 'Rename'}
         </button>
       )}
       <button
         type="button"
         className="btn-delete-selected"
+        title="Delete"
+        aria-label="Delete"
         onClick={(event) => {
           stopSummaryToggle(event)
           onDelete()
         }}
       >
-        Delete
+        {compact ? '×' : 'Delete'}
       </button>
     </div>
   )
@@ -68,6 +80,7 @@ export function MovieSelectionPanel({
   const scoreMeta = `F ${formatScore(movie.fun)} · G ${formatScore(movie.good)}`
   const actionButtons = (
     <SelectionActions
+      compact
       isExampleDeck={isExampleDeck}
       onRename={onRename}
       onDelete={onDelete}

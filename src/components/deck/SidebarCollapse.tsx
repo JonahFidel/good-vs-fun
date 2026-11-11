@@ -28,7 +28,14 @@ export function SidebarCollapse({
   }
 
   const preventToggleFromActions = (event: MouseEvent<HTMLElement>) => {
-    if (event.target instanceof Element && event.target.closest('button')) {
+    const target = event.target
+    const element =
+      target instanceof Element
+        ? target
+        : target instanceof Node
+          ? target.parentElement
+          : null
+    if (element?.closest('button')) {
       event.preventDefault()
     }
   }
