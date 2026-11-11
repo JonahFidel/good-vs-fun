@@ -118,6 +118,7 @@ export function GhostPoints({
               'movie-point',
               'ghost-point',
               variantClass,
+              group.items.length > 1 ? 'ghost-point--stacked' : '',
               labelOnLeft ? 'ghost-point--label-start' : '',
               labelBelow ? 'ghost-point--label-south' : '',
               labelAbove ? 'ghost-point--label-north' : '',

@@ -1373,15 +1373,24 @@
   .grid-zoom-slot--ghost-labels .ghost-point > .movie-label {
     opacity: 1;
     pointer-events: none;
-    /*
-      Overlay movies have no Selected bar, so a one-line 3.75rem
-      ellipsis is the only 3.2x readout. Wrap 2 lines in that same
-      one-cell box (the fit-zoom selected trick) so names like
-      Pirates of the Caribbean are identifiable without covering
-      extra Good units. Cap used width: shrink-to-fit plus
-      -webkit-box otherwise reports the unwrapped title and
-      line-clamp never runs.
-    */
+  }
+
+  /*
+    Overlay movies have no Selected bar, so a one-line 3.75rem
+    ellipsis is the only 3.2x readout. Wrap 2 lines in that same
+    one-cell box (the fit-zoom selected trick) so names like
+    Pirates of the Caribbean are identifiable without covering
+    extra Good units. Cap used width: shrink-to-fit plus
+    -webkit-box otherwise reports the unwrapped title and
+    line-clamp never runs.
+
+    Stacked overlays already list every truncated name, the same
+    2.2x primary readout. Wrapping each of those lines too turns
+    a two-film overlay (Code 3 + Kill Bill V2 in the 2026 example)
+    into a four-line pill over the cluster pinch-to-read just
+    uncovered. Keep stacks one-line; wrap only a single overlay.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) > .movie-label {
     white-space: normal;
     width: min(max-content, 3.75rem);
     min-width: 0;
@@ -1393,14 +1402,14 @@
     text-overflow: ellipsis;
   }
 
-  .grid-zoom-slot--ghost-labels .ghost-point :is(.movie-label-line, .movie-label-title) {
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) :is(.movie-label-line, .movie-label-title) {
     white-space: normal;
     overflow-wrap: break-word;
     min-width: 0;
     max-width: 100%;
   }
 
-  .grid-zoom-slot--ghost-labels .ghost-point .movie-label-title {
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) .movie-label-title {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
