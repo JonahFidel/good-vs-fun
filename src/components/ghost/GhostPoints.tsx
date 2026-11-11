@@ -81,7 +81,11 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * Fun-staggers the highest same-side title: 12
  * Years grows toward Fun 10 so it sits above
  * Schindler and Requiem. Overlay flip 7 still
- * leaves Tree of Life left at Good 8.5. Skip
+ * leaves Tree of Life left at Good 8.5. The
+ * leftover pair on that north/Good-10 slot then
+ * takes the unused Fun-plus-Good corner:
+ * Schindler grows toward Fun 10 / Good 0 so it
+ * sits left of 12 Years and above Requiem. Skip
  * coincident north/south so those names do not
  * restack on the primary. Reuse of label-start
  * would also move every left-side overlay.
@@ -1181,8 +1185,9 @@ function funGutterAssignedGoodSide(
  * interior-neighbor passes so Airplane stays opposite
  * Ghostbusters and Furiosa stays opposite John Wick.
  * Drama's Fun 0-1 mesh has no degree-1 end, so leftover
- * Fun-gutter triangles take Fun stagger next.
- * Coincident north/south stay put at class apply.
+ * Fun-gutter triangles take Fun stagger next, then leftover
+ * pairs on that slot take Fun-plus-Good. Coincident
+ * north/south stay put at class apply.
  */
 function funGutterCloseGoodChainHorizontalStagger(
   groups: PositionGroup[],
@@ -1268,7 +1273,8 @@ function funGutterCloseGoodChainHorizontalStagger(
  * 12 Years sits above Schindler and Requiem instead
  * of covering them. Fun 9-10 leftover triangles
  * grow the lowest title toward Fun 0. Schindler vs
- * Requiem still cover on that north/Good-10 slot.
+ * Requiem still cover on that north/Good-10 slot
+ * until leftover pairs take Fun-plus-Good next.
  * Coincident namesake Good 10 already occupy
  * north/south, so hasVerticalSlot skips this on
  * same-position compare; the split helps
@@ -1325,6 +1331,86 @@ function funGutterLeftoverTriangleFunStagger(
     }
   }
   return stagger
+}
+
+/**
+ * Leftover Fun-gutter same-side triangles Fun-stagger
+ * the highest (12 Years Fun 10) but leave the other
+ * two covering on that north/Good-10 slot: Schindler
+ * vs Requiem. A Good-only flip restacks on Manchester
+ * (already Good 0 opposite Room). Move the higher
+ * remaining Fun title into the unused Fun-plus-Good
+ * corner: Schindler grows toward Fun 10 / Good 0 so
+ * it sits left of 12 Years and above Requiem. Fun
+ * 9-10 leftover pairs move the lower remaining title
+ * toward Fun 0 / opposite Good. Overlay flip 7 still
+ * leaves Tree of Life left at Good 8.5, so this pair
+ * is the same leftover as labels-visible. Coincident
+ * namesake Good 10 already occupy north/south, so
+ * hasVerticalSlot skips this on same-position
+ * compare; the split helps non-coincident overlay
+ * clusters.
+ */
+function funGutterLeftoverPairQuadrantStagger(
+  groups: PositionGroup[],
+  claimedGood: Map<string, 'good-10' | 'good-0'>,
+  claimedFun: Map<string, 'fun-10' | 'fun-0'>,
+): {
+  fun: Map<string, 'fun-10' | 'fun-0'>
+  good: Map<string, 'good-10' | 'good-0'>
+} {
+  const fun = new Map<string, 'fun-10' | 'fun-0'>()
+  const good = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isFunGutterUnstacked(group) && !claimedGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    const partners = closeGoodPartners(component)
+    if (
+      component.some(
+        (group) => (partners.get(group.key) ?? []).length === 1,
+      )
+    ) {
+      continue
+    }
+    const bySide = new Map<'left' | 'right', PositionGroup[]>()
+    for (const group of component) {
+      const side = funGutterResolvedGoodSide(group)
+      const list = bySide.get(side)
+      if (list) list.push(group)
+      else bySide.set(side, [group])
+    }
+    for (const [side, list] of bySide) {
+      if (list.length !== INTERIOR_TRIANGLE_SIZE) continue
+      const sidePartners = closeGoodPartners(list)
+      if (
+        list.some(
+          (group) => (sidePartners.get(group.key) ?? []).length !== 2,
+        )
+      ) {
+        continue
+      }
+      const remaining = list.filter((group) => !claimedFun.has(group.key))
+      if (remaining.length !== 2) continue
+      const inNorth = list.every((group) => group.fun <= LABEL_NORTH_FUN)
+      const inSouth = list.every((group) => group.fun >= LABEL_SOUTH_FUN)
+      const oppositeGood: 'good-10' | 'good-0' =
+        side === 'right' ? 'good-0' : 'good-10'
+      if (inNorth) {
+        const higher =
+          remaining[0].fun >= remaining[1].fun ? remaining[0] : remaining[1]
+        fun.set(higher.key, 'fun-10')
+        good.set(higher.key, oppositeGood)
+      } else if (inSouth) {
+        const lower =
+          remaining[0].fun <= remaining[1].fun ? remaining[0] : remaining[1]
+        fun.set(lower.key, 'fun-0')
+        good.set(lower.key, oppositeGood)
+      }
+    }
+  }
+  return { fun, good }
 }
 
 function overlayLabelPlacement({
@@ -1517,24 +1603,32 @@ export function GhostPoints({
     groups,
     new Map([...claimedGood, ...funGutterIsolatedGood]),
   )
+  const funGutterClaimedGood = new Map([
+    ...claimedGood,
+    ...funGutterIsolatedGood,
+    ...funGutterChainGood,
+  ])
   const funGutterLeftoverFun = funGutterLeftoverTriangleFunStagger(
     groups,
-    new Map([
-      ...claimedGood,
-      ...funGutterIsolatedGood,
-      ...funGutterChainGood,
-    ]),
+    funGutterClaimedGood,
+  )
+  const funGutterLeftoverPair = funGutterLeftoverPairQuadrantStagger(
+    groups,
+    funGutterClaimedGood,
+    funGutterLeftoverFun,
   )
   const funStagger = new Map([
     ...interiorFun,
     ...gutterNeighborFun,
     ...funGutterLeftoverFun,
+    ...funGutterLeftoverPair.fun,
   ])
   const goodStagger = new Map([
     ...interiorGood,
     ...funGutterNeighborGood,
     ...funGutterIsolatedGood,
     ...funGutterChainGood,
+    ...funGutterLeftoverPair.good,
   ])
   return (
     <>
@@ -1599,6 +1693,9 @@ export function GhostPoints({
         // leftover peel only needs Top Gun on Good 10.
         // Drama's leftover Fun 0-1 triangle reuses Fun
         // stagger so 12 Years sits above Schindler and
+        // Requiem. Leftover pairs on that north/Good-10
+        // slot reuse Fun-plus-Good so Schindler sits
+        // Fun 10 / Good 0 left of 12 Years and above
         // Requiem. Skip coincident north/south so those
         // names do not restack on the primary that
         // already occupies a slot next to the marker.

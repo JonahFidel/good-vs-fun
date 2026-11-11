@@ -2376,11 +2376,13 @@
     reuse them so Top Gun (gutter-fun-10, Good 10) sits
     right of Die Hard. Overlay flip 7 already puts Kill
     Bill on the right of Die Hard, so the leftover peel
-    does not need a new transform. Leftover Fun-gutter
+    does not need a new transform.     Leftover Fun-gutter
     triangles reuse the gutter-good + gutter-fun +
     stagger-fun combos above so 12 Years (gutter-fun-0,
     Good 10, Fun 10) sits above Schindler and Requiem.
-    Include label-start so an
+    Leftover pairs on that slot reuse the Fun-plus-Good
+    combos below so Schindler (Fun 10 / Good 0) sits
+    left of 12 Years and above Requiem. Include label-start so an
     equally specific gutter-fun + label-start or stagger-good
     + label-start rule does not grow these back onto the
     interior Good side or re-center them. Overlay Fun-gutter
@@ -2415,6 +2417,52 @@
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    gutter-fun + stagger-good is equally specific to
+    stagger-fun + stagger-good and would keep Schindler
+    hanging in the Fun 0 gutter after the leftover pair
+    takes Fun 10 / Good 0. Combine so leftover Fun-gutter
+    pairs keep both offsets: Schindler (gutter-fun-0, Fun
+    10, Good 0) sits left of 12 Years and above Requiem
+    instead of covering Requiem on the north/Good-10 slot.
+    Fun 9-10 leftover pairs reuse the gutter-fun-10 / Fun 0
+    combos. Include label-start so an equally specific
+    later gutter-fun + stagger-good + label-start rule
+    does not grow these back onto the namesake Good
+    side or undo Fun 10. Coincident namesake Good 10
+    already occupy north/south because the opposite
+    side clips, so hasVerticalSlot skips this on
+    same-position compare; the split helps
+    non-coincident overlay clusters.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-fun-10.ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-fun-10.ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-fun-10.ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-fun-10.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-fun-0.ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-fun-0.ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-fun-0.ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-fun-0.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), 0);
   }
 
   /*
