@@ -5,8 +5,9 @@
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  /* Inverse-scale so pinch-zoom spreads points without exploding titles. */
-  transform: translate(-50%, -50%) scale(calc(1 / var(--plot-scale, 1)));
+  /* Desktop wheel-zoom should enlarge titles with the canvas (Figma-style).
+     Mobile re-applies inverse-scale so pinch spreads points without exploding pills. */
+  transform: translate(-50%, -50%);
   transform-origin: center;
   cursor: grab;
   z-index: 1;

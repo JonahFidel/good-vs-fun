@@ -562,6 +562,9 @@
   .movie-point {
     width: 11px;
     height: 11px;
+    /* Keep markers, 44px hit areas, and title pills screen-sized while pinch
+       spreads the 0-10 grid. Desktop omits this so wheel-zoom enlarges titles. */
+    transform: translate(-50%, -50%) scale(calc(1 / var(--plot-scale, 1)));
   }
 
   /* Invisible ~44px tap target around the 11px marker. */
