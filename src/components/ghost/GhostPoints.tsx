@@ -75,7 +75,11 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * next, so the two-partner middle does not block
  * the ends. Overlay flip 7 already puts Kill Bill
  * on the right of Die Hard, so the leftover peel
- * only needs Top Gun on Good 10. Skip coincident
+ * only needs Top Gun on Good 10. Drama's leftover
+ * Fun 0-1 triangle (12 Years / Schindler /
+ * Requiem after Tree of Life sits opposite) takes
+ * Fun stagger on the primary; overlay copies wait
+ * for ghost-label zoom. Skip coincident
  * north/south so those names do not restack on
  * the primary. Reuse of label-start would also
  * move every left-side overlay.
@@ -1174,8 +1178,9 @@ function funGutterAssignedGoodSide(
  * Fun-gutter titles already claimed by isolated or
  * interior-neighbor passes so Airplane stays opposite
  * Ghostbusters and Furiosa stays opposite John Wick.
- * Drama's Fun 0-1 mesh has no degree-1 end, so it
- * stays put. Coincident north/south stay put at class
+ * Drama's Fun 0-1 mesh has no degree-1 end, so leftover
+ * Fun-gutter triangles take Fun stagger on the primary
+ * first. Coincident north/south stay put at class
  * apply.
  */
 function funGutterCloseGoodChainHorizontalStagger(
@@ -1507,9 +1512,11 @@ export function GhostPoints({
         // Hard) reuse it too. Overlay flip 7 already puts
         // Kill Bill on the right of Die Hard, so the
         // leftover peel only needs Top Gun on Good 10.
-        // Skip coincident north/south so those names do
-        // not restack on the primary that already occupies
-        // a slot next to the marker.
+        // Drama's leftover Fun 0-1 triangle takes Fun
+        // stagger on the primary first. Skip coincident
+        // north/south so those names do not restack on
+        // the primary that already occupies a slot next
+        // to the marker.
         const staggerTowardFun10 =
           !hasVerticalSlot && funStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 =
