@@ -166,6 +166,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const panVelocityRef = useRef({ vx: 0, vy: 0 })
     const inertiaRafRef = useRef<number | null>(null)
     const zoomAnimRafRef = useRef<number | null>(null)
+    // Destination of the in-flight (or last) zoom ease. Catching a
+    // double-tap zoom-in must land here instead of the interpolated
+    // ~1.1x leftover, or lift would settle back to the locked square.
+    const lastZoomTargetRef = useRef<ZoomState | null>(null)
     // A tap that stops inertia or a zoom ease should not deselect.
     const caughtMotionRef = useRef(false)
 
@@ -414,7 +418,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // an empty-grid tap, so a finger-down to stop the grid is not sticky
     // and does not hide the selected title. Catching a zoom-out ease
     // (or a leftover ~1.1x) still eases home on lift so covering pan
-    // cannot unlock for a few pixels of overflow.
+    // cannot unlock for a few pixels of overflow. Catching a zoom-in
+    // ease completes that zoom before pan, so a double-tap then
+    // immediate drag is not left at ~1.1x and snapped back to fit.
     // Mouse pan, like wheel and Touch Events, sits on the
     // plot card so a drag that starts on a Fun/Good axis still pans the
     // zoomed grid. Safari GestureEvents listen on window capture because
@@ -438,6 +444,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       function animateTo(next: ZoomState, onDone?: () => void) {
+        lastZoomTargetRef.current = next
         stopTransientMotion()
         const from = { ...stateRef.current }
         if (
@@ -793,6 +800,20 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         )
       }
 
+      // A catch during double-tap zoom-in (or a pinch-out settle from
+      // below 1x) would otherwise freeze at the interpolated scale.
+      // Near 1.1x, lift then treats that leftover as "almost home" and
+      // eases back to fit, undoing the zoom the user just committed.
+      function commitZoomInIfCaught() {
+        const target = lastZoomTargetRef.current
+        if (!target) return
+        if (target.scale <= stateRef.current.scale + 0.01) return
+        stateRef.current = target
+        const fit = fitTransform()
+        userTransformedRef.current = !fit || !isNearFit(target, fit)
+        applyTransform()
+      }
+
       function applyDoubleTap(point: PointerPos) {
         const fit = fitTransform()
         const canvas = canvasRef.current
@@ -1051,7 +1072,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // an empty-grid tap.
         caughtMotionRef.current =
           inertiaRafRef.current != null || zoomAnimRafRef.current != null
+        const catchingZoom = zoomAnimRafRef.current != null
         stopTransientMotion()
+        if (catchingZoom) commitZoomInIfCaught()
         pinchOccurredRef.current = false
         // A follow-up finger may be the second half of a double-tap or a
         // pan. Cancel the pending empty-tap deselect without clearing
