@@ -1756,6 +1756,42 @@
     transform: translate(calc(100% + 9px), 0);
   }
 
+  /*
+    Fun 9-10 / Fun 0-1 gutter growth still leaves a 3.75rem pill covering
+    1-unit Good neighbors: default labels sit left at Good >= 5, so
+    Pirates (9.55 / 9.83) covers Kill Bill V1 (8.67 / 9.25) and
+    Inglorious Basterds (9.00 / 9.02) on the same side. Fit-zoom
+    selected wrap stays on that interior side because the 1-unit
+    gutter is only ~31px. Double-tap cells are ~93px, so grow into
+    the Good 10 / Good 0 gutter instead (the inverse of the Good < 5
+    flip). Combine with the Fun 9-10 / Fun 0-1 flip so the namesake
+    corner sits in both gutters. Overlay names still use default
+    Good sides. Stacked stay one-line and do not need this.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10 > .movie-label {
+    transform: translate(calc(100% + 9px), -50%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-south > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-north > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0 > .movie-label {
+    transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-south > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-north > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
   .ghost-point--label-start > .movie-label {
     transform: translate(calc(-100% - 9px), -50%);
   }

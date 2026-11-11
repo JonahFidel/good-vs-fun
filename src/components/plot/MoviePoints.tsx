@@ -9,6 +9,10 @@ const LABEL_FLIP_GOOD = 5
 const LABEL_SOUTH_FUN = 9
 /** Grow the selected pill up so a stacked title+score stays on-canvas at Fun 0–1. */
 const LABEL_NORTH_FUN = 1
+/** Grow into the Good 10 gutter at labels-visible zoom (CSS), matching Fun 9-10. */
+const LABEL_GUTTER_GOOD_HIGH = 9
+/** Grow into the Good 0 gutter at labels-visible zoom (CSS), matching Fun 0-1. */
+const LABEL_GUTTER_GOOD_LOW = 1
 /** Slide the stack-count chip left so Fun/Good ≈10 does not clip it in the 1-unit margin. */
 const COUNT_WEST_GOOD = 9
 
@@ -52,6 +56,9 @@ export function MoviePoints({
         const labelOnRight = group.good < LABEL_FLIP_GOOD
         const labelBelow = group.fun >= LABEL_SOUTH_FUN
         const labelAbove = !labelBelow && group.fun <= LABEL_NORTH_FUN
+        const gutterIntoGood10 = group.good >= LABEL_GUTTER_GOOD_HIGH
+        const gutterIntoGood0 =
+          !gutterIntoGood10 && group.good <= LABEL_GUTTER_GOOD_LOW
         const countOnLeft = group.good >= COUNT_WEST_GOOD
 
         return (
@@ -66,6 +73,8 @@ export function MoviePoints({
               labelOnRight ? 'movie-point--label-end' : '',
               labelBelow ? 'movie-point--label-south' : '',
               labelAbove ? 'movie-point--label-north' : '',
+              gutterIntoGood10 ? 'movie-point--gutter-good-10' : '',
+              gutterIntoGood0 ? 'movie-point--gutter-good-0' : '',
               countOnLeft ? 'movie-point--count-west' : '',
             ]
               .filter(Boolean)
