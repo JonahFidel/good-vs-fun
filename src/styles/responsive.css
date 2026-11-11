@@ -236,8 +236,35 @@
     min-width: 0;
   }
 
-  .deck-sidebar-tools-row:has([open]) > * {
-    flex: 1 1 100%;
+  /*
+    Opening Add or Compare used to stack both full-width in the flex
+    column. The add form is ~16rem of 44px fields, taller than an SE
+    leftover strip, and sidebar overflow is hidden - so the list went
+    to 0px and the submit button could sit off-screen with no scroll.
+    Keep the list at least one title tall, scroll the open panel, and
+    hide the closed sibling so it does not add another 44px.
+  */
+  .deck-sidebar > .deck-sidebar-tools-row:has([open]) {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .deck-sidebar-tools-row:has([open]) > :not([open]) {
+    display: none;
+  }
+
+  .deck-sidebar-tools-row:has([open]) > [open] {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .deck-sidebar:has(.deck-sidebar-tools-row [open]) .deck-sidebar-section--list.movie-list {
+    flex: 1 1 5.5rem;
+    min-height: 5.5rem;
   }
 
   .deck-sidebar-tools-row > .deck-sidebar-section--add {

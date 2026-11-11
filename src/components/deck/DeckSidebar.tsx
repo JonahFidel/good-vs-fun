@@ -80,6 +80,9 @@ export function DeckSidebar({
     })
     if (added) {
       setTitle('')
+      // Phone Add is a <details> sheet. Leave it open and the new title
+      // stays buried under the form; desktop renders a div, so this is a no-op.
+      event.currentTarget.closest('details')?.removeAttribute('open')
     }
   }
 
