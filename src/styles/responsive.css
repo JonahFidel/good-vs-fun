@@ -1397,6 +1397,55 @@
     grid-template-columns: 1fr;
     gap: 0.4rem;
   }
+
+  /*
+    Portrait fit-zoom wrapping is a half-square title plus Good/Fun, because
+    Selected sits below the plot and is easy to miss. Landscape Selected is
+    already beside the square, so that same wrap covers ~5 score units of a
+    ~280-360px grid - the default-zoom 0-10 view you tapped to read.
+    Keep a one-cell title beside the marker; the sidebar bar has the rest.
+    South/north offsets were for that tall stack and would push Fun 9-10
+    names down over neighbors on this short plot.
+  */
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--selected > .movie-label,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point.dragging > .movie-label,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--highlighted > .movie-label {
+    font-size: 0.65rem;
+    padding: 0.08rem 0.28rem;
+    max-width: 3.75rem;
+    white-space: nowrap;
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--selected .movie-label-line,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point.dragging .movie-label-line,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--highlighted .movie-label-line {
+    white-space: nowrap;
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--selected .movie-label-title,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point.dragging .movie-label-title,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--highlighted .movie-label-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--selected .movie-label-score,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point.dragging .movie-label-score,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--highlighted .movie-label-score {
+    display: none;
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south > .movie-label,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north > .movie-label {
+    transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south.movie-point--label-end > .movie-label,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north.movie-point--label-end > .movie-label {
+    transform: translate(calc(100% + 9px), -50%);
+  }
 }
 
 /*
