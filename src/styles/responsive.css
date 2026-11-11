@@ -1165,7 +1165,10 @@
     hidden, and 0.85rem in that box shows about four letters ("Kill...").
     32cqw is ~3.8 score units (7.25rem on a ~370px square, less on a
     short landscape plot) so the name can be read without the old 50cqw
-    wrap. Compact to 3.75rem only once many titles are on screen.
+    wrap. Compact as soon as light pinch adds --zoomed (1.4x): that is
+    when half-unit lines appear, and a 32cqw wrap still covers ~3.8
+    units of a ~43px cell. --labels (2.2x) is too late; it is when
+    every title appears, not when the selected readout must shrink.
   */
   .movie-point--selected > .movie-label,
   .movie-point.dragging > .movie-label,
@@ -1181,10 +1184,11 @@
     Wrap up to 2 lines in that same box so the default-zoom readout can
     be identified without bringing back 50cqw cover. Grow down at Fun
     9-10 and up at Fun 0-1 so the taller pill stays in the scoring
-    region instead of clipping the 1-unit gutter. Zoomed one-cell
-    titles stay nowrap; this is fit-zoom only.
+    region instead of clipping the 1-unit gutter. Light-pinch and
+    double-tap one-cell titles stay nowrap; this is fit-zoom only
+    (:not --zoomed), not "until names appear" (:not --labels).
   */
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     white-space: normal;
     /*
       The pill is abspos on a 7px marker. Shrink-to-fit plus -webkit-box
@@ -1198,14 +1202,14 @@
     min-width: 0;
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) :is(.movie-label-line, .movie-label-title) {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) :is(.movie-label-line, .movie-label-title) {
     white-space: normal;
     overflow-wrap: break-word;
     min-width: 0;
     max-width: 100%;
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -1213,26 +1217,33 @@
     overflow: hidden;
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-south:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-south.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-north:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-north.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(100% + 9px), -100%);
   }
 
+  /*
+    Selected stays one-cell as soon as 1.4x detail lines appear, not
+    only once every title paints at 2.2x. Unselected names and 3.2x
+    ghost names still wait for their own restore classes.
+  */
+  .grid-zoom-slot--zoomed .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label,
   .grid-zoom-slot--labels .movie-point:not(.ghost-point) > .movie-label,
   .grid-zoom-slot--ghost-labels .ghost-point > .movie-label {
     font-size: 0.65rem;
     padding: 0.08rem 0.28rem;
+    width: max-content;
     max-width: 3.75rem;
     white-space: nowrap;
   }
