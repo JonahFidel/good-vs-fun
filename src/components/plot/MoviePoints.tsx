@@ -71,10 +71,11 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * flip next, so the two-partner middle does not block
  * the ends. Odd-length leftovers of those peels (Kill
  * Bill after Top Gun claims Die Hard) then flip
- * opposite the claimed partner. Overlay copies of those
- * Fun-gutter neighbors, isolated pairs, and 3-chains
- * wait for ghost-label zoom. Reuse of label-end would
- * also flip the fit-zoom selected pill.
+ * opposite the claimed partner. Overlay copies of
+ * those 3-chains match at ghost-label zoom. Drama's
+ * Fun 0-1 mesh still has no degree-1 end, so it
+ * stays put. Reuse of label-end would also flip
+ * the fit-zoom selected pill.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
 /** A 4-clique can occupy the four Fun-plus-Good stagger slots. */
@@ -1068,8 +1069,8 @@ function interiorFunGutterNeighborGoodStagger(
  * stays opposite Room, skip a 3-chain whose middle has
  * two partners (Top Gun / Die Hard / Kill Bill), and
  * skip a flip that would restack on a nearby claimed
- * or same-side Fun-gutter title. Overlay copies wait
- * for ghost-label zoom.
+ * or same-side Fun-gutter title. Overlay copies of
+ * those 3-chains match at ghost-label zoom.
  */
 function funGutterIsolatedFlipRestacks(
   flipped: PositionGroup,
@@ -1178,7 +1179,7 @@ function funGutterAssignedGoodSide(
  * passes so Airplane stays opposite Ghostbusters and
  * Manchester stays opposite Room. Drama's Fun 0-1 mesh
  * has no degree-1 end, so it stays put. Overlay copies
- * wait for ghost-label zoom.
+ * of those 3-chains match at ghost-label zoom.
  */
 function funGutterCloseGoodChainHorizontalStagger(
   groups: PositionGroup[],

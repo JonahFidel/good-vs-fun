@@ -70,9 +70,15 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * are not next to those interiors (Airplane vs
  * Ghostbusters, Inglorious Basterds vs Pirates) then
  * take that same left/right flip at ghost-label zoom.
- * Skip coincident north/south so those names do
- * not restack on the primary. Reuse of label-start
- * would also move every left-side overlay.
+ * Remaining degree-1 ends of Fun-gutter 3-chains
+ * (Top Gun / Die Hard / Kill Bill) get that flip
+ * next, so the two-partner middle does not block
+ * the ends. Overlay flip 7 already puts Kill Bill
+ * on the right of Die Hard, so the leftover peel
+ * only needs Top Gun on Good 10. Skip coincident
+ * north/south so those names do not restack on
+ * the primary. Reuse of label-start would also
+ * move every left-side overlay.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
 /** A 4-clique can occupy the four Fun-plus-Good stagger slots. */
@@ -1056,10 +1062,11 @@ function interiorFunGutterNeighborGoodStagger(
  * Good 10 is already right, unlike overlay Good > 7).
  * Skip pairs already on opposite sides, skip Fun-gutter
  * titles already claimed by the interior neighbor pass
- * so Furiosa stays opposite John Wick, and skip a flip
- * that would restack on a nearby claimed or same-side
- * Fun-gutter title. Coincident north/south stay put at
- * class apply.
+ * so Furiosa stays opposite John Wick, skip a 3-chain
+ * whose middle has two partners (Top Gun / Die Hard /
+ * Kill Bill), and skip a flip that would restack on a
+ * nearby claimed or same-side Fun-gutter title.
+ * Coincident north/south stay put at class apply.
  */
 function funGutterIsolatedFlipRestacks(
   flipped: PositionGroup,
@@ -1132,6 +1139,102 @@ function funGutterIsolatedCloseGoodHorizontalStagger(
         side,
         pairOther,
         claimedGood,
+        groups,
+      )
+    ) {
+      used.add(group.key)
+      used.add(other.key)
+      continue
+    }
+    stagger.set(flipped.key, side)
+    used.add(group.key)
+    used.add(other.key)
+  }
+  return stagger
+}
+
+function funGutterAssignedGoodSide(
+  group: PositionGroup,
+  assigned: Map<string, 'good-10' | 'good-0'>,
+): 'left' | 'right' {
+  const side = assigned.get(group.key)
+  if (side === 'good-10') return 'right'
+  if (side === 'good-0') return 'left'
+  return funGutterResolvedGoodSide(group)
+}
+
+/**
+ * Isolated Fun-gutter pairs leave 3-chains unstaggered
+ * because the middle has two partners. Peel remaining
+ * degree-1 ends with the same away-from-partner flip so
+ * Top Gun (toward Die Hard) sits on the opposite Good
+ * side instead of covering the chain. Overlay flip 7
+ * already puts Kill Bill on the right of Die Hard, so
+ * the leftover peel does not re-flip Kill Bill. Skip
+ * Fun-gutter titles already claimed by isolated or
+ * interior-neighbor passes so Airplane stays opposite
+ * Ghostbusters and Furiosa stays opposite John Wick.
+ * Drama's Fun 0-1 mesh has no degree-1 end, so it
+ * stays put. Coincident north/south stay put at class
+ * apply.
+ */
+function funGutterCloseGoodChainHorizontalStagger(
+  groups: PositionGroup[],
+  claimedGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isFunGutterUnstacked(group) && !claimedGood.has(group.key),
+  )
+  const partners = closeGoodPartners(candidates)
+  const used = new Set<string>()
+  for (const group of candidates) {
+    if (used.has(group.key)) continue
+    const list = partners.get(group.key) ?? []
+    if (list.length !== 1) continue
+    const other = list[0]
+    const assignedGood = new Map([...claimedGood, ...stagger])
+    if (used.has(other.key)) {
+      const otherSide = funGutterAssignedGoodSide(other, assignedGood)
+      const mySide = funGutterResolvedGoodSide(group)
+      if (mySide === otherSide) {
+        const side: 'good-10' | 'good-0' =
+          otherSide === 'left' ? 'good-10' : 'good-0'
+        if (
+          !funGutterIsolatedFlipRestacks(
+            group,
+            side,
+            other,
+            assignedGood,
+            groups,
+          )
+        ) {
+          stagger.set(group.key, side)
+        }
+      }
+      used.add(group.key)
+      continue
+    }
+    const groupSide = funGutterResolvedGoodSide(group)
+    const otherSide = funGutterResolvedGoodSide(other)
+    if (groupSide !== otherSide) {
+      used.add(group.key)
+      used.add(other.key)
+      continue
+    }
+    const [higherGood, lowerGood] =
+      group.good >= other.good ? [group, other] : [other, group]
+    const side: 'good-10' | 'good-0' =
+      groupSide === 'left' ? 'good-10' : 'good-0'
+    const flipped = groupSide === 'left' ? higherGood : lowerGood
+    const pairOther = flipped.key === group.key ? other : group
+    if (
+      funGutterIsolatedFlipRestacks(
+        flipped,
+        side,
+        pairOther,
+        assignedGood,
         groups,
       )
     ) {
@@ -1332,11 +1435,16 @@ export function GhostPoints({
     groups,
     claimedGood,
   )
+  const funGutterChainGood = funGutterCloseGoodChainHorizontalStagger(
+    groups,
+    new Map([...claimedGood, ...funGutterIsolatedGood]),
+  )
   const funStagger = new Map([...interiorFun, ...gutterNeighborFun])
   const goodStagger = new Map([
     ...interiorGood,
     ...funGutterNeighborGood,
     ...funGutterIsolatedGood,
+    ...funGutterChainGood,
   ])
   return (
     <>
@@ -1394,10 +1502,14 @@ export function GhostPoints({
         // pairs that those neighbors skipped (Airplane next
         // to Ghostbusters, Inglorious Basterds next to
         // Pirates) reuse that same Good stagger from the
-        // Fun-gutter resolved side. Skip coincident
-        // north/south so those names do not restack on the
-        // primary that already occupies a slot next to the
-        // marker.
+        // Fun-gutter resolved side, and remaining degree-1
+        // ends of Fun-gutter 3-chains (Top Gun toward Die
+        // Hard) reuse it too. Overlay flip 7 already puts
+        // Kill Bill on the right of Die Hard, so the
+        // leftover peel only needs Top Gun on Good 10.
+        // Skip coincident north/south so those names do
+        // not restack on the primary that already occupies
+        // a slot next to the marker.
         const staggerTowardFun10 =
           !hasVerticalSlot && funStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 =
