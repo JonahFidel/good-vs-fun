@@ -37,10 +37,22 @@ type PinchStart = {
 
 type PointerPos = { x: number; y: number }
 
+/** WebKit-only. Safari fires these for trackpad pinch; they are not in lib.dom. */
+type WebKitGestureEvent = Event & {
+  scale: number
+  clientX: number
+  clientY: number
+}
+
 const PAN_DEAD_ZONE_PX = 22
 const PAN_SLOP_PX = 8
 const DOUBLE_TAP_MS = 350
 const DOUBLE_TAP_PX = 28
+const COARSE_POINTER_QUERY = '(pointer: coarse)'
+
+function isCoarsePointer() {
+  return window.matchMedia(COARSE_POINTER_QUERY).matches
+}
 
 type Props = { children: React.ReactNode }
 
@@ -59,6 +71,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const gestureMovedRef = useRef(false)
     const pinchOccurredRef = useRef(false)
     const lastTapRef = useRef<{ t: number; x: number; y: number } | null>(null)
+    const webkitGestureOriginRef = useRef<{
+      origin: ZoomState
+      originPoint: PointerPos
+    } | null>(null)
+    const webkitGestureActiveRef = useRef(false)
 
     useImperativeHandle(forwardedRef, () => gridRef.current as HTMLDivElement)
 
@@ -147,6 +164,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         //   the grid behaves like a Figma canvas: scroll = zoom, drag = pan.
         e.preventDefault()
         e.stopPropagation()
+        // Safari also fires GestureEvents for the same pinch. Those drive
+        // zoom on fine pointers; ignoring wheel here avoids double-scale.
+        if (webkitGestureActiveRef.current) return
 
         const rect = capturedSlot.getBoundingClientRect()
         const cursorX = e.clientX - rect.left
@@ -470,11 +490,60 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         endTouchGesture()
       }
 
-      function preventNativeGesture(e: Event) {
-        e.preventDefault()
+      function webkitGesturePoint(event: WebKitGestureEvent): PointerPos {
+        if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+          return slotPoint(event.clientX, event.clientY)
+        }
+        return {
+          x: capturedSlot.offsetWidth / 2,
+          y: capturedSlot.offsetHeight / 2,
+        }
+      }
+
+      // Safari page-zoom gestures fight custom pinch unless they are cancelled.
+      // On iPhone, Touch Events own pinch (GestureEvents would double-zoom).
+      // On Safari Mac, trackpad pinch is GestureEvents, not Touch Events, so
+      // swallowing them without applying scale left Figma-style pinch dead.
+      function onWebkitGestureStart(event: Event) {
+        event.preventDefault()
+        if (pinchRef.current || isCoarsePointer()) return
+        const gesture = event as WebKitGestureEvent
+        webkitGestureActiveRef.current = true
+        webkitGestureOriginRef.current = {
+          origin: { ...stateRef.current },
+          originPoint: webkitGesturePoint(gesture),
+        }
+        pinchOccurredRef.current = true
+        gestureMovedRef.current = true
+      }
+
+      function onWebkitGestureChange(event: Event) {
+        event.preventDefault()
+        const start = webkitGestureOriginRef.current
+        if (pinchRef.current || !start || isCoarsePointer()) return
+        const gesture = event as WebKitGestureEvent
+        if (!Number.isFinite(gesture.scale) || gesture.scale <= 0) return
+        // gesture.scale is relative to gesturestart (1 at rest), so treat
+        // originDistance as 1 and reuse the two-finger pinch math.
+        stateRef.current = pinchTransform(
+          start.origin,
+          start.originPoint,
+          1,
+          webkitGesturePoint(gesture),
+          gesture.scale,
+        )
+        userTransformedRef.current = true
+        applyTransform()
+      }
+
+      function onWebkitGestureEnd(event: Event) {
+        event.preventDefault()
+        webkitGestureOriginRef.current = null
+        webkitGestureActiveRef.current = false
       }
 
       const touchOpts: AddEventListenerOptions = { passive: false, capture: true }
+      const gestureOpts: AddEventListenerOptions = { passive: false }
 
       // Capture phase so a finger on a movie label still counts toward pinch.
       capturedSlot.addEventListener('pointerdown', onPointerDown, { capture: true })
@@ -485,10 +554,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       gestureRoot.addEventListener('touchmove', onTouchMove, touchOpts)
       gestureRoot.addEventListener('touchend', onTouchEnd, touchOpts)
       gestureRoot.addEventListener('touchcancel', onTouchCancel, touchOpts)
-      // Safari page-zoom gestures fight custom pinch unless they are cancelled.
-      gestureRoot.addEventListener('gesturestart', preventNativeGesture)
-      gestureRoot.addEventListener('gesturechange', preventNativeGesture)
-      gestureRoot.addEventListener('gestureend', preventNativeGesture)
+      gestureRoot.addEventListener('gesturestart', onWebkitGestureStart, gestureOpts)
+      gestureRoot.addEventListener('gesturechange', onWebkitGestureChange, gestureOpts)
+      gestureRoot.addEventListener('gestureend', onWebkitGestureEnd, gestureOpts)
 
       return () => {
         capturedSlot.removeEventListener('pointerdown', onPointerDown, { capture: true })
@@ -499,9 +567,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         gestureRoot.removeEventListener('touchmove', onTouchMove, touchOpts)
         gestureRoot.removeEventListener('touchend', onTouchEnd, touchOpts)
         gestureRoot.removeEventListener('touchcancel', onTouchCancel, touchOpts)
-        gestureRoot.removeEventListener('gesturestart', preventNativeGesture)
-        gestureRoot.removeEventListener('gesturechange', preventNativeGesture)
-        gestureRoot.removeEventListener('gestureend', preventNativeGesture)
+        gestureRoot.removeEventListener('gesturestart', onWebkitGestureStart, gestureOpts)
+        gestureRoot.removeEventListener('gesturechange', onWebkitGestureChange, gestureOpts)
+        gestureRoot.removeEventListener('gestureend', onWebkitGestureEnd, gestureOpts)
       }
     }, [])
 
