@@ -1231,25 +1231,20 @@
 */
 @media (max-width: 900px) and (orientation: landscape),
   (pointer: coarse) and (max-width: 1023px) and (orientation: landscape) {
+  /*
+    Landscape height is the binding constraint for the fitted square.
+    The app header (brand + Decks + account) is redundant with the
+    sidebar back control and stole ~2.35rem from a short-side plot.
+    Hide it so default zoom is a larger 0-10 grid. Account lives on
+    /decks; Back still leaves the page. Layout padding now owns the
+    top safe area the header used to absorb.
+  */
   .app:has(.deck-page-layout) > .header {
-    padding: 0.12rem 0.5rem;
-    padding-top: max(0.12rem, env(safe-area-inset-top));
-    padding-left: max(0.5rem, env(safe-area-inset-left));
-    padding-right: max(0.5rem, env(safe-area-inset-right));
-  }
-
-  .app:has(.deck-page-layout) > .header .header-brand {
-    font-size: 0.72rem;
-  }
-
-  .app:has(.deck-page-layout) > .header .nav-link {
-    min-height: 1.75rem;
-    padding: 0.2rem 0.55rem;
-    font-size: 0.72rem;
+    display: none;
   }
 
   .app:has(.deck-page-layout) > .layout {
-    padding: 0.12rem max(0.25rem, env(safe-area-inset-right))
+    padding: max(0.12rem, env(safe-area-inset-top)) max(0.25rem, env(safe-area-inset-right))
       max(0.12rem, env(safe-area-inset-bottom)) max(0.25rem, env(safe-area-inset-left));
     gap: 0.25rem;
   }
@@ -1282,8 +1277,10 @@
   }
 
   .deck-page-layout .grid-zoom-slot {
-    --landscape-header: 2.35rem;
-    --landscape-pad-y: calc(0.12rem + max(0.12rem, env(safe-area-inset-bottom, 0px)));
+    --landscape-pad-y: calc(
+      max(0.12rem, env(safe-area-inset-top, 0px)) +
+        max(0.12rem, env(safe-area-inset-bottom, 0px))
+    );
     /* Sidebar min plus Fun-axis chrome, wrapper padding, and the row gap. */
     --landscape-sidebar-min: 15.5rem;
     --max-plot: min(
@@ -1291,9 +1288,7 @@
       max(
         10rem,
         calc(
-          var(--deck-viewport-h) - env(safe-area-inset-top, 0px) -
-            var(--landscape-header) -
-            var(--landscape-pad-y) - var(--plot-chrome-y)
+          var(--deck-viewport-h) - var(--landscape-pad-y) - var(--plot-chrome-y)
         )
       ),
       calc(
@@ -1392,17 +1387,10 @@
     the short side, and keyboard-inset cannot lift a title field that sits
     beside a 10rem-floor square. Hide the plot while typing so the form
     can use the visual viewport above the keys. Range sliders are not text
-    fields, so dragging Fun/Good brings the grid back.
-
-    Hide the app nav too. 2.35rem of the leftover ~160px is the difference
-    between the title sitting on-screen and under the keys on SE-height
-    landscape.
+    fields, so dragging Fun/Good brings the grid back. The app header is
+    already hidden in this query, so typing no longer needs a second hide.
   */
   .deck-page-layout:has(.deck-sidebar-section--add input[type='text']:focus) .grid-panel {
-    display: none;
-  }
-
-  .app:has(.deck-sidebar-section--add input[type='text']:focus) > .header {
     display: none;
   }
 
