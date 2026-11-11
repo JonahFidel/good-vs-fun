@@ -35,7 +35,11 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * Odd-length leftovers of those peels (Indiana Jones after
  * Bourne / Black Panther) flip opposite the claimed partner so
  * the leftover does not keep covering the unflipped middle.
- * Reuse of label-end would also flip the fit-zoom selected pill.
+ * Independent same-side collisions after those flips (Lebowski
+ * vs Palm Springs both Good 10, Moana vs On the Basis of Sex
+ * both Good 0) then split vertically so they do not keep
+ * covering on that side. Reuse of label-end would also flip
+ * the fit-zoom selected pill.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
 /** Slide the stack-count chip left so Fun/Good ≈10 does not clip it in the 1-unit margin. */
@@ -277,6 +281,58 @@ function interiorCloseGoodChainHorizontalStagger(
   )
 }
 
+/**
+ * Neighbor, isolated, and chain flips can land two titles on the
+ * same Good side still close enough to cover: Palm Springs
+ * (neighbor Good 10) vs Lebowski (isolated Good 10), and Moana
+ * vs On the Basis of Sex (both chain-end Good 0). Pair remaining
+ * degree-1 same-side neighbors and grow them toward opposite Fun
+ * gutters. Skip anyone already in same-Good vertical stagger, and
+ * skip clusters with two leftover partners so this does not fight
+ * the Drama clique. Overlay same-side collisions stay put until
+ * they get this stagger at ghost-label zoom.
+ */
+function interiorSameSideCloseGoodVerticalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const bySide = new Map<'good-10' | 'good-0', PositionGroup[]>()
+  for (const group of groups) {
+    if (
+      !isInteriorUnstacked(group) ||
+      verticalStagger.has(group.key)
+    ) {
+      continue
+    }
+    const side = horizontalStagger.get(group.key)
+    if (!side) continue
+    const list = bySide.get(side)
+    if (list) list.push(group)
+    else bySide.set(side, [group])
+  }
+  for (const list of bySide.values()) {
+    const partners = closeGoodPartners(list)
+    const used = new Set<string>()
+    for (const group of list) {
+      if (used.has(group.key)) continue
+      const others = partners.get(group.key) ?? []
+      if (others.length !== 1) continue
+      const other = others[0]
+      if (used.has(other.key)) continue
+      if ((partners.get(other.key) ?? []).length !== 1) continue
+      const [higher, lower] =
+        group.fun >= other.fun ? [group, other] : [other, group]
+      stagger.set(higher.key, 'fun-10')
+      stagger.set(lower.key, 'fun-0')
+      used.add(group.key)
+      used.add(other.key)
+    }
+  }
+  return stagger
+}
+
 export function MoviePoints({
   groups,
   draggingIds,
@@ -322,6 +378,12 @@ export function MoviePoints({
     ...isolatedStagger,
     ...chainStagger,
   ])
+  const sameSideVertical = interiorSameSideCloseGoodVerticalStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+  )
+  const funStagger = new Map([...verticalStagger, ...sameSideVertical])
 
   return (
     <>
@@ -338,8 +400,8 @@ export function MoviePoints({
         const labelOnRight = group.good < LABEL_FLIP_GOOD
         const labelBelow = group.fun >= LABEL_SOUTH_FUN
         const labelAbove = !labelBelow && group.fun <= LABEL_NORTH_FUN
-        const staggerTowardFun10 = verticalStagger.get(group.key) === 'fun-10'
-        const staggerTowardFun0 = verticalStagger.get(group.key) === 'fun-0'
+        const staggerTowardFun10 = funStagger.get(group.key) === 'fun-10'
+        const staggerTowardFun0 = funStagger.get(group.key) === 'fun-0'
         const staggerTowardGood10 = horizontalStagger.get(group.key) === 'good-10'
         const staggerTowardGood0 = horizontalStagger.get(group.key) === 'good-0'
         const gutterIntoGood10 = group.good >= LABEL_GUTTER_GOOD_HIGH

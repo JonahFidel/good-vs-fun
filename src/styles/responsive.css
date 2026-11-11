@@ -1821,6 +1821,11 @@
     leftovers of those peels (Indiana Jones toward Black
     Panther) flip opposite the claimed partner. Overlay
     close-Good gets this stagger at ghost-label zoom.
+    Independent same-side collisions after those flips
+    (Lebowski vs Palm Springs both Good 10, Moana vs On
+    the Basis of Sex both Good 0) add Fun stagger on top
+    of these classes; the combo rules below keep both
+    offsets so Good-side transform does not re-center them.
   */
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-good-10 > .movie-label {
     left: auto;
@@ -1832,6 +1837,38 @@
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  /*
+    Good-side stagger transform is vertically centered and would
+    undo Fun 10 / Fun 0 growth. Combine so Lebowski (Good 10,
+    Fun 10) sits above Palm Springs (Good 10, Fun 0) instead of
+    covering it, and Moana (Good 0, Fun 10) sits above On the
+    Basis of Sex (Good 0, Fun 0). Fit-zoom selected wrap is
+    unchanged because both classes are labels-visible only.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), 0);
   }
 
   .ghost-point--label-start > .movie-label {
