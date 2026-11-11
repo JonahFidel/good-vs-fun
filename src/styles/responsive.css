@@ -262,6 +262,11 @@
     width: 100%;
   }
 
+  /* Same overflow-parent steal as Selected: the open Add sheet scrolls. */
+  .deck-sidebar-tools-row:has([open]) .score-sliders--add {
+    touch-action: none;
+  }
+
   .deck-sidebar:has(.deck-sidebar-tools-row [open]) .deck-sidebar-section--list.movie-list {
     flex: 1 1 5.5rem;
     min-height: 5.5rem;
@@ -361,6 +366,13 @@
 
   .deck-sidebar .movie-selection-panel[open] > .score-sliders--selected {
     order: 1;
+    /*
+      The open sheet is overflow:auto so Rename/Delete can scroll on a
+      9rem floor. iOS still pans that parent from a range input even with
+      touch-action:none on the thumb, which steals the only way to move a
+      point. Lock the sliders block; scroll from the summary or actions.
+    */
+    touch-action: none;
   }
 
   .deck-sidebar .movie-selection-panel[open] > .movie-selection-bar {
