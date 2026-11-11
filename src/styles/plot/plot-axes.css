@@ -15,10 +15,11 @@
 
 /*
   Tick anchors sit on the axis. Desktop wheel-zoom enlarges numbers with
-  the canvas (Figma-style). Mobile re-applies inverse-scale on the anchor
-  so pinch keeps 0-10 numbers screen-sized while the label child's margin
-  offset stays in screen pixels. Combining those on one transform made
-  pinch drift the numbers off the axes.
+  the canvas (Figma-style). Coarse pointers re-apply inverse-scale on the
+  anchor so pinch keeps 0-10 numbers screen-sized while the label child's
+  margin offset stays in screen pixels. Combining those on one transform
+  made pinch drift the numbers off the axes. Gated on pointer: coarse, not
+  900px, so a narrow mouse window still grows ticks with wheel-zoom.
 */
 .grid-tick {
   position: absolute;

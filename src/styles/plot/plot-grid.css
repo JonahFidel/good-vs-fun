@@ -53,15 +53,16 @@
   min-width: 700px;
   will-change: transform;
   z-index: 1;
-  /* Used by mobile tick and Fun/Good axis-border inverse-scale. */
+  /* Used by coarse-pointer tick and Fun/Good axis-border inverse-scale. */
   --plot-inverse-scale: calc(1 / var(--plot-scale, 1));
 }
 
 /*
-  Mobile-only unit lines. Hidden on desktop so wheel-zoom can enlarge the
-  1px strokes painted on .grid::before. Narrow/coarse screens re-enable this
-  overlay so pinch keeps 1px screen thickness (canvas-local 1px lines round
-  away on WebKit past ~1.4x, and 1px local becomes 8px at max zoom).
+  Coarse-pointer unit lines. Hidden for a mouse so wheel-zoom can enlarge the
+  1px strokes painted on .grid::before. Touch re-enables this overlay so pinch
+  keeps 1px screen thickness (canvas-local 1px lines round away on WebKit past
+  ~1.4x, and 1px local becomes 8px at max zoom). Gated on pointer: coarse, not
+  900px, so a narrow desktop window still gets Figma-style canvas-scaled lines.
 */
 .grid-line-overlay {
   display: none;
@@ -101,7 +102,7 @@
   height: calc(100% * var(--grid-score-max) / var(--grid-canvas));
   /*
     Desktop wheel-zoom enlarges Fun=0 / Good=0 with the canvas (Figma-style).
-    Mobile re-applies inverse-scale so pinch does not bury origin movies.
+    Coarse pointers re-apply inverse-scale so pinch does not bury origin movies.
     Keep content-box so a future border change does not resize the 0-10 box
     (universal * does not match ::before).
   */
@@ -112,8 +113,8 @@
   border-top: 2px solid #111827;
   /*
     Desktop wheel-zoom enlarges unit lines with the canvas (Figma-style).
-    Mobile clears this background and paints the same lines on the unscaled
-    overlay so 1px strokes stay 1px.
+    Coarse pointers clear this background and paint the same lines on the
+    unscaled overlay so 1px strokes stay 1px.
   */
   background-image: linear-gradient(#e5e7eb 1px, transparent 1px),
     linear-gradient(90deg, #e5e7eb 1px, transparent 1px);

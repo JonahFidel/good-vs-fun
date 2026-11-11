@@ -6,7 +6,9 @@
   height: 7px;
   border-radius: 999px;
   /* Desktop wheel-zoom should enlarge titles with the canvas (Figma-style).
-     Mobile re-applies inverse-scale so pinch spreads points without exploding pills. */
+     Coarse pointers re-apply inverse-scale so pinch spreads points without
+     exploding pills. Gated on pointer: coarse, not 900px, so a narrow mouse
+     window still grows titles with wheel-zoom. */
   transform: translate(-50%, -50%);
   transform-origin: center;
   cursor: grab;

@@ -480,10 +480,6 @@
     color: #4b5563;
     /* 4px keeps 0.85rem "10" inside the portrait ~31px 1-unit margin. */
     --grid-tick-outset-major: 4px;
-    /* Keep 0-10 numbers screen-sized while pinch spreads the grid.
-       Desktop omits this so wheel-zoom enlarges ticks with titles. */
-    transform: scale(var(--plot-inverse-scale, 1));
-    transform-origin: 0 0;
   }
 
   /*
@@ -530,41 +526,24 @@
   /*
     #e5e7eb lines on white are decoration on desktop and the whole scale
     on a phone. Example decks also faded the overlay to 0.55. Darken both.
-    Lines live on the unscaled overlay so pinch cannot thicken them.
+    Coarse pointers actually paint those lines on the overlay; this query
+    only sets contrast so a narrow mouse window still uses canvas-scaled
+    lines (Figma-style wheel-zoom).
   */
   .deck-page-layout .grid::before,
   .deck-page-layout .grid-wrapper--example .grid::before {
     opacity: 1;
-    /* Keep Fun=0 / Good=0 at screen thickness while pinch spreads the grid.
-       Desktop omits this so wheel-zoom enlarges the axes with ticks. */
-    border-left: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
-    border-bottom: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
-    border-right: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
-    border-top: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
-    /* Overlay owns unit lines so pinch cannot thicken 1px strokes. */
-    background-image: none;
   }
 
   .deck-page-layout .grid-line-overlay,
   .deck-page-layout .grid-wrapper--example .grid-line-overlay {
-    display: block;
     opacity: 1;
     --grid-line-unit: #94a3b8;
   }
 
-  /*
-    Once zoomed, 1-unit cells are ~70px on a phone and decimal scores have
-    no lines to read against, so add 0.5-unit lines with the same --zoomed
-    switch as titles and odd ticks. Overlay 1px strokes stay 1px.
-  */
   .deck-page-layout .grid-zoom-slot--zoomed > .grid-line-overlay,
   .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed > .grid-line-overlay {
     --grid-line-unit: #64748b;
-    background-image: linear-gradient(var(--grid-line-unit) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-line-unit) 1px, transparent 1px),
-      linear-gradient(var(--grid-line-half) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-line-half) 1px, transparent 1px);
-    background-size: 10% 10%, 10% 10%, 5% 5%, 5% 5%;
   }
 
   .deck-page-layout .grid-wrapper--example .grid-axis {
@@ -574,17 +553,6 @@
   .movie-point {
     width: 11px;
     height: 11px;
-    /* Keep markers, 44px hit areas, and title pills screen-sized while pinch
-       spreads the 0-10 grid. Desktop omits this so wheel-zoom enlarges titles. */
-    transform: translate(-50%, -50%) scale(calc(1 / var(--plot-scale, 1)));
-  }
-
-  /* Invisible ~44px tap target around the 11px marker. */
-  .movie-point::before {
-    content: '';
-    position: absolute;
-    inset: -16px;
-    border-radius: 999px;
   }
 
   /*
@@ -855,10 +823,65 @@
 }
 
 /*
+  Plot zoom chrome follows the pointer, not the 900px layout breakpoint.
+  A mouse in a narrow window still needs Figma-style wheel-zoom (titles,
+  ticks, axes, and unit lines grow with the canvas). A finger still needs
+  inverse-scale so pinch spreads the grid without exploding pills or 1px
+  strokes. iPhone already matches this; iPad landscape does too, even
+  when it keeps the desktop two-column frame.
+*/
+@media (pointer: coarse) {
+  .grid-tick,
+  .grid-wrapper--example .grid-tick {
+    transform: scale(var(--plot-inverse-scale, 1));
+    transform-origin: 0 0;
+  }
+
+  .deck-page-layout .grid::before,
+  .deck-page-layout .grid-wrapper--example .grid::before {
+    border-left: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
+    border-bottom: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
+    border-right: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
+    border-top: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
+    background-image: none;
+  }
+
+  .deck-page-layout .grid-line-overlay,
+  .deck-page-layout .grid-wrapper--example .grid-line-overlay {
+    display: block;
+  }
+
+  /*
+    Once zoomed, 1-unit cells are large enough that decimal scores need
+    half-unit lines. Overlay 1px strokes stay 1px while the canvas scales.
+  */
+  .deck-page-layout .grid-zoom-slot--zoomed > .grid-line-overlay,
+  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed > .grid-line-overlay {
+    background-image: linear-gradient(var(--grid-line-unit) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line-unit) 1px, transparent 1px),
+      linear-gradient(var(--grid-line-half) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line-half) 1px, transparent 1px);
+    background-size: 10% 10%, 10% 10%, 5% 5%, 5% 5%;
+  }
+
+  .movie-point {
+    transform: translate(-50%, -50%) scale(calc(1 / var(--plot-scale, 1)));
+  }
+
+  /* Invisible ~44px tap target around the marker. */
+  .movie-point::before {
+    content: '';
+    position: absolute;
+    inset: -16px;
+    border-radius: 999px;
+  }
+}
+
+/*
   iPhone landscape: the portrait stack sizes a square from remaining height
   after an 11rem sidebar strip, so the plot collapses to ~12rem. Put plot and
   sidebar side by side and size the square from the short viewport edge.
-  Same 900px / coarse-and-1023px split as the block above so Pro Max
+  Same 900px / coarse-and-1023px split as the phone layout block so Pro Max
   landscape gets this row, not the desktop two-column grid.
 */
 @media (max-width: 900px) and (orientation: landscape),
