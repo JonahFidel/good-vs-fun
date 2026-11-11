@@ -1289,8 +1289,9 @@
     A 5-line selected pill is ~81px. Unselected names are hidden, and
     Fun 9-10 already grows down / Fun 0-1 up, so the extra line stays
     in the scoring region even on a 10rem landscape square. Overlay
-    3.2x wrap stays at six lines: a seventh would be ~91px vs ~84px
-    per unit there and would overflow the Fun 10 gutter.
+    3.2x wrap is seven lines: TARGET_LABEL_UNIT_PX 80 makes that
+    10rem ghost-label unit ~93px, so a ~92px seventh line still
+    fits the Fun 10 gutter.
   */
   .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     white-space: normal;
@@ -1509,16 +1510,19 @@
     are three wraps and already fit. 28-35 character names
     are four wraps and already fit. 36-43 character names
     are five wraps and already fit. 44-50 character names
-    are six wraps: "Pirates of the Carribean: Curse of the
-    Black Pearl". Five lines then hid the identifying start
-    (Pirates / Curse of), and overlays have no Selected bar
-    to recover it. Six line-heights (1.2) fit those. Longer
-    namesake titles still last-clip to the distinctive ending.
+    are six wraps and already fit. 51-59 character names
+    are seven wraps: "Alexander and the Terrible, Horrible,
+    No Good, Very Bad Day". Six lines then hid the
+    identifying start (Alexander / Terrible), and overlays
+    have no Selected bar to recover it. Seven line-heights
+    (1.2) fit those. Longer namesake titles still last-clip
+    to the distinctive ending.
 
-    A 6-line overlay is ~78px. Ghost-label zoom keeps at
-    least ~81px per unit even on a 10rem landscape square
-    (labelsVisibleScale plus 1x), so the extra line stays
-    inside one Fun cell and the 1-unit Fun 10 gutter.
+    A 7-line overlay is ~92px. Ghost-label zoom keeps at
+    least ~93px per unit even on a 10rem landscape square
+    (labelsVisibleScale plus 1x after TARGET_LABEL_UNIT_PX
+    80), so the extra line stays inside one Fun cell and
+    the 1-unit Fun 10 gutter.
 
     Stacked overlays already list every truncated name, the same
     2.2x primary readout. Wrapping each of those lines too turns
@@ -1544,11 +1548,11 @@
     min-width: 0;
     max-width: 100%;
     /*
-      Six line-heights (1.2 on .movie-label) so 6-wrap overlay
+      Seven line-heights (1.2 on .movie-label) so 7-wrap overlay
       names fit in this cell. Height stays auto so a one-line
-      name does not sit in an empty six-line box.
+      name does not sit in an empty seven-line box.
     */
-    max-height: 7.2em;
+    max-height: 8.4em;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -1662,16 +1666,19 @@
     of the Carribean: Curse of the Black Pearl"), and
     unselected primaries have no Selected bar to recover
     it. Six line-heights (1.2) fit those once double-tap
-    cells are ~80px. Longer namesake titles still
-    last-clip to the distinctive ending.
+    cells are ~80px. Seven-wrap names like Alexander
+    still last-clip here until --ghost-labels. Short
+    names still shrink-to-fit.
 
     Compact zoomed titles are 0.65rem, not the 0.8rem
     fit-hidden size. A 6-line pill (7.2em plus 0.08rem
     padding and 1px border) is ~79px. Double-tap now
     raises the cell to ~80px (TARGET_LABEL_UNIT_PX) so
     that extra line fits at --labels instead of waiting
-    for a deeper pinch. Seven-wrap names like Alexander
-    still last-clip here. Short names still shrink-to-fit.
+    for a deeper pinch. A 7-line pill is ~92px and would
+    overflow this 80px cell; that bump lives at
+    --ghost-labels where the same extra line fits the
+    ~93px unit on a 10rem landscape square.
   */
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked) > .movie-label {
     white-space: normal;
@@ -1709,6 +1716,19 @@
     flex: none;
     direction: ltr;
     unicode-bidi: normal;
+  }
+
+  /*
+    Seven-wrap primary names like Alexander last-clip at --labels
+    (~80px cells). --labels stays on at --ghost-labels, so only
+    max-height has to grow; wrap, flex-end, and the 3.75rem box
+    already applied. A 7-line pill is ~92px vs ~93px per unit at
+    ghost-label zoom on a 10rem landscape square, so the extra
+    line still fits one Fun cell. Stacked primaries stay one-line
+    start-clipped.
+  */
+  .grid-zoom-slot--ghost-labels .movie-point:not(.ghost-point):not(.movie-point--stacked) .movie-label-line {
+    max-height: 8.4em;
   }
 
   /*
