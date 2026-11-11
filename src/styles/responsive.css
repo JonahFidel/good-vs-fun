@@ -340,6 +340,26 @@
     box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.12);
   }
 
+  /*
+    Collapsed Selected is a 44px bar, so the 5.5rem list reservation keeps
+    titles visible above it. Expanding to edit Fun/Good (the only iPhone
+    way to move a point) still used that cap: on an 11rem leftover that
+    is ~88px, and DOM order puts 44px Rename/Delete first, so the sliders
+    sat below the fold. Grow to the sidebar and put Fun/Good first so the
+    editor actually fits. Desktop order is unchanged (this query only).
+  */
+  .deck-sidebar .movie-selection-panel[open] {
+    max-height: calc(100% - 0.5rem);
+  }
+
+  .deck-sidebar .movie-selection-panel[open] > .score-sliders--selected {
+    order: 1;
+  }
+
+  .deck-sidebar .movie-selection-panel[open] > .movie-selection-bar {
+    order: 2;
+  }
+
   .deck-sidebar:has(.movie-selection-panel) .deck-sidebar-section--list.movie-list ul {
     padding-bottom: 3.25rem;
   }
