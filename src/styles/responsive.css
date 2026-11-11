@@ -1469,17 +1469,26 @@
     Unknown" became "A / Complete…", "The Phoenician Scheme"
     became "The / Phoenici…", and "Pirates of the Carribean:
     Curse of the Black Pearl" never reached Black Pearl. Clip
-    the line to the last two wrapped lines instead (column
-    flex-end plus overflow) so those read as Complete/Unknown,
+    to the last wrapped lines instead (column flex-end plus
+    overflow) so those read as Complete/Unknown,
     Phoenician/Scheme, and Black Pearl. Short names still
-    shrink-to-fit and stay one or two lines; the title must
-    keep its content height so flex-end can hide the start
-    instead of shrinking to the first two lines.
+    shrink-to-fit; the title must keep its content height so
+    flex-end can hide the start instead of shrinking to the
+    first lines.
+
+    Last-two-lines only helps when a title overflows the box.
+    In this ~9-character 3.75rem cell, 24-27 character names
+    are three wraps: "Sicario: Day of the Soldado",
+    "28 Years Later Bone Temple", "One Battle After Another".
+    Two lines then hid the identifying start (Sicario /
+    28 Years), and overlays have no Selected bar to recover
+    it. Three line-heights (1.2) fit those. Longer namesake
+    titles still last-clip to the distinctive ending.
 
     Stacked overlays already list every truncated name, the same
     2.2x primary readout. Wrapping each of those lines too turns
     a two-film overlay (Code 3 + Kill Bill V2 in the 2026 example)
-    into a four-line pill over the cluster pinch-to-read just
+    into a six-line pill over the cluster pinch-to-read just
     uncovered. Keep stacks one-line; wrap only a single overlay.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) > .movie-label {
@@ -1500,10 +1509,11 @@
     min-width: 0;
     max-width: 100%;
     /*
-      Two line-heights (1.2 on .movie-label). Height stays auto
-      so a one-line name does not sit in an empty two-line box.
+      Three line-heights (1.2 on .movie-label) so 3-wrap overlay
+      names fit in this cell. Height stays auto so a one-line
+      name does not sit in an empty three-line box.
     */
-    max-height: 2.4em;
+    max-height: 3.6em;
     overflow: hidden;
     display: flex;
     flex-direction: column;
