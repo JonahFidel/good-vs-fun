@@ -38,10 +38,15 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * Independent same-side collisions after those flips (Lebowski
  * vs Palm Springs both Good 10, Moana vs On the Basis of Sex
  * both Good 0) then split vertically so they do not keep
- * covering on that side. Reuse of label-end would also flip
- * the fit-zoom selected pill.
+ * covering on that side. Remaining 4-cliques with no degree-1
+ * end (Brokeback / Marriage Story / Room / Nomadland) then take
+ * the four Fun-plus-Good quadrants around the cluster centroid
+ * so those interiors do not keep covering. Reuse of label-end
+ * would also flip the fit-zoom selected pill.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
+/** A 4-clique can occupy the four Fun-plus-Good stagger slots. */
+const INTERIOR_CLIQUE_SIZE = 4
 /** Slide the stack-count chip left so Fun/Good ≈10 does not clip it in the 1-unit margin. */
 const COUNT_WEST_GOOD = 9
 
@@ -261,7 +266,7 @@ function interiorIsolatedCloseGoodHorizontalStagger(
  * instead of covering the chain. Odd-length leftovers of those peels
  * (Indiana Jones after Bourne / Black Panther) then flip opposite
  * the claimed partner. Clique interiors with two leftover partners
- * stay put.
+ * stay put until the 4-clique quadrant pass.
  */
 function interiorCloseGoodChainHorizontalStagger(
   groups: PositionGroup[],
@@ -289,8 +294,8 @@ function interiorCloseGoodChainHorizontalStagger(
  * degree-1 same-side neighbors and grow them toward opposite Fun
  * gutters. Skip anyone already in same-Good vertical stagger, and
  * skip clusters with two leftover partners so this does not fight
- * the Drama clique. Overlay same-side collisions get this stagger
- * at ghost-label zoom.
+ * the Drama 4-clique, which gets Fun-plus-Good quadrants next.
+ * Overlay same-side collisions get this stagger at ghost-label zoom.
  */
 function interiorSameSideCloseGoodVerticalStagger(
   groups: PositionGroup[],
@@ -331,6 +336,90 @@ function interiorSameSideCloseGoodVerticalStagger(
     }
   }
   return stagger
+}
+
+function closeGoodConnectedComponents(
+  candidates: PositionGroup[],
+): PositionGroup[][] {
+  const partners = closeGoodPartners(candidates)
+  const visited = new Set<string>()
+  const components: PositionGroup[][] = []
+  for (const group of candidates) {
+    if (visited.has(group.key)) continue
+    const stack = [group]
+    const component: PositionGroup[] = []
+    visited.add(group.key)
+    while (stack.length > 0) {
+      const current = stack.pop()
+      if (!current) break
+      component.push(current)
+      for (const partner of partners.get(current.key) ?? []) {
+        if (visited.has(partner.key)) continue
+        visited.add(partner.key)
+        stack.push(partner)
+      }
+    }
+    components.push(component)
+  }
+  return components
+}
+
+/**
+ * Clique interiors never received a horizontal class: every leftover
+ * has two partners, so isolated pairs, chain peels, leftover 3-chains,
+ * and same-side Fun stagger all skip them. A remaining 4-clique
+ * (Brokeback / Marriage Story / Room / Nomadland) can occupy the
+ * four Fun-plus-Good slots the combo CSS already paints. Assign
+ * each title the quadrant of its marker relative to the cluster
+ * centroid, and skip the cluster if that split is not unique so a
+ * line-shaped 4 does not stack two titles in one slot. Size-3
+ * triangles and Jonah's 2025 9-mesh stay put: four slots cannot
+ * unique-pack those. Overlay copies get this stagger at
+ * ghost-label zoom.
+ */
+function interiorCloseGoodCliqueQuadrantStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+  sameSideVertical: Map<string, 'fun-10' | 'fun-0'>,
+): {
+  fun: Map<string, 'fun-10' | 'fun-0'>
+  good: Map<string, 'good-10' | 'good-0'>
+} {
+  const fun = new Map<string, 'fun-10' | 'fun-0'>()
+  const good = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !horizontalStagger.has(group.key) &&
+      !sameSideVertical.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    if (component.length !== INTERIOR_CLIQUE_SIZE) continue
+    const centroidFun =
+      component.reduce((sum, group) => sum + group.fun, 0) / component.length
+    const centroidGood =
+      component.reduce((sum, group) => sum + group.good, 0) / component.length
+    const assigned: {
+      key: string
+      fun: 'fun-10' | 'fun-0'
+      good: 'good-10' | 'good-0'
+    }[] = []
+    const quadrants = new Set<string>()
+    for (const group of component) {
+      const funSide = group.fun >= centroidFun ? 'fun-10' : 'fun-0'
+      const goodSide = group.good >= centroidGood ? 'good-10' : 'good-0'
+      assigned.push({ key: group.key, fun: funSide, good: goodSide })
+      quadrants.add(`${funSide}:${goodSide}`)
+    }
+    if (quadrants.size !== INTERIOR_CLIQUE_SIZE) continue
+    for (const entry of assigned) {
+      fun.set(entry.key, entry.fun)
+      good.set(entry.key, entry.good)
+    }
+  }
+  return { fun, good }
 }
 
 export function MoviePoints({
@@ -383,7 +472,18 @@ export function MoviePoints({
     verticalStagger,
     horizontalStagger,
   )
-  const funStagger = new Map([...verticalStagger, ...sameSideVertical])
+  const cliqueStagger = interiorCloseGoodCliqueQuadrantStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+    sameSideVertical,
+  )
+  const funStagger = new Map([
+    ...verticalStagger,
+    ...sameSideVertical,
+    ...cliqueStagger.fun,
+  ])
+  const goodStagger = new Map([...horizontalStagger, ...cliqueStagger.good])
 
   return (
     <>
@@ -402,8 +502,8 @@ export function MoviePoints({
         const labelAbove = !labelBelow && group.fun <= LABEL_NORTH_FUN
         const staggerTowardFun10 = funStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 = funStagger.get(group.key) === 'fun-0'
-        const staggerTowardGood10 = horizontalStagger.get(group.key) === 'good-10'
-        const staggerTowardGood0 = horizontalStagger.get(group.key) === 'good-0'
+        const staggerTowardGood10 = goodStagger.get(group.key) === 'good-10'
+        const staggerTowardGood0 = goodStagger.get(group.key) === 'good-0'
         const gutterIntoGood10 = group.good >= LABEL_GUTTER_GOOD_HIGH
         const gutterIntoGood0 =
           !gutterIntoGood10 && group.good <= LABEL_GUTTER_GOOD_LOW
