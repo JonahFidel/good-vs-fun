@@ -109,13 +109,6 @@ export function useDecks() {
   }
 
   const handleDeleteDeck = async (deck: Deck) => {
-    const confirmed = window.confirm(
-      `Delete "${deck.name}" and its movies? This cannot be undone.`,
-    )
-    if (!confirmed) {
-      return
-    }
-
     setLoading(true)
     setError(null)
     try {

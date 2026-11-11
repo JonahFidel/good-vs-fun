@@ -189,6 +189,32 @@
   user-select: text;
 }
 
+.deck-list li.deck-list-item--confirming-delete {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.deck-delete-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.deck-delete-confirm-name {
+  margin: 0;
+  font-weight: 600;
+  color: #111827;
+  overflow-wrap: anywhere;
+}
+
+.deck-delete-confirm-copy {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: #6b7280;
+}
+
 .deck-actions {
   display: flex;
   gap: 0.5rem;

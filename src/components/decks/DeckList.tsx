@@ -1,8 +1,9 @@
 import {
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
-  type KeyboardEvent,
+  type KeyboardEvent as InputKeyboardEvent,
 } from 'react'
 import { flushSync } from 'react-dom'
 import { Link } from 'react-router-dom'
@@ -31,7 +32,11 @@ export function DeckList({
   const inputRef = useRef<HTMLInputElement | null>(null)
   const committingRef = useRef(false)
   const renameArmedRef = useRef(false)
+  const deleteArmedRef = useRef(false)
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
+    null,
+  )
   const [draft, setDraft] = useState('')
 
   useLayoutEffect(() => {
@@ -47,10 +52,32 @@ export function DeckList({
     return () => window.cancelAnimationFrame(frame)
   }, [renamingDeckId])
 
+  useEffect(() => {
+    if (!confirmingDeleteId) {
+      deleteArmedRef.current = false
+      return
+    }
+    deleteArmedRef.current = false
+    const timer = window.setTimeout(() => {
+      deleteArmedRef.current = true
+    }, 350)
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setConfirmingDeleteId(null)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [confirmingDeleteId])
+
   const beginRename = (deck: Deck) => {
     if (renamingDeckId === deck.id) {
       return
     }
+    setConfirmingDeleteId(null)
     committingRef.current = false
     // flushSync so the input mounts and useLayoutEffect can focus it
     // inside this tap. iOS will not open the keyboard for a focus()
@@ -92,7 +119,7 @@ export function DeckList({
   }
 
   const handleRenameKeyDown = (
-    event: KeyboardEvent<HTMLInputElement>,
+    event: InputKeyboardEvent<HTMLInputElement>,
     deck: Deck,
   ) => {
     if (event.key === 'Enter') {
@@ -105,10 +132,38 @@ export function DeckList({
     }
   }
 
+  const beginConfirmDelete = (deck: Deck) => {
+    // Inline confirm replaces window.confirm, a tiny native iOS dialog.
+    if (confirmingDeleteId === deck.id) {
+      return
+    }
+    if (renamingDeckId) {
+      cancelRename()
+    }
+    setConfirmingDeleteId(deck.id)
+  }
+
+  const cancelDelete = () => {
+    setConfirmingDeleteId(null)
+  }
+
+  const confirmDelete = (deck: Deck) => {
+    // A double-tap on the row Delete would otherwise land on this
+    // same-side confirm control and remove the deck immediately.
+    if (!deleteArmedRef.current) {
+      return
+    }
+    setConfirmingDeleteId(null)
+    onDelete(deck)
+  }
+
   return (
     <ul className="deck-list">
       {decks.map((deck) => {
         const isRenaming = renamingDeckId === deck.id
+        const isConfirmingDelete = confirmingDeleteId === deck.id
+        const canReorder =
+          canDragToReorder && !isRenaming && !isConfirmingDelete
         return (
           <li
             key={deck.id}
@@ -116,14 +171,15 @@ export function DeckList({
               deck.id === selectedDeckId ? 'active' : '',
               deckDragOverId === deck.id ? 'drag-over' : '',
               deck.isExample ? 'deck-list-item--example' : '',
-              canDragToReorder && !isRenaming ? 'deck-list-item--reorderable' : '',
+              canReorder ? 'deck-list-item--reorderable' : '',
               isRenaming ? 'deck-list-item--renaming' : '',
+              isConfirmingDelete ? 'deck-list-item--confirming-delete' : '',
             ]
               .filter(Boolean)
               .join(' ')}
-            draggable={canDragToReorder && !isRenaming}
+            draggable={canReorder}
             onDragStart={(event) => {
-              if (!canDragToReorder || isRenaming) {
+              if (!canReorder) {
                 event.preventDefault()
                 return
               }
@@ -179,6 +235,29 @@ export function DeckList({
                   event.stopPropagation()
                 }}
               />
+            ) : isConfirmingDelete ? (
+              <div
+                className="deck-delete-confirm"
+                role="group"
+                aria-label={`Delete ${deck.name}`}
+              >
+                <p className="deck-delete-confirm-name">{deck.name}</p>
+                <p className="deck-delete-confirm-copy">
+                  Delete this deck and its movies? This cannot be undone.
+                </p>
+                <div className="deck-actions">
+                  <button type="button" onClick={cancelDelete}>
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="deck-action-delete"
+                    onClick={() => confirmDelete(deck)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
             ) : (
               <>
                 <Link className="deck-select" to={`/deck/${deck.id}/movies`}>
@@ -200,7 +279,7 @@ export function DeckList({
                     <button
                       type="button"
                       className="deck-action-delete"
-                      onClick={() => onDelete(deck)}
+                      onClick={() => beginConfirmDelete(deck)}
                     >
                       Delete
                     </button>
