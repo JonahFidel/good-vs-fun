@@ -1363,6 +1363,28 @@
     bottom: max(0.3rem, env(safe-area-inset-bottom), var(--keyboard-inset, 0px));
   }
 
+  /*
+    Portrait hides the plot for open Add/Compare because that stacked
+    square sits above the leftover sidebar and steals the height those
+    sheets need. Landscape is a row: hiding .grid-panel only widens the
+    rail, so the form still fights the short side and the 0-10 grid
+    disappears. Keep the square; give the open sheet the sidebar by
+    hiding the list (Compare already does this in the phone query).
+  */
+  .deck-page-layout:has(.deck-sidebar-section--add[open]) .grid-panel,
+  .deck-page-layout:has(.deck-sidebar-section--tools[open]) .grid-panel {
+    display: flex;
+  }
+
+  .deck-sidebar:has(.deck-sidebar-section--add[open]) .deck-sidebar-section--list.movie-list,
+  .deck-sidebar:has(.deck-sidebar-section--add[open]) .movie-selection-panel {
+    display: none;
+  }
+
+  .deck-sidebar:has(.deck-sidebar-section--add[open]) > .deck-sidebar-tools-row {
+    flex: 1 1 auto;
+  }
+
   /* Landscape sidebar is ~12-15rem; two 44px sliders would have ~90px tracks. */
   .score-sliders--add,
   .score-sliders--selected {
