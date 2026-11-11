@@ -68,6 +68,34 @@
 }
 
 /*
+  Unit lines at scores 1-9 only. Scores 0 and 10 are the bold outline, so a
+  gray line there would sit beside it. One untiled gradient per axis covers
+  90% of the 0-10 region, anchored to its far edge: a 10% tile was rounded
+  to whole pixels, so ten tiles fell short of the region and an eleventh
+  line showed just inside the top and right borders.
+  --grid-lines-edge is how far the painting box runs past the region's top
+  and right edges (the outline's top/right stroke on .grid::before).
+*/
+.grid::before,
+.grid-line-overlay {
+  --grid-unit-lines-y: repeating-linear-gradient(
+    to bottom,
+    var(--grid-line-unit) 0 1px,
+    transparent 1px calc(100% / 9)
+  );
+  --grid-unit-lines-x: repeating-linear-gradient(
+    to right,
+    var(--grid-line-unit) 0 1px,
+    transparent 1px calc(100% / 9)
+  );
+  --grid-unit-lines-span: calc(90% - 0.9 * var(--grid-lines-edge, 0px));
+  --grid-unit-lines-size: 100% var(--grid-unit-lines-span),
+    var(--grid-unit-lines-span) 100%;
+  --grid-unit-lines-position: left 0 bottom 0,
+    right var(--grid-lines-edge, 0px) top 0;
+}
+
+/*
   Coarse-pointer unit lines. Hidden for a mouse, which paints the same 1px
   strokes on .grid::before (a fine pointer never zooms). Touch re-enables
   this overlay so pinch keeps 1px screen thickness (canvas-local 1px lines
@@ -85,10 +113,10 @@
   transform-origin: 0 0;
   --grid-line-unit: #e5e7eb;
   --grid-line-half: #cbd5e1;
-  background-image: linear-gradient(var(--grid-line-unit) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line-unit) 1px, transparent 1px);
-  background-size: 10% 10%;
-  background-position: 0 0;
+  background-image: var(--grid-unit-lines-y), var(--grid-unit-lines-x);
+  background-size: var(--grid-unit-lines-size);
+  background-position: var(--grid-unit-lines-position);
+  background-repeat: no-repeat;
 }
 
 .grid {
@@ -104,30 +132,44 @@
 .grid::before {
   content: '';
   position: absolute;
+  /*
+    The margin box starts on the 0-10 region's left and bottom edges, so the
+    bold Fun/Good axes sit inside the region as before. The top and right
+    strokes sit just outside it, on the score-10 edges the movie points,
+    ticks, and coarse-pointer line overlay use.
+  */
+  --grid-axis-stroke: 4px;
+  --grid-edge-stroke: 2px;
   left: calc(100% * var(--grid-margin) / var(--grid-canvas));
   bottom: calc(100% * var(--grid-margin) / var(--grid-canvas));
-  width: calc(100% * var(--grid-score-max) / var(--grid-canvas));
-  height: calc(100% * var(--grid-score-max) / var(--grid-canvas));
+  width: calc(100% * var(--grid-score-max) / var(--grid-canvas) - var(--grid-axis-stroke));
+  height: calc(100% * var(--grid-score-max) / var(--grid-canvas) - var(--grid-axis-stroke));
   /*
     A fine pointer never zooms, so these borders stay as drawn. Coarse
     pointers re-apply inverse-scale so pinch does not bury origin movies.
-    Keep content-box so a future border change does not resize the 0-10 box
+    Keep content-box: the width and height above subtract the axis stroke
+    so the right and top strokes land outside the score-10 edges
     (universal * does not match ::before).
   */
   box-sizing: content-box;
-  border-left: 4px solid #111827;
-  border-bottom: 4px solid #111827;
-  border-right: 2px solid #111827;
-  border-top: 2px solid #111827;
+  border-left: var(--grid-axis-stroke) solid #111827;
+  border-bottom: var(--grid-axis-stroke) solid #111827;
+  border-right: var(--grid-edge-stroke) solid #111827;
+  border-top: var(--grid-edge-stroke) solid #111827;
   /*
     A fine pointer paints unit lines here (it never zooms).
     Coarse pointers clear this background and paint the same lines on the
     unscaled overlay so 1px strokes stay 1px.
+    The lines are laid out against the border box, whose left and bottom
+    edges are the region's; the borders paint over the line ends.
   */
-  background-image: linear-gradient(#e5e7eb 1px, transparent 1px),
-    linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
-  background-size: 10% 10%;
-  background-position: 0 0;
+  --grid-line-unit: #e5e7eb;
+  --grid-lines-edge: var(--grid-edge-stroke);
+  background-image: var(--grid-unit-lines-y), var(--grid-unit-lines-x);
+  background-size: var(--grid-unit-lines-size);
+  background-position: var(--grid-unit-lines-position);
+  background-origin: border-box;
+  background-repeat: no-repeat;
   pointer-events: none;
   z-index: 0;
 }

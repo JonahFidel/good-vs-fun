@@ -6,10 +6,10 @@
   --grid-canvas: 12;
   --grid-tick-outset-major: 10px;
   --grid-tick-outset-minor: 5px;
-  --grid-tick-outset-top: calc(var(--grid-tick-outset-major) + 5px);
-  --grid-tick-outset-right: calc(var(--grid-tick-outset-major) + 5px);
-  --grid-tick-outset-minor-top: calc(var(--grid-tick-outset-minor) + 5px);
-  --grid-tick-outset-minor-right: calc(var(--grid-tick-outset-minor) + 5px);
+  --grid-tick-outset-top: calc(var(--grid-tick-outset-major) + 1px);
+  --grid-tick-outset-right: calc(var(--grid-tick-outset-major) + 1px);
+  --grid-tick-outset-minor-top: calc(var(--grid-tick-outset-minor) + 1px);
+  --grid-tick-outset-minor-right: calc(var(--grid-tick-outset-minor) + 1px);
   --deck-rail-width: 280px;
   /*
     Locked deck layout height. 100dvh grows when iOS hides the URL bar, so a
