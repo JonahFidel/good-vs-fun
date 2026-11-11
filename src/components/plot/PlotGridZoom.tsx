@@ -135,6 +135,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const pointersRef = useRef<Map<number, PointerPos>>(new Map())
     const panRef = useRef<PanStart | null>(null)
     const pinchRef = useRef<PinchStart | null>(null)
+    // Last pinchTransform before covering/keep-visible pan rubber-band.
+    // 2→1 pan must resume from this, not the compressed stateRef, or a
+    // leftover finger past the edge double-compresses like inertia did.
+    const pinchUnconstrainedRef = useRef<ZoomState | null>(null)
     const gestureStartRef = useRef<GestureStart | null>(null)
     const gestureMovedRef = useRef(false)
     const pinchOccurredRef = useRef(false)
@@ -394,11 +398,14 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // one-finger pan coasts with friction after lift so the zoomed grid
     // does not stop dead; that coast rubber-bands past the covering edge
     // (and leftover keep-visible gutters) and eases back, matching a
-    // finger-down pull. Fit zoom never pans, so the default 0-10 square
-    // stays locked. Double-tap eases to 2.2x or
-    // back to fit instead of jumping, matching that coast. Pinch-out past
-    // 1x and zoomed pan past a covering or keep-visible edge rubber-band,
-    // then ease back on lift, so getting home or hitting an edge is not a wall.
+    // finger-down pull. A 2→1 pinch handoff pans from the unconstrained
+    // pinch translation, so a leftover finger past that edge does not
+    // stick from double-compressing the painted rubber-band. Fit zoom
+    // never pans, so the default 0-10 square stays locked. Double-tap
+    // eases to 2.2x or back to fit instead of jumping, matching that
+    // coast. Pinch-out past 1x and zoomed pan past a covering or
+    // keep-visible edge rubber-band, then ease back on lift, so getting
+    // home or hitting an edge is not a wall.
     // Mouse pan, like wheel and Touch Events, sits on the
     // plot card so a drag that starts on a Fun/Good axis still pans the
     // zoomed grid. Safari GestureEvents listen on window capture because
@@ -624,7 +631,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         cancelEmptyTap()
         lastTapRef.current = null
         pinchRef.current = {
-          origin: { ...stateRef.current },
+          // 3→2 restarts from the last unconstrained pinch pan, not the
+          // compressed paint, so a pair that was already past the edge
+          // does not stick the way 2→1 pan used to.
+          origin: { ...(pinchUnconstrainedRef.current ?? stateRef.current) },
           originMidpoint: pointerMidpoint(a, b),
           originDistance: pointerDistance(a, b),
         }
@@ -640,7 +650,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const pinch = pinchRef.current
         if (!pinch) return
         const coarse = isCoarsePointer()
-        stateRef.current = pinchTransform(
+        const unconstrained = pinchTransform(
           pinch.origin,
           pinch.originMidpoint,
           pinch.originDistance,
@@ -654,6 +664,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
               }
             : undefined,
         )
+        pinchUnconstrainedRef.current = unconstrained
+        stateRef.current = unconstrained
         userTransformedRef.current = true
         applyTransform({ rubberBand: coarse })
       }
@@ -671,6 +683,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       function beginPan(id: number, clientX: number, clientY: number) {
+        const panOrigin = pinchUnconstrainedRef.current
+        pinchUnconstrainedRef.current = null
         const sizes = viewSizes()
         if (
           !sizes ||
@@ -684,8 +698,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           pointerId: id,
           x: clientX,
           y: clientY,
-          tx: stateRef.current.tx,
-          ty: stateRef.current.ty,
+          tx: panOrigin?.tx ?? stateRef.current.tx,
+          ty: panOrigin?.ty ?? stateRef.current.ty,
         }
         setPanCursor(true)
       }
@@ -1020,6 +1034,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       function endTouchGesture() {
         pinchRef.current = null
+        pinchUnconstrainedRef.current = null
         panRef.current = null
         setPanCursor(false)
       }
@@ -1031,15 +1046,20 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
         if (fingers.length === 1) {
-          // 2→1 must keep the remaining plot finger as a pan. Count only
-          // plot-card contacts: e.touches also includes a sidebar thumb,
-          // which would restart pinch against that off-grid finger or skip
-          // this handoff entirely (length stays >= 2). Rubber-band or
-          // near-fit pinch-out settles to 1x instead of handing off a
-          // sub-fit pan.
+          // 2→1 must keep the remaining plot finger as a pan from the
+          // unconstrained pinch translation. Count only plot-card contacts:
+          // e.touches also includes a sidebar thumb, which would restart
+          // pinch against that off-grid finger or skip this handoff
+          // entirely (length stays >= 2). Rubber-band or near-fit pinch-out
+          // settles to 1x instead of handing off a sub-fit pan. A leftover
+          // finger past a covering/keep-visible edge must not take the
+          // compressed paint as pan origin, or each move double-compresses.
           const wasPinch = Boolean(pinchRef.current)
           pinchRef.current = null
-          if (wasPinch && settlePinchIfNeeded()) return
+          if (wasPinch && settlePinchIfNeeded()) {
+            pinchUnconstrainedRef.current = null
+            return
+          }
           const touch = fingers[0]
           beginPan(touch.identifier, touch.clientX, touch.clientY)
           return
