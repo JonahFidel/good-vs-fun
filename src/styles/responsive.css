@@ -1760,6 +1760,9 @@
     leftover after #root padding. 16px / 44px matches create-deck, and
     the card has to shrink to the slot. Account popover actions were
     still ~32px after the avatar grew.
+    Card fill stays on .sign-in-page: the same .cl-card/.cl-rootBox
+    classes wrap UserButton, and 100% there overflows the signed-in
+    header plus the Manage account popover.
   */
   .sign-in-page {
     overflow-x: hidden;
@@ -1770,6 +1773,19 @@
   .sign-in-page .cl-card {
     width: 100%;
     max-width: 100%;
+  }
+
+  .nav .cl-rootBox,
+  .nav .cl-userButtonBox {
+    width: auto;
+    max-width: none;
+    flex-shrink: 0;
+  }
+
+  .cl-userButtonPopoverRootBox,
+  .cl-userButtonPopoverCard {
+    width: auto;
+    max-width: min(20rem, calc(100vw - 1.5rem));
   }
 
   .cl-formFieldInput,
