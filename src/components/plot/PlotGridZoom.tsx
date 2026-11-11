@@ -421,10 +421,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // Fit zoom never pans, so the default 0-10 square stays locked. Double-tap
     // eases to title-visible zoom (~2.2x) from any scale below that,
     // including a 1.2-2.1x leftover pinch, or back to fit once titles
-    // are on screen. Overflowed scales unlock pan, so touch pan slop is
-    // 20px (not the 8px mouse value) or iPhone tap jitter cancels that
-    // double-tap the same way empty-space jitter did at fit before
-    // movement tracking was skipped there.
+    // are on screen. The selected fit-zoom title (pointer-events: none)
+    // is also that zoom-in gesture: it is the movie you tapped to read,
+    // and empty space around a 32cqw pill can be scarce. Marker rings
+    // still select/cycle instead of zooming. Overflowed scales unlock pan,
+    // so touch pan slop is 20px (not the 8px mouse value) or iPhone tap
+    // jitter cancels that double-tap the same way empty-space jitter did
+    // at fit before movement tracking was skipped there.
     // Pinch-out past 1x and zoomed pan past a covering or
     // keep-visible edge rubber-band, then ease back on lift, so getting
     // home or hitting an edge is not a wall. Catching a flicked coast
@@ -971,9 +974,20 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return false
         }
         // Painted title pills are pointer-events: none, so a tap on the
-        // selected readout or a zoomed title hits the grid. Counting that
-        // as double-tap would zoom while the user is trying to read it.
-        if (pointerHitsVisibleMovieLabel(capturedSlot, clientX, clientY)) {
+        // selected readout or a zoomed title hits the grid. Below
+        // title-visible zoom that selected pill is the movie you want
+        // to read: double-tap it to zoom in toward the name. After
+        // titles appear, a tap on a name is select/read, not zoom-out.
+        const onLabel = pointerHitsVisibleMovieLabel(
+          capturedSlot,
+          clientX,
+          clientY,
+        )
+        const canvas = canvasRef.current
+        const labelsOn =
+          canvas != null &&
+          stateRef.current.scale >= labelsVisibleScale(canvas.offsetWidth)
+        if (onLabel && labelsOn) {
           cancelEmptyTap()
           lastTapRef.current = null
           return false
@@ -996,8 +1010,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // Wait out the double-tap window so a confirmed empty tap is
         // the only touch path that clears the selection. A tap that
         // caught inertia or a zoom ease still records lastTap so a
-        // follow-up can double-tap, but must not deselect.
-        if (!caughtMotionRef.current) {
+        // follow-up can double-tap, but must not deselect. A tap on
+        // the selected fit-zoom pill is also not empty space.
+        if (!caughtMotionRef.current && !onLabel) {
           scheduleEmptyTap(now)
         }
         return false
