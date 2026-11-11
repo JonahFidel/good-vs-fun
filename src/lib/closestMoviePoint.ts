@@ -17,6 +17,17 @@ function pointInRect(
   )
 }
 
+function distanceToRectCenter(
+  rect: DOMRect,
+  clientX: number,
+  clientY: number,
+): number {
+  return Math.hypot(
+    clientX - (rect.left + rect.width / 2),
+    clientY - (rect.top + rect.height / 2),
+  )
+}
+
 /** True when the label is actually painted, not an opacity-0 fit-zoom pill. */
 function isPainted(el: HTMLElement): boolean {
   const rect = el.getBoundingClientRect()
@@ -24,6 +35,46 @@ function isPainted(el: HTMLElement): boolean {
   const style = getComputedStyle(el)
   if (style.visibility === 'hidden' || style.display === 'none') return false
   return parseFloat(style.opacity) > 0
+}
+
+function idFromLabelAtPoint(
+  label: HTMLElement,
+  clientX: number,
+  clientY: number,
+): { id: string; dist: number } | null {
+  let closestTitle: { id: string; dist: number } | null = null
+
+  for (const title of label.querySelectorAll('[data-movie-id]')) {
+    if (!(title instanceof HTMLElement) || !isPainted(title)) continue
+    const titleRect = title.getBoundingClientRect()
+    if (!pointInRect(titleRect, clientX, clientY)) continue
+    const id = title.getAttribute('data-movie-id')
+    if (!id) continue
+    const dist = distanceToRectCenter(titleRect, clientX, clientY)
+    if (!closestTitle || dist < closestTitle.dist) {
+      closestTitle = { id, dist }
+    }
+  }
+
+  if (closestTitle) {
+    return closestTitle
+  }
+
+  const selected = label.querySelector(
+    '.movie-label-line--selected [data-movie-id]',
+  )
+  const any = selected ?? label.querySelector('[data-movie-id]')
+  if (!(any instanceof HTMLElement)) {
+    return null
+  }
+  const id = any.getAttribute('data-movie-id')
+  if (!id) {
+    return null
+  }
+  return {
+    id,
+    dist: distanceToRectCenter(label.getBoundingClientRect(), clientX, clientY),
+  }
 }
 
 /**
@@ -34,37 +85,35 @@ function isPainted(el: HTMLElement): boolean {
  * Fit-zoom unselected pills are opacity 0 and skipped. After pinch/double-tap
  * every title is painted, so this is how you select the movie you just read
  * instead of missing it or double-tap zooming.
+ *
+ * A selected wrapping pill can cover a neighbor's truncated title. Returning
+ * the first DOM hit would switch away from the title you are reading; prefer
+ * the selected pill when it contains the tap, otherwise the closest title.
  */
 export function movieIdAtVisibleLabel(
   root: ParentNode,
   clientX: number,
   clientY: number,
 ): string | null {
-  let pillFallback: string | null = null
+  let selectedHit: string | null = null
+  let closest: { id: string; dist: number } | null = null
 
   for (const point of root.querySelectorAll('.movie-point:not(.ghost-point)')) {
     const label = point.querySelector(':scope > .movie-label')
     if (!(label instanceof HTMLElement) || !isPainted(label)) continue
     if (!pointInRect(label.getBoundingClientRect(), clientX, clientY)) continue
 
-    for (const title of label.querySelectorAll('[data-movie-id]')) {
-      if (!(title instanceof HTMLElement) || !isPainted(title)) continue
-      if (!pointInRect(title.getBoundingClientRect(), clientX, clientY)) continue
-      return title.getAttribute('data-movie-id')
+    const hit = idFromLabelAtPoint(label, clientX, clientY)
+    if (!hit) continue
+    if (point.classList.contains('movie-point--selected')) {
+      selectedHit = hit.id
     }
-
-    if (pillFallback === null) {
-      const selected = label.querySelector(
-        '.movie-label-line--selected [data-movie-id]',
-      )
-      const any = selected ?? label.querySelector('[data-movie-id]')
-      if (any instanceof HTMLElement) {
-        pillFallback = any.getAttribute('data-movie-id')
-      }
+    if (!closest || hit.dist < closest.dist) {
+      closest = hit
     }
   }
 
-  return pillFallback
+  return selectedHit ?? closest?.id ?? null
 }
 
 /** True when a screen-space point lands on a painted movie title pill. */
@@ -123,10 +172,7 @@ export function closestMovieId(
 
   for (const point of grid.querySelectorAll('.movie-point:not(.ghost-point)')) {
     const rect = point.getBoundingClientRect()
-    const dist = Math.hypot(
-      clientX - (rect.left + rect.width / 2),
-      clientY - (rect.top + rect.height / 2),
-    )
+    const dist = distanceToRectCenter(rect, clientX, clientY)
     if (dist > maxDistance) {
       continue
     }

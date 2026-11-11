@@ -144,7 +144,8 @@ export function usePlotDrag({
       }
       // After pinch, titles are visible but pointer-events: none. Prefer
       // the painted title so a tap on "Kill Bill" selects that movie
-      // instead of a nearby 44px ring or cycling the stack. At fit zoom
+      // instead of a nearby 44px ring or cycling the stack. Overlapping
+      // pills keep the selected title (it is painted on top). At fit zoom
       // keep marker-first so the selected pill does not steal taps aimed
       // at a covered neighbor.
       const zoomed = Boolean(plot.closest('.grid-zoom-slot--zoomed'))
