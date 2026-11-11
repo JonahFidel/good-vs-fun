@@ -83,10 +83,14 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * that north/Good-10 slot then takes the unused
  * Fun-plus-Good corner: Schindler grows toward
  * Fun 10 / Good 0 so it sits left of 12 Years
- * and above Requiem. Overlay copies of that
- * triangle and leftover pair match at
- * ghost-label zoom. Reuse of label-end would
- * also flip the fit-zoom selected pill.
+ * and above Requiem. That Fun 10 still grows
+ * into Room (Fun 0 / Good 10) at dFun 1.0, so
+ * Room then matches 12 Years' Fun 10 and sits
+ * above it instead of covering. Overlay copies
+ * of that triangle, leftover pair, and Room
+ * Fun match wait for ghost-label zoom. Reuse
+ * of label-end would also flip the fit-zoom
+ * selected pill.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
 /** A 4-clique can occupy the four Fun-plus-Good stagger slots. */
@@ -1346,8 +1350,9 @@ function funGutterLeftoverTriangleFunStagger(
  * corner: Schindler grows toward Fun 10 / Good 0 so
  * it sits left of 12 Years and above Requiem. Fun
  * 9-10 leftover pairs move the lower remaining title
- * toward Fun 0 / opposite Good. Overlay copies match
- * at ghost-label zoom.
+ * toward Fun 0 / opposite Good. 12 Years Fun 10 still
+ * meets Room until Room matches that Fun next.
+ * Overlay copies match at ghost-label zoom.
  */
 function funGutterLeftoverPairQuadrantStagger(
   groups: PositionGroup[],
@@ -1409,6 +1414,133 @@ function funGutterLeftoverPairQuadrantStagger(
     }
   }
   return { fun, good }
+}
+
+/**
+ * Leftover Fun-gutter Fun stagger still grows into an
+ * interior Fun-plus-Good slot on that same Good side:
+ * 12 Years (0.8 / 9.4, Fun 10) covers Room (1.8 / 8.9,
+ * Fun 0 / Good 10) at dFun 1.0. Flip the interior to
+ * the gutter title's Fun so they grow the same way
+ * instead of toward each other: Room grows toward
+ * Fun 10 above 12 Years. Skip an interior already
+ * on that Fun, skip opposite Good sides (Schindler
+ * Fun 10 / Good 0 vs Room), and skip a flip that
+ * would restack on another interior in the new
+ * Fun-plus-Good slot (Brokeback is Fun 10 / Good
+ * 10 at dFun 1.2). Fun 9-10 leftover Fun 0 titles
+ * flip the interior toward Fun 0. Overlay copies
+ * match at ghost-label zoom.
+ */
+function funGutterLeftoverMeetsInteriorFunStagger(
+  groups: PositionGroup[],
+  leftoverFun: Map<string, 'fun-10' | 'fun-0'>,
+  leftoverGood: Map<string, 'good-10' | 'good-0'>,
+  interiorFun: Map<string, 'fun-10' | 'fun-0'>,
+  interiorGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const gutters = groups.filter(
+    (group) => isFunGutterUnstacked(group) && leftoverFun.has(group.key),
+  )
+  const interiors = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      interiorFun.has(group.key) &&
+      interiorGood.has(group.key),
+  )
+  const pairs: {
+    gutter: PositionGroup
+    interior: PositionGroup
+    dist: number
+    fun: 'fun-10' | 'fun-0'
+  }[] = []
+  for (const gutter of gutters) {
+    const funSide = leftoverFun.get(gutter.key)
+    if (!funSide) continue
+    const gutterSide = leftoverGood.has(gutter.key)
+      ? resolvedGoodSide(gutter, leftoverGood.get(gutter.key))
+      : funGutterResolvedGoodSide(gutter)
+    for (const interior of interiors) {
+      const interiorFunSide = interiorFun.get(interior.key)
+      const interiorGoodSide = interiorGood.get(interior.key)
+      if (!interiorFunSide || !interiorGoodSide) continue
+      if (interiorFunSide === funSide) continue
+      if (
+        resolvedGoodSide(interior, interiorGoodSide) !== gutterSide
+      ) {
+        continue
+      }
+      const dFun = Math.abs(gutter.fun - interior.fun)
+      const dGood = Math.abs(gutter.good - interior.good)
+      if (
+        dFun > INTERIOR_SAME_GOOD_FUN_GAP ||
+        dGood > INTERIOR_CLOSE_GOOD_GAP
+      ) {
+        continue
+      }
+      pairs.push({
+        gutter,
+        interior,
+        dist: Math.hypot(dFun, dGood),
+        fun: funSide,
+      })
+    }
+  }
+  pairs.sort((a, b) => a.dist - b.dist)
+  const usedGutter = new Set<string>()
+  const usedInterior = new Set<string>()
+  for (const pair of pairs) {
+    if (
+      usedGutter.has(pair.gutter.key) ||
+      usedInterior.has(pair.interior.key) ||
+      stagger.has(pair.interior.key)
+    ) {
+      continue
+    }
+    if (
+      interiorFunFlipRestacks(
+        pair.interior,
+        pair.fun,
+        interiorFun,
+        interiorGood,
+        groups,
+      )
+    ) {
+      continue
+    }
+    stagger.set(pair.interior.key, pair.fun)
+    usedGutter.add(pair.gutter.key)
+    usedInterior.add(pair.interior.key)
+  }
+  return stagger
+}
+
+function interiorFunFlipRestacks(
+  interior: PositionGroup,
+  newFun: 'fun-10' | 'fun-0',
+  interiorFun: Map<string, 'fun-10' | 'fun-0'>,
+  interiorGood: Map<string, 'good-10' | 'good-0'>,
+  groups: PositionGroup[],
+): boolean {
+  const wantGood = interiorGood.get(interior.key)
+  if (!wantGood) return false
+  for (const other of groups) {
+    if (other.key === interior.key) continue
+    if (!isInteriorUnstacked(other)) continue
+    if (interiorFun.get(other.key) !== newFun) continue
+    if (interiorGood.get(other.key) !== wantGood) continue
+    const dFun = Math.abs(interior.fun - other.fun)
+    const dGood = Math.abs(interior.good - other.good)
+    if (
+      dFun > INTERIOR_SAME_GOOD_FUN_GAP ||
+      dGood > INTERIOR_CLOSE_GOOD_GAP
+    ) {
+      continue
+    }
+    return true
+  }
+  return false
 }
 
 function computeMoviePointStagger(groups: PositionGroup[]) {
@@ -1536,11 +1668,22 @@ function computeMoviePointStagger(groups: PositionGroup[]) {
     funGutterClaimedGood,
     funGutterLeftoverFun,
   )
+  const leftoverGutterFun = new Map([
+    ...funGutterLeftoverFun,
+    ...funGutterLeftoverPair.fun,
+  ])
+  const leftoverInteriorFun = funGutterLeftoverMeetsInteriorFunStagger(
+    groups,
+    leftoverGutterFun,
+    funGutterLeftoverPair.good,
+    interiorFun,
+    interiorGood,
+  )
   const funStagger = new Map([
     ...interiorFun,
     ...gutterNeighborFun,
-    ...funGutterLeftoverFun,
-    ...funGutterLeftoverPair.fun,
+    ...leftoverGutterFun,
+    ...leftoverInteriorFun,
   ])
   const goodStagger = new Map([
     ...interiorGood,
