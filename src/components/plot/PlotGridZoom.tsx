@@ -166,6 +166,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const panVelocityRef = useRef({ vx: 0, vy: 0 })
     const inertiaRafRef = useRef<number | null>(null)
     const zoomAnimRafRef = useRef<number | null>(null)
+    // A tap that stops inertia or a zoom ease should not deselect.
+    const caughtMotionRef = useRef(false)
 
     useImperativeHandle(forwardedRef, () => gridRef.current as HTMLDivElement)
 
@@ -407,7 +409,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // eases to 2.2x or back to fit instead of jumping, matching that
     // coast. Pinch-out past 1x and zoomed pan past a covering or
     // keep-visible edge rubber-band, then ease back on lift, so getting
-    // home or hitting an edge is not a wall.
+    // home or hitting an edge is not a wall. Catching a flicked coast
+    // resumes from that unconstrained translation and does not count as
+    // an empty-grid tap, so a finger-down to stop the grid is not sticky
+    // and does not hide the selected title.
     // Mouse pan, like wheel and Touch Events, sits on the
     // plot card so a drag that starts on a Fun/Good axis still pans the
     // zoomed grid. Safari GestureEvents listen on window capture because
@@ -489,6 +494,14 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         lastPanSampleRef.current = { x: clientX, y: clientY, t: now }
       }
 
+      function rememberUnconstrained(tx: number, ty: number) {
+        pinchUnconstrainedRef.current = {
+          scale: stateRef.current.scale,
+          tx,
+          ty,
+        }
+      }
+
       function startInertia() {
         const speed = Math.hypot(
           panVelocityRef.current.vx,
@@ -504,9 +517,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // move. Inertia has no finger, so keep unconstrained tx/ty here:
         // applyTransform(rubberBand) writes the compressed overshoot back
         // into stateRef, and adding velocity onto that would shrink the
-        // overshoot every frame.
+        // overshoot every frame. Remember that origin so a catch finger
+        // (1→pan or 1→2 pinch) does not resume from the compressed paint.
         let ux = stateRef.current.tx
         let uy = stateRef.current.ty
+        rememberUnconstrained(ux, uy)
         let last = performance.now()
         const tick = (now: number) => {
           inertiaRafRef.current = null
@@ -545,6 +560,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           const prevTy = stateRef.current.ty
           ux += v.vx * dt
           uy += v.vy * dt
+          rememberUnconstrained(ux, uy)
           stateRef.current.tx = ux
           stateRef.current.ty = uy
           userTransformedRef.current = true
@@ -704,14 +720,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           tx,
           ty,
         }
-        // Keep unconstrained pan for a 1→2 pinch. Clearing it here made
-        // the next pinch origin the compressed paint, the same sticky
-        // handoff 2→1 had before this ref existed.
-        pinchUnconstrainedRef.current = {
-          scale: stateRef.current.scale,
-          tx,
-          ty,
-        }
+        // Keep unconstrained pan for a 1→2 pinch or a catch of inertia.
+        // Clearing it here made the next pinch origin the compressed
+        // paint, the same sticky handoff 2→1 had before this ref existed.
+        rememberUnconstrained(tx, ty)
         setPanCursor(true)
       }
 
@@ -760,11 +772,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         samplePanVelocity(clientX, clientY)
         const tx = panRef.current.tx + (clientX - panRef.current.x)
         const ty = panRef.current.ty + (clientY - panRef.current.y)
-        pinchUnconstrainedRef.current = {
-          scale: stateRef.current.scale,
-          tx,
-          ty,
-        }
+        rememberUnconstrained(tx, ty)
         stateRef.current.tx = tx
         stateRef.current.ty = ty
         userTransformedRef.current = true
@@ -824,6 +832,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         )
         if (!overshotMin && !overshotMax && !nearFit) return false
         resetPanVelocity()
+        pinchUnconstrainedRef.current = null
         userTransformedRef.current = true
         if (overshotMax) {
           const next = clampToSlot(
@@ -860,6 +869,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return false
         }
         resetPanVelocity()
+        // Drop the overshoot origin so a catch during the ease-back
+        // grabs the interpolated view instead of jumping to unconstrained.
+        pinchUnconstrainedRef.current = null
         userTransformedRef.current = true
         animateTo(clamped)
         return true
@@ -904,8 +916,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // Wrapper pointerdown would deselect on the first finger of a
         // pinch, pan, or double-tap, hiding the only fit-zoom title.
         // Wait out the double-tap window so a confirmed empty tap is
-        // the only touch path that clears the selection.
-        scheduleEmptyTap(now)
+        // the only touch path that clears the selection. A tap that
+        // caught inertia or a zoom ease still records lastTap so a
+        // follow-up can double-tap, but must not deselect.
+        if (!caughtMotionRef.current) {
+          scheduleEmptyTap(now)
+        }
         return false
       }
 
@@ -1013,6 +1029,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
         if (fingers.length !== 1) return
         const touch = fingers[0]
+        // Check before stopTransientMotion clears the rAF ids. A finger
+        // that stops a flicked coast (or in-flight ease) is a catch, not
+        // an empty-grid tap.
+        caughtMotionRef.current =
+          inertiaRafRef.current != null || zoomAnimRafRef.current != null
         stopTransientMotion()
         pinchOccurredRef.current = false
         // A follow-up finger may be the second half of a double-tap or a
@@ -1083,17 +1104,20 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
         const ended = plotTouches(e.changedTouches)[0] ?? e.changedTouches[0]
-        if (ended) {
-          if (maybeDoubleTap(ended.clientX, ended.clientY)) {
-            e.preventDefault()
-            // The zoom ease is already in flight. Do not settle pan or
-            // start inertia; those would cancel animateTo.
-            endTouchGesture()
-            resetPanVelocity()
-            return
-          }
-        } else {
+        const doubled = ended
+          ? maybeDoubleTap(ended.clientX, ended.clientY)
+          : false
+        caughtMotionRef.current = false
+        if (!ended) {
           lastTapRef.current = null
+        }
+        if (doubled) {
+          e.preventDefault()
+          // The zoom ease is already in flight. Do not settle pan or
+          // start inertia; those would cancel animateTo.
+          endTouchGesture()
+          resetPanVelocity()
+          return
         }
         // One-finger flick: keep the zoomed grid moving after lift. Fit
         // zoom never sets panRef, so the default 0-10 square stays locked.
@@ -1116,6 +1140,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       function onTouchCancel() {
         cancelEmptyTap()
         lastTapRef.current = null
+        caughtMotionRef.current = false
         stopTransientMotion()
         resetPanVelocity()
         endTouchGesture()
