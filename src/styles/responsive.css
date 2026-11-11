@@ -1811,8 +1811,12 @@
     label-end: a transform-only Good 10 shift on left:0 would
     leave a one-pill gap and cover Kill Bill V1 instead of
     sitting beside Stalin. One neighbor per pair, away from
-    the pair's Good, so Novocaine and Phoenician stay put.
-    Overlay close-Good gets this stagger at ghost-label zoom.
+    the pair's Good, so Novocaine stays put. Isolated
+    close-Good pairs that are not next to a same-Good pair
+    (Frankenstein vs Back to the Future 3, Ad Astra vs
+    Sicario) reuse these classes: one title, away from its
+    partner. Overlay close-Good gets this stagger at
+    ghost-label zoom.
   */
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-good-10 > .movie-label {
     left: auto;
