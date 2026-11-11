@@ -1788,6 +1788,37 @@
     max-width: min(20rem, calc(100vw - 1.5rem));
   }
 
+  /*
+    Manage account is Clerk's default ~55rem modal. On a 375px iPhone
+    that overflows horizontally. Cap to the viewport like Sign in,
+    scoped to UserProfile so UserButton popover stays auto-sized.
+    Appearance inline styles are the cascade that beats Clerk's
+    injected sheet; these rules match that sizing when they win.
+  */
+  .cl-modalContent:has(.cl-userProfile-root) {
+    width: 100%;
+    max-width: min(55rem, calc(100vw - 1.5rem));
+    height: min(44rem, calc(100dvh - 1.5rem));
+    max-height: min(44rem, calc(100dvh - 1.5rem));
+    margin: 0;
+  }
+
+  .cl-userProfile-root,
+  .cl-userProfile-root .cl-cardBox,
+  .cl-userProfile-root .cl-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .cl-navbarButton,
+  .cl-navbarMobileMenuButton,
+  .cl-profileSectionPrimaryButton,
+  .cl-accordionTriggerButton,
+  .cl-modalCloseButton {
+    min-height: 2.75rem;
+  }
+
   .cl-formFieldInput,
   .cl-otpCodeFieldInput,
   .cl-phoneInputInput,

@@ -1,5 +1,6 @@
 import { UserButton, useAuth } from '@clerk/clerk-react'
 import { NavLink } from 'react-router-dom'
+import { clerkAppearance } from './clerkAppearance'
 import { useIsHydrated } from './useIsHydrated'
 
 export function NavBar() {
@@ -21,7 +22,10 @@ export function NavBar() {
               >
                 Decks
               </NavLink>
-              <UserButton afterSignOutUrl="/" />
+              <UserButton
+                afterSignOutUrl="/"
+                userProfileProps={{ appearance: clerkAppearance.userProfile }}
+              />
             </>
           ) : (
             <>
