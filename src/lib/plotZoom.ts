@@ -17,14 +17,20 @@ export type ViewSize = {
 export const INITIAL_SCALE = 1
 export const MIN_SCALE = 0.3
 export const MAX_SCALE = 8
-/** Pinch past this scale before unselected mobile titles come back. */
-export const LABELS_VISIBLE_SCALE = 1.4
-/** Double-tap zoom-in; above LABELS_VISIBLE_SCALE so titles appear. */
+/** Pinch past this scale before odd ticks and half-unit lines return. */
+export const GRID_DETAIL_SCALE = 1.4
+/**
+ * Double-tap zoom-in. Unselected titles wait until this scale: 1.4x on a
+ * ~370px square is only ~43px per score unit, so 0.8rem / 7.25rem pills
+ * still cover the grid you zoomed in to read.
+ */
 export const DOUBLE_TAP_SCALE = 2.2
+/** Unselected mobile titles appear at double-tap zoom, not at 1.4x. */
+export const LABELS_VISIBLE_SCALE = DOUBLE_TAP_SCALE
 /**
  * Ghost compare titles wait until after double-tap zoom. Example decks
- * are 40+ movies, so revealing that overlay at 1.4x covers the primary
- * titles pinch-to-read is for.
+ * are 40+ movies, so revealing that overlay with primary titles covers
+ * the names pinch-to-read is for.
  */
 export const GHOST_LABELS_VISIBLE_SCALE = 3.2
 const FIT_SCALE_EPSILON = 0.05

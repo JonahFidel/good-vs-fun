@@ -82,9 +82,9 @@ function idFromLabelAtPoint(
  * over. iPhone labels stay pointer-events: none so nearby 44px markers remain
  * tappable; callers that need the title itself have to hit-test screen rects.
  *
- * Fit-zoom unselected pills are opacity 0 and skipped. After pinch/double-tap
- * every title is painted, so this is how you select the movie you just read
- * instead of missing it or double-tap zooming.
+ * Fit-zoom and light-pinch unselected pills are opacity 0 and skipped.
+ * After double-tap / deep pinch every title is painted, so this is how
+ * you select the movie you just read instead of missing it or zooming.
  *
  * A selected wrapping pill can cover a neighbor's truncated title. Returning
  * the first DOM hit would switch away from the title you are reading; prefer
@@ -157,9 +157,9 @@ export function nextMovieIdInGroup(
  * iPhone grid is often not the dot you aimed at.
  *
  * Movies that share a Fun/Good score render as one marker. A second tap on
- * that marker advances to the next title. After pinch, movieIdAtVisibleLabel
- * can select a listed title directly because the pills stay pointer-events:
- * none so they cannot receive the tap themselves.
+ * that marker advances to the next title. After double-tap / deep pinch,
+ * movieIdAtVisibleLabel can select a listed title directly because the pills
+ * stay pointer-events: none so they cannot receive the tap themselves.
  */
 export function closestMovieId(
   grid: HTMLElement,

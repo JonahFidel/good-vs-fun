@@ -12,6 +12,7 @@ import {
 import { scoringRegionScreenRect } from '../../lib/gridCanvas'
 import {
   GHOST_LABELS_VISIBLE_SCALE,
+  GRID_DETAIL_SCALE,
   INITIAL_SCALE,
   LABELS_VISIBLE_SCALE,
   canPan,
@@ -117,6 +118,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       canvas.style.setProperty('--plot-scale', String(scale))
       slot?.classList.toggle(
         'grid-zoom-slot--zoomed',
+        scale >= GRID_DETAIL_SCALE,
+      )
+      slot?.classList.toggle(
+        'grid-zoom-slot--labels',
         scale >= LABELS_VISIBLE_SCALE,
       )
       slot?.classList.toggle(

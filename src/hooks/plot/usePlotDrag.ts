@@ -142,13 +142,13 @@ export function usePlotDrag({
       if (event.pointerType !== 'touch') {
         return
       }
-      // After pinch, titles are visible but pointer-events: none. Prefer
-      // the painted title so a tap on "Kill Bill" selects that movie
-      // instead of a nearby 44px ring or cycling the stack. Overlapping
-      // pills keep the selected title (it is painted on top). At fit zoom
-      // keep marker-first so the selected pill does not steal taps aimed
-      // at a covered neighbor.
-      const zoomed = Boolean(plot.closest('.grid-zoom-slot--zoomed'))
+      // After double-tap / deep pinch, titles are visible but
+      // pointer-events: none. Prefer the painted title so a tap on
+      // "Kill Bill" selects that movie instead of a nearby 44px ring
+      // or cycling the stack. Overlapping pills keep the selected title
+      // (it is painted on top). Below label zoom, keep marker-first so
+      // a selected pill does not steal taps aimed at a covered neighbor.
+      const zoomed = Boolean(plot.closest('.grid-zoom-slot--labels'))
       const fromLabel = zoomed
         ? movieIdAtVisibleLabel(plot, event.clientX, event.clientY)
         : null
