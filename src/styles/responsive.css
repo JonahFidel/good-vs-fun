@@ -442,8 +442,14 @@
     Fit-zoom Good/Fun live in this bar, not on the canvas. The summary
     used to be "Selected" plus "title · scores" in one ellipsizing meta
     string, so a tap on Pirates of the Caribbean (Fun 9.55 / Good 9.83)
-    hid the only default-zoom score readout. Title can ellipsize; F/G
-    stay. Undo the uppercase summary so the movie name stays readable.
+    hid the only default-zoom score readout. F/G stay on one line; the
+    title can wrap. Undo the uppercase summary so the movie name stays
+    readable.
+
+    One nowrap line in this leftover width is still ~12-26 characters,
+    so that same Pirates title reads as "Pirates of the Caribbe…". Two
+    lines of 0.8rem / 1.25 fit the existing 44px bar and show the rest
+    of the name without covering the 0-10 grid.
   */
   .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
     flex: 1 1 0;
@@ -452,6 +458,13 @@
     letter-spacing: 0;
     text-transform: none;
     color: #1e3a8a;
+    white-space: normal;
+    overflow-wrap: break-word;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta {
