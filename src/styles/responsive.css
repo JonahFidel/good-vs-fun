@@ -1377,12 +1377,23 @@
 
   /*
     Overlay movies have no Selected bar, so a one-line 3.75rem
-    ellipsis is the only 3.2x readout. Wrap 2 lines in that same
-    one-cell box (the fit-zoom selected trick) so names like
-    Pirates of the Caribbean are identifiable without covering
-    extra Good units. Cap used width: shrink-to-fit plus
-    -webkit-box otherwise reports the unwrapped title and
-    line-clamp never runs.
+    ellipsis is the only 3.2x readout. Wrap in that same one-cell
+    box (the fit-zoom selected trick) so names like Pirates of
+    the Caribbean are identifiable without covering extra Good
+    units. Cap used width: shrink-to-fit plus a wrapping block
+    otherwise reports the unwrapped title and the two-line clip
+    never sees a narrower box.
+
+    Line-clamp shows the start of that wrap: "A Complete
+    Unknown" became "A / Complete…", "The Phoenician Scheme"
+    became "The / Phoenici…", and "Pirates of the Carribean:
+    Curse of the Black Pearl" never reached Black Pearl. Clip
+    the line to the last two wrapped lines instead (column
+    flex-end plus overflow) so those read as Complete/Unknown,
+    Phoenician/Scheme, and Black Pearl. Short names still
+    shrink-to-fit and stay one or two lines; the title must
+    keep its content height so flex-end can hide the start
+    instead of shrinking to the first two lines.
 
     Stacked overlays already list every truncated name, the same
     2.2x primary readout. Wrapping each of those lines too turns
@@ -1402,19 +1413,31 @@
     text-overflow: ellipsis;
   }
 
-  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) :is(.movie-label-line, .movie-label-title) {
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) .movie-label-line {
     white-space: normal;
     overflow-wrap: break-word;
     min-width: 0;
     max-width: 100%;
+    /*
+      Two line-heights (1.2 on .movie-label). Height stays auto
+      so a one-line name does not sit in an empty two-line box.
+    */
+    max-height: 2.4em;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
   }
 
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) .movie-label-title {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: unset;
+    flex: none;
   }
 
   /*
@@ -1467,7 +1490,7 @@
     intersects with the pill so right-side 2.2x labels cannot
     steal tap-A-then-tap-B from this stack's 44px ring.
     Ghost stacks already clip at --ghost-labels; unstacked
-    overlays wrap 2 lines there.
+    overlays clip to the last two wrapped lines there.
   */
   .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) .movie-label-line {
     min-width: 0;
