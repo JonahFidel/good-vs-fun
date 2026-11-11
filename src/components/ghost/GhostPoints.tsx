@@ -36,9 +36,12 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * partner. Remaining degree-1 ends of longer close-Good chains
  * (28 Years Later / Alexander / Bone Temple / Pizza) get that
  * flip next, so the two-partner interiors do not block the ends.
- * Skip coincident north/south so those names do not restack on
- * the primary. Reuse of label-start would also move every
- * left-side overlay.
+ * Independent same-side collisions after those flips (Lebowski
+ * vs Palm Springs both Good 10, Moana vs On the Basis of Sex
+ * both Good 0) then split vertically so they do not keep
+ * covering on that side. Skip coincident north/south so those
+ * names do not restack on the primary. Reuse of label-start
+ * would also move every left-side overlay.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
 
@@ -251,6 +254,57 @@ function interiorCloseGoodChainHorizontalStagger(
   )
 }
 
+/**
+ * Neighbor, isolated, and chain flips can land two titles on the
+ * same Good side still close enough to cover: Palm Springs
+ * (neighbor Good 10) vs Lebowski (isolated Good 10), and Moana
+ * vs On the Basis of Sex (both chain-end Good 0). Pair remaining
+ * degree-1 same-side neighbors and grow them toward opposite Fun
+ * gutters. Skip anyone already in same-Good vertical stagger, and
+ * skip clusters with two leftover partners so this does not fight
+ * the Drama clique. Coincident north/south stay put at class apply.
+ */
+function interiorSameSideCloseGoodVerticalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const bySide = new Map<'good-10' | 'good-0', PositionGroup[]>()
+  for (const group of groups) {
+    if (
+      !isInteriorUnstacked(group) ||
+      verticalStagger.has(group.key)
+    ) {
+      continue
+    }
+    const side = horizontalStagger.get(group.key)
+    if (!side) continue
+    const list = bySide.get(side)
+    if (list) list.push(group)
+    else bySide.set(side, [group])
+  }
+  for (const list of bySide.values()) {
+    const partners = closeGoodPartners(list)
+    const used = new Set<string>()
+    for (const group of list) {
+      if (used.has(group.key)) continue
+      const others = partners.get(group.key) ?? []
+      if (others.length !== 1) continue
+      const other = others[0]
+      if (used.has(other.key)) continue
+      if ((partners.get(other.key) ?? []).length !== 1) continue
+      const [higher, lower] =
+        group.fun >= other.fun ? [group, other] : [other, group]
+      stagger.set(higher.key, 'fun-10')
+      stagger.set(lower.key, 'fun-0')
+      used.add(group.key)
+      used.add(other.key)
+    }
+  }
+  return stagger
+}
+
 function overlayLabelPlacement({
   good,
   fun,
@@ -350,6 +404,12 @@ export function GhostPoints({
     ...isolatedStagger,
     ...chainStagger,
   ])
+  const sameSideVertical = interiorSameSideCloseGoodVerticalStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+  )
+  const funStagger = new Map([...verticalStagger, ...sameSideVertical])
   return (
     <>
       {groups.map((group) => {
@@ -392,13 +452,16 @@ export function GhostPoints({
         // isolated close-Good pairs with no same-Good neighbor, and
         // remaining degree-1 ends of longer close-Good chains flip
         // left/right like label-start so they sit beside each other
-        // instead of covering. Skip coincident north/south so those
-        // names do not restack on the primary that already occupies
-        // a slot next to the marker.
+        // instead of covering. Independent same-side collisions after
+        // those flips (Lebowski vs Palm Springs, Moana vs On the
+        // Basis of Sex) add Fun stagger on top of that Good class.
+        // Skip coincident north/south so those names do not restack
+        // on the primary that already occupies a slot next to the
+        // marker.
         const staggerTowardFun10 =
-          !hasVerticalSlot && verticalStagger.get(group.key) === 'fun-10'
+          !hasVerticalSlot && funStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 =
-          !hasVerticalSlot && verticalStagger.get(group.key) === 'fun-0'
+          !hasVerticalSlot && funStagger.get(group.key) === 'fun-0'
         const staggerTowardGood10 =
           !hasVerticalSlot && horizontalStagger.get(group.key) === 'good-10'
         const staggerTowardGood0 =

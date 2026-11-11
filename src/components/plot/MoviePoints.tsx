@@ -289,8 +289,8 @@ function interiorCloseGoodChainHorizontalStagger(
  * degree-1 same-side neighbors and grow them toward opposite Fun
  * gutters. Skip anyone already in same-Good vertical stagger, and
  * skip clusters with two leftover partners so this does not fight
- * the Drama clique. Overlay same-side collisions stay put until
- * they get this stagger at ghost-label zoom.
+ * the Drama clique. Overlay same-side collisions get this stagger
+ * at ghost-label zoom.
  */
 function interiorSameSideCloseGoodVerticalStagger(
   groups: PositionGroup[],
