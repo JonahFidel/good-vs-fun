@@ -392,12 +392,11 @@
     can read a long name. That same summary stayed sticky when open, so
     on the 9rem SE floor (~144px) the extra ~24px plus the open
     border-bottom clipped Fun/Good - the only iPhone way to move a
-    point. Collapse the open summary to a 44px title row; the sliders
-    below already show live Fun/Good. Two lines of 0.8rem / 1.25 are
-    32px, so the open title can keep the collapsed wrap inside 44px.
-    Nowrap plus wordy Rename/Delete left ~14 characters on SE, so
-    Pirates of the Caribbean read as "Pirates of th…". Portrait folds
-    compact 44px actions into that row so they are not below the fold.
+    point. Collapse the open summary to a title row; the sliders
+    below already show live Fun/Good. Portrait folds compact 44px
+    Aa/× into that row so they are not below the fold, then wraps
+    three lines so the narrower leftover still reaches Black Pearl.
+    Landscape keeps the full-width labeled row under stacked sliders.
   */
   .deck-sidebar .movie-selection-panel[open] > .deck-sidebar-collapse-summary {
     position: sticky;
@@ -462,7 +461,13 @@
       actions into the open summary (F/G is already hidden there) so the
       editor can rename/delete without scrolling. Wordy Rename/Delete
       in that row leave ~14 characters on SE, so keep 44px icon hits
-      (Aa / ×, matching Undo) and 2-line wrap. Landscape leftover is
+      (Aa / ×, matching Undo). Two lines then last-clip Pirates (~50)
+      and Alexander (~59) on that ~18-22 character leftover: last-two-
+      lines hid Pirates / Alexander and showed only Curse of the /
+      Black Pearl. Three line-heights (1.25) fit those. Collapsed
+      portrait keeps two lines because that row is ~33-44 characters
+      without Aa/×. Three title lines are ~48px; side-by-side Fun/Good
+      plus that row still fit the 9rem SE floor. Landscape leftover is
       tall, so it keeps the full-width labeled row under the stacked
       sliders; those same words in a 12rem summary would still clip
       the title.
@@ -473,6 +478,10 @@
 
     .movie-selection-panel[open] > .deck-sidebar-collapse-summary {
       grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+
+    .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
+      max-height: 3.75em;
     }
 
     .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .movie-selection-actions {
