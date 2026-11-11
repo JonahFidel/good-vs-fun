@@ -667,6 +667,19 @@
   }
 
   /*
+    Stacked groups put every title in one pill. A selected wrapping stack
+    plus Good/Fun covers the fitted square, and cycling would not change
+    which titles you see. Keep only the active line; the count chip still
+    shows how many share the dot. Unselected zoomed stacks still list
+    every truncated title so pinch-in can be read without tapping.
+  */
+  .movie-point--stacked.movie-point--selected .movie-label-line:not(.movie-label-line--selected):not(.movie-label-line--linked),
+  .movie-point--stacked.movie-point.dragging .movie-label-line:not(.movie-label-line--selected):not(.movie-label-line--linked),
+  .movie-point--stacked.movie-point--highlighted .movie-label-line:not(.movie-label-line--selected):not(.movie-label-line--linked) {
+    display: none;
+  }
+
+  /*
     The hover score pill is centered above the dot, so on a ~370px square it
     clips at Good 0/10 (needs ~60px, margin is ~31px) and at Fun 10 on
     landscape. Fold Good/Fun into the selected title as two short lines.
