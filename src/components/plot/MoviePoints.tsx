@@ -47,6 +47,10 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * same slots. Size-5+ meshes that fail both guards (Jonah's
  * 2025 9-mesh around Knives Out 3) then peel the hub so a
  * leftover unique-quadrant 4 can occupy those slots.
+ * Leftover size-5 of that peel (Challengers / Logan Lucky /
+ * Knives Out 3 / The Vvitch / The Killer) then peels the
+ * pair whose isolated Good flip would restack, so the
+ * remaining 3 occupy triangle slots.
  * Reuse of label-end would also flip the fit-zoom
  * selected pill.
  */
@@ -55,6 +59,8 @@ const INTERIOR_CLOSE_GOOD_GAP = 1
 const INTERIOR_CLIQUE_SIZE = 4
 /** A triangle occupies three of those slots as a 2-vs-1 split. */
 const INTERIOR_TRIANGLE_SIZE = 3
+/** Leftover mesh after a unique-quadrant-4 peel is a size-5 bowtie. */
+const INTERIOR_LEFTOVER_MESH_SIZE = 5
 /** Slide the stack-count chip left so Fun/Good ≈10 does not clip it in the 1-unit margin. */
 const COUNT_WEST_GOOD = 9
 
@@ -383,6 +389,7 @@ function closeGoodConnectedComponents(
  * line-shaped 4 does not stack two titles in one slot. Size-3
  * triangles get a 2-vs-1 split next; size-5+ meshes peel a hub
  * after that so a leftover unique-quadrant 4 can still pack.
+ * Leftover size-5 of that peel packs a triangle after that.
  */
 function uniqueQuadrantAssignment(
   component: PositionGroup[],
@@ -473,8 +480,110 @@ function pickTowardShared<T>(
  * unused adjacent quadrant along the pair's larger
  * separation (Fun for those two Naked Guns). Overlay
  * copies of this triangle get the same split at
- * ghost-label zoom. Jonah's 2025 9-mesh peels next.
+ * ghost-label zoom. Leftover size-5 of the 9-mesh peel
+ * reuses this next so Knives Out 3 / The Vvitch / The
+ * Killer can occupy three slots.
  */
+function triangleAssignment(
+  component: PositionGroup[],
+): {
+  key: string
+  fun: 'fun-10' | 'fun-0'
+  good: 'good-10' | 'good-0'
+}[] | null {
+  if (component.length !== INTERIOR_TRIANGLE_SIZE) return null
+  const centroidFun =
+    component.reduce((sum, group) => sum + group.fun, 0) / component.length
+  const centroidGood =
+    component.reduce((sum, group) => sum + group.good, 0) / component.length
+  const assigned: {
+    group: PositionGroup
+    fun: 'fun-10' | 'fun-0'
+    good: 'good-10' | 'good-0'
+  }[] = []
+  const byQuadrant = new Map<
+    string,
+    {
+      group: PositionGroup
+      fun: 'fun-10' | 'fun-0'
+      good: 'good-10' | 'good-0'
+    }[]
+  >()
+  for (const group of component) {
+    const funSide: 'fun-10' | 'fun-0' =
+      group.fun >= centroidFun ? 'fun-10' : 'fun-0'
+    const goodSide: 'good-10' | 'good-0' =
+      group.good >= centroidGood ? 'good-10' : 'good-0'
+    const entry = { group, fun: funSide, good: goodSide }
+    assigned.push(entry)
+    const key = `${funSide}:${goodSide}`
+    const list = byQuadrant.get(key)
+    if (list) list.push(entry)
+    else byQuadrant.set(key, [entry])
+  }
+  if (byQuadrant.size === INTERIOR_TRIANGLE_SIZE) {
+    return assigned.map((entry) => ({
+      key: entry.group.key,
+      fun: entry.fun,
+      good: entry.good,
+    }))
+  }
+  if (byQuadrant.size !== 2) return null
+  const pair = [...byQuadrant.values()].find((list) => list.length === 2)
+  const singletonList = [...byQuadrant.values()].find(
+    (list) => list.length === 1,
+  )
+  if (!pair || !singletonList) return null
+  const singleton = singletonList[0]
+  const [first, second] = pair
+  const sharedFun = first.fun
+  const sharedGood = first.good
+  const uniqueKey = `${singleton.fun}:${singleton.good}`
+  const funFlip = {
+    fun: oppositeFunSide(sharedFun),
+    good: sharedGood,
+  }
+  const goodFlip = {
+    fun: sharedFun,
+    good: oppositeGoodSide(sharedGood),
+  }
+  const funFlipKey = `${funFlip.fun}:${funFlip.good}`
+  const dFun = Math.abs(first.group.fun - second.group.fun)
+  const dGood = Math.abs(first.group.good - second.group.good)
+  let splitOnFun = dFun >= dGood
+  if (splitOnFun && funFlipKey === uniqueKey) splitOnFun = false
+  if (!splitOnFun && `${goodFlip.fun}:${goodFlip.good}` === uniqueKey) {
+    splitOnFun = true
+  }
+  const keep = pickTowardShared(
+    first,
+    second,
+    splitOnFun
+      ? (entry) => entry.group.fun
+      : (entry) => entry.group.good,
+    splitOnFun ? sharedFun === 'fun-10' : sharedGood === 'good-10',
+  )
+  const move = keep === first ? second : first
+  const moveSlot = splitOnFun ? funFlip : goodFlip
+  return [
+    {
+      key: singleton.group.key,
+      fun: singleton.fun,
+      good: singleton.good,
+    },
+    {
+      key: keep.group.key,
+      fun: sharedFun,
+      good: sharedGood,
+    },
+    {
+      key: move.group.key,
+      fun: moveSlot.fun,
+      good: moveSlot.good,
+    },
+  ]
+}
+
 function interiorCloseGoodTriangleStagger(
   groups: PositionGroup[],
   verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
@@ -498,87 +607,12 @@ function interiorCloseGoodTriangleStagger(
       !cliqueGood.has(group.key),
   )
   for (const component of closeGoodConnectedComponents(candidates)) {
-    if (component.length !== INTERIOR_TRIANGLE_SIZE) continue
-    const centroidFun =
-      component.reduce((sum, group) => sum + group.fun, 0) / component.length
-    const centroidGood =
-      component.reduce((sum, group) => sum + group.good, 0) / component.length
-    const assigned: {
-      group: PositionGroup
-      fun: 'fun-10' | 'fun-0'
-      good: 'good-10' | 'good-0'
-    }[] = []
-    const byQuadrant = new Map<
-      string,
-      {
-        group: PositionGroup
-        fun: 'fun-10' | 'fun-0'
-        good: 'good-10' | 'good-0'
-      }[]
-    >()
-    for (const group of component) {
-      const funSide: 'fun-10' | 'fun-0' =
-        group.fun >= centroidFun ? 'fun-10' : 'fun-0'
-      const goodSide: 'good-10' | 'good-0' =
-        group.good >= centroidGood ? 'good-10' : 'good-0'
-      const entry = { group, fun: funSide, good: goodSide }
-      assigned.push(entry)
-      const key = `${funSide}:${goodSide}`
-      const list = byQuadrant.get(key)
-      if (list) list.push(entry)
-      else byQuadrant.set(key, [entry])
+    const assigned = triangleAssignment(component)
+    if (!assigned) continue
+    for (const entry of assigned) {
+      fun.set(entry.key, entry.fun)
+      good.set(entry.key, entry.good)
     }
-    if (byQuadrant.size === INTERIOR_TRIANGLE_SIZE) {
-      for (const entry of assigned) {
-        fun.set(entry.group.key, entry.fun)
-        good.set(entry.group.key, entry.good)
-      }
-      continue
-    }
-    if (byQuadrant.size !== 2) continue
-    const pair = [...byQuadrant.values()].find((list) => list.length === 2)
-    const singletonList = [...byQuadrant.values()].find(
-      (list) => list.length === 1,
-    )
-    if (!pair || !singletonList) continue
-    const singleton = singletonList[0]
-    fun.set(singleton.group.key, singleton.fun)
-    good.set(singleton.group.key, singleton.good)
-
-    const [first, second] = pair
-    const sharedFun = first.fun
-    const sharedGood = first.good
-    const uniqueKey = `${singleton.fun}:${singleton.good}`
-    const funFlip = {
-      fun: oppositeFunSide(sharedFun),
-      good: sharedGood,
-    }
-    const goodFlip = {
-      fun: sharedFun,
-      good: oppositeGoodSide(sharedGood),
-    }
-    const funFlipKey = `${funFlip.fun}:${funFlip.good}`
-    const dFun = Math.abs(first.group.fun - second.group.fun)
-    const dGood = Math.abs(first.group.good - second.group.good)
-    let splitOnFun = dFun >= dGood
-    if (splitOnFun && funFlipKey === uniqueKey) splitOnFun = false
-    if (!splitOnFun && `${goodFlip.fun}:${goodFlip.good}` === uniqueKey) {
-      splitOnFun = true
-    }
-    const keep = pickTowardShared(
-      first,
-      second,
-      splitOnFun
-        ? (entry) => entry.group.fun
-        : (entry) => entry.group.good,
-      splitOnFun ? sharedFun === 'fun-10' : sharedGood === 'good-10',
-    )
-    const move = keep === first ? second : first
-    const moveSlot = splitOnFun ? funFlip : goodFlip
-    fun.set(keep.group.key, sharedFun)
-    good.set(keep.group.key, sharedGood)
-    fun.set(move.group.key, moveSlot.fun)
-    good.set(move.group.key, moveSlot.good)
   }
   return { fun, good }
 }
@@ -593,7 +627,8 @@ function interiorCloseGoodTriangleStagger(
  * subcluster. Size-2 leftovers of that peel (Challengers /
  * Logan Lucky, The Vvitch / The Killer) stay put so this
  * does not restack Challengers on Some Like It Hot's
- * chain Good-10. Overlay copies get the same peel at
+ * chain Good-10. Leftover size-5 of that peel packs a
+ * triangle next. Overlay copies get the same peel at
  * ghost-label zoom.
  */
 function interiorCloseGoodMeshHubStagger(
@@ -648,31 +683,115 @@ function interiorCloseGoodMeshHubStagger(
   return { fun, good }
 }
 
-export function MoviePoints({
-  groups,
-  draggingIds,
-  selectedMovieId,
-  hover,
-  onGroupPointerDown,
-  onLabelPointerDown,
-  onHighlight,
-  onClearHover,
-}: {
-  groups: PositionGroup[]
-  draggingIds: string[] | null
-  selectedMovieId: string | null
-  hover: MovieHover | null
-  onGroupPointerDown: (
-    key: string,
-    ids: string[],
-    primaryId: string,
-  ) => (event: React.PointerEvent<HTMLDivElement>) => void
-  onLabelPointerDown: (
-    id: string,
-  ) => (event: React.PointerEvent<HTMLSpanElement>) => void
-  onHighlight: (id: string) => void
-  onClearHover: () => void
-}) {
+/**
+ * Isolated Good flip of Challengers vs Logan Lucky would
+ * restack Challengers on Some Like It Hot's chain Good-10.
+ * Skip a leftover pair when that flip lands on the same
+ * Good side as a nearby already-staggered title.
+ */
+function isolatedCloseGoodFlipRestacks(
+  pair: PositionGroup[],
+  assignedGood: Map<string, 'good-10' | 'good-0'>,
+  groups: PositionGroup[],
+): boolean {
+  if (pair.length !== 2) return false
+  const flip = closeGoodAwayFromPartner(pair[0], pair[1])
+  if (!flip) return false
+  const flipped = pair[0].key === flip.key ? pair[0] : pair[1]
+  for (const other of groups) {
+    if (other.key === pair[0].key || other.key === pair[1].key) continue
+    if (assignedGood.get(other.key) !== flip.side) continue
+    const dFun = Math.abs(flipped.fun - other.fun)
+    const dGood = Math.abs(flipped.good - other.good)
+    if (
+      dGood === 0 ||
+      dGood > INTERIOR_CLOSE_GOOD_GAP ||
+      dFun > INTERIOR_SAME_GOOD_FUN_GAP
+    ) {
+      continue
+    }
+    return true
+  }
+  return false
+}
+
+/**
+ * Leftover size-5 after a unique-quadrant-4 hub peel fails
+ * unique-4 and triangle guards: peeling Knives Out 3 from
+ * Challengers / Logan Lucky / Knives Out 3 / The Vvitch /
+ * The Killer leaves two size-2s. Pack the hub with the
+ * size-2 whose isolated Good flip would not restack
+ * (The Vvitch / The Killer) so those three occupy triangle
+ * slots. Challengers / Logan Lucky stay put so Challengers
+ * does not restack on Some Like It Hot. Overlay copies
+ * get the same peel at ghost-label zoom.
+ */
+function interiorCloseGoodLeftoverMeshTriangleStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+  sameSideVertical: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueFun: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueGood: Map<string, 'good-10' | 'good-0'>,
+  triangleFun: Map<string, 'fun-10' | 'fun-0'>,
+  triangleGood: Map<string, 'good-10' | 'good-0'>,
+  meshFun: Map<string, 'fun-10' | 'fun-0'>,
+  meshGood: Map<string, 'good-10' | 'good-0'>,
+): {
+  fun: Map<string, 'fun-10' | 'fun-0'>
+  good: Map<string, 'good-10' | 'good-0'>
+} {
+  const fun = new Map<string, 'fun-10' | 'fun-0'>()
+  const good = new Map<string, 'good-10' | 'good-0'>()
+  const assignedGood = new Map([
+    ...horizontalStagger,
+    ...cliqueGood,
+    ...triangleGood,
+    ...meshGood,
+  ])
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !horizontalStagger.has(group.key) &&
+      !sameSideVertical.has(group.key) &&
+      !cliqueFun.has(group.key) &&
+      !cliqueGood.has(group.key) &&
+      !triangleFun.has(group.key) &&
+      !triangleGood.has(group.key) &&
+      !meshFun.has(group.key) &&
+      !meshGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    if (component.length !== INTERIOR_LEFTOVER_MESH_SIZE) continue
+    const partners = closeGoodPartners(component)
+    const hub = [...component].sort(
+      (a, b) =>
+        (partners.get(b.key)?.length ?? 0) -
+        (partners.get(a.key)?.length ?? 0),
+    )[0]
+    if (!hub) continue
+    const remaining = component.filter((group) => group.key !== hub.key)
+    let packed = false
+    for (const piece of closeGoodConnectedComponents(remaining)) {
+      if (packed) break
+      if (piece.length !== 2) continue
+      if (isolatedCloseGoodFlipRestacks(piece, assignedGood, groups)) {
+        continue
+      }
+      const assigned = triangleAssignment([hub, ...piece])
+      if (!assigned) continue
+      for (const entry of assigned) {
+        fun.set(entry.key, entry.fun)
+        good.set(entry.key, entry.good)
+      }
+      packed = true
+    }
+  }
+  return { fun, good }
+}
+
+function computeMoviePointStagger(groups: PositionGroup[]) {
   const verticalStagger = interiorSameGoodVerticalStagger(groups)
   const neighborStagger = interiorCloseGoodHorizontalStagger(
     groups,
@@ -722,19 +841,62 @@ export function MoviePoints({
     triangleStagger.fun,
     triangleStagger.good,
   )
+  const leftoverMeshStagger = interiorCloseGoodLeftoverMeshTriangleStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+    sameSideVertical,
+    cliqueStagger.fun,
+    cliqueStagger.good,
+    triangleStagger.fun,
+    triangleStagger.good,
+    meshStagger.fun,
+    meshStagger.good,
+  )
   const funStagger = new Map([
     ...verticalStagger,
     ...sameSideVertical,
     ...cliqueStagger.fun,
     ...triangleStagger.fun,
     ...meshStagger.fun,
+    ...leftoverMeshStagger.fun,
   ])
   const goodStagger = new Map([
     ...horizontalStagger,
     ...cliqueStagger.good,
     ...triangleStagger.good,
     ...meshStagger.good,
+    ...leftoverMeshStagger.good,
   ])
+  return { funStagger, goodStagger }
+}
+
+export function MoviePoints({
+  groups,
+  draggingIds,
+  selectedMovieId,
+  hover,
+  onGroupPointerDown,
+  onLabelPointerDown,
+  onHighlight,
+  onClearHover,
+}: {
+  groups: PositionGroup[]
+  draggingIds: string[] | null
+  selectedMovieId: string | null
+  hover: MovieHover | null
+  onGroupPointerDown: (
+    key: string,
+    ids: string[],
+    primaryId: string,
+  ) => (event: React.PointerEvent<HTMLDivElement>) => void
+  onLabelPointerDown: (
+    id: string,
+  ) => (event: React.PointerEvent<HTMLSpanElement>) => void
+  onHighlight: (id: string) => void
+  onClearHover: () => void
+}) {
+  const { funStagger, goodStagger } = computeMoviePointStagger(groups)
 
   return (
     <>
