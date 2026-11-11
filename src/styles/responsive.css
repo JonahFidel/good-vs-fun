@@ -1307,36 +1307,20 @@
   }
 
   /*
-    A 10rem-floor landscape square has only ~13px of 1-unit margin, too
-    tight for the 0.85rem in-axis "10". Those labels covered Fun≈0 /
-    Good≈0 at default zoom. 0.7rem plus a 2px outset fits in that margin
-    so the 0-10 grid stays clear. Taller landscape plots still use this
-    size so the numbers stay in the gutter instead of on movies.
+    Landscape used to shrink every 0-10 tick to 0.7rem because the stacked
+    12rem-floor plot had a ~13px gutter. Hiding the landscape header grew
+    typical iPhone squares to ~280-360px, the same size as portrait, so
+    those numbers can stay the readable 0.85rem / 4px gutter. Keep the
+    compact ticks only on the 10rem-floor square, where 0.85rem still clips.
+    Fun 10 placement then follows the portrait 17.5rem top-gutter fallback
+    instead of a landscape undo that assumed 0.7rem would always fit left.
   */
-  .grid-tick,
-  .grid-wrapper--example .grid-tick {
-    font-size: 0.7rem;
-    /* 2px plus 0.7rem "10" fits the ~13px SE-floor landscape margin. */
-    --grid-tick-outset-major: 2px;
-  }
-
-  /*
-    Landscape 0.7rem "10" fits the left gutter down to ~14rem. Undo the
-    portrait 17.5rem top-gutter fallback so a typical ~280px landscape
-    square keeps Fun 10 on the Fun axis. Only the 10rem floor is too
-    narrow for that two-digit label.
-  */
-  .grid-tick-y:not(.grid-tick-y-right)[data-tick='10'] > .grid-tick-label {
-    right: var(--grid-tick-outset-major);
-    left: auto;
-    transform: translate(0, -50%);
-  }
-
   @container (max-width: 14rem) {
-    .grid-tick-y:not(.grid-tick-y-right)[data-tick='10'] > .grid-tick-label {
-      right: auto;
-      left: 0;
-      transform: translate(0, -100%);
+    .grid-tick,
+    .grid-wrapper--example .grid-tick {
+      font-size: 0.7rem;
+      /* 2px plus 0.7rem "10" fits the ~13px SE-floor landscape margin. */
+      --grid-tick-outset-major: 2px;
     }
   }
 
