@@ -412,7 +412,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // home or hitting an edge is not a wall. Catching a flicked coast
     // resumes from that unconstrained translation and does not count as
     // an empty-grid tap, so a finger-down to stop the grid is not sticky
-    // and does not hide the selected title.
+    // and does not hide the selected title. Catching a zoom-out ease
+    // (or a leftover ~1.1x) still eases home on lift so covering pan
+    // cannot unlock for a few pixels of overflow.
     // Mouse pan, like wheel and Touch Events, sits on the
     // plot card so a drag that starts on a Fun/Good axis still pans the
     // zoomed grid. Safari GestureEvents listen on window capture because
@@ -551,9 +553,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           v.vy *= friction
           if (Math.hypot(v.vx, v.vy) < INERTIA_MIN_VELOCITY) {
             resetPanVelocity()
-            // Coast may have ended in a rubber-band overshoot; ease back
-            // onto the filled square instead of leaving the grid hanging.
-            settlePanIfNeeded()
+            // Coast may have ended in a leftover ~1.1x or a rubber-band
+            // overshoot; ease back to the locked square or covering edge
+            // instead of leaving pan unlocked / the grid hanging.
+            if (!settlePinchIfNeeded()) settlePanIfNeeded()
             return
           }
           const prevTx = stateRef.current.tx
@@ -573,7 +576,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
             Math.abs(stateRef.current.ty - prevTy) < 0.1
           ) {
             resetPanVelocity()
-            settlePanIfNeeded()
+            if (!settlePinchIfNeeded()) settlePanIfNeeded()
             return
           }
           inertiaRafRef.current = requestAnimationFrame(tick)
@@ -814,7 +817,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       // Pinch-out past 1x rubber-bands during the gesture; on lift, ease
       // back to the locked 0-10 square. A 1.1x leftover is also settled
-      // so pan does not unlock for a few pixels of overflow.
+      // so pan does not unlock for a few pixels of overflow. Same settle
+      // runs after catching a zoom-out ease or a flicked coast: those
+      // paths never set pinchRef, so gating on pinch would leave the
+      // square slightly overflowed and pan-unlocked.
       function settlePinchIfNeeded() {
         if (!isCoarsePointer()) return false
         const fit = fitTransform()
@@ -831,6 +837,17 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           PINCH_SETTLE_PAN_EPSILON_PX,
         )
         if (!overshotMin && !overshotMax && !nearFit) return false
+        // Already on the readable square: a fit-zoom tap must not count
+        // as a settle or every empty-grid tap would start a no-op ease.
+        if (
+          !overshotMin &&
+          !overshotMax &&
+          Math.abs(current.scale - fit.scale) < 0.01 &&
+          Math.abs(current.tx - fit.tx) < 0.5 &&
+          Math.abs(current.ty - fit.ty) < 0.5
+        ) {
+          return false
+        }
         resetPanVelocity()
         pinchUnconstrainedRef.current = null
         userTransformedRef.current = true
@@ -1125,13 +1142,15 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // compressed rubber-band, and inertia would treat that as
         // unconstrained and snap back. In-bounds coast rubber-bands when
         // it later hits the covering edge.
-        const wasPinch = Boolean(pinchRef.current)
+        // Settle leftover ~1.1x even when this lift was not a pinch:
+        // catching a zoom-out ease (or a flicked leftover) leaves
+        // pinchRef null, and covering pan would unlock if we skipped.
         const coast =
           Boolean(panRef.current) &&
           gestureMovedRef.current &&
           !pinchRef.current
         endTouchGesture()
-        if (wasPinch && settlePinchIfNeeded()) return
+        if (settlePinchIfNeeded()) return
         if (settlePanIfNeeded()) return
         if (coast) startInertia()
         else resetPanVelocity()
