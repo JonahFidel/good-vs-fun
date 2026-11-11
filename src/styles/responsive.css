@@ -1767,7 +1767,10 @@
     Account popover actions were still ~32px after the avatar grew.
     Card fill stays on .sign-in-page: the same .cl-card/.cl-rootBox
     classes wrap UserButton, and 100% there overflows the signed-in
-    header plus the Manage account popover.
+    header plus the Manage account popover. Iteration 115 capped the
+    popover width but left min-width auto, so a nowrap name or email
+    in userPreview still beats that max-width and shoves Manage
+    account off a 375px leftover.
   */
   .sign-in-page {
     overflow-x: hidden;
@@ -1791,7 +1794,35 @@
   .cl-userButtonPopoverRootBox,
   .cl-userButtonPopoverCard {
     width: auto;
-    max-width: min(20rem, calc(100vw - 1.5rem));
+    max-width: min(
+      20rem,
+      calc(
+        100vw - 1.5rem - env(safe-area-inset-left, 0px) -
+          env(safe-area-inset-right, 0px)
+      )
+    );
+    min-width: 0;
+  }
+
+  .cl-userButtonPopoverMain {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /*
+    Same intrinsic-width leak as identity-preview and UserProfile rows:
+    nowrap name/email in the popover preview sets min-content wider than
+    the 20rem cap. min-width 0 plus overflow-wrap keeps Manage account
+    on a 375px leftover.
+  */
+  .cl-userPreview,
+  .cl-userPreviewTextContainer,
+  .cl-userPreviewMainIdentifier,
+  .cl-userPreviewMainIdentifierText,
+  .cl-userPreviewSecondaryIdentifier {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
 
   /*

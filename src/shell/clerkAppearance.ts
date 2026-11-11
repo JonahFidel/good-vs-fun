@@ -30,6 +30,13 @@
  * not put that padding on formFieldInput here: OTP segments also use
  * that slot, and 3rem sides would overflow a 375px leftover again.
  * CSS :has(.cl-formFieldInputShowPasswordButton) is the scoped path.
+ *
+ * The signed-in UserButton popover still has the min-width leak Sign in
+ * and UserProfile already fixed. max-width alone loses to nowrap name
+ * and email in userPreview: min-width: auto is the intrinsic address,
+ * and that beats max-width, so a long email shoves Manage account off
+ * a 375px leftover. minWidth 0 on the card plus overflow-wrap on the
+ * identifiers is the same recipe as identity-preview and profile rows.
  */
 
 const clerkAuthCardFill = {
@@ -83,6 +90,15 @@ const clerk44pxTextHit = {
   alignItems: 'center',
   minHeight: '2.75rem',
 } as const
+
+const clerkPreviewWrap = {
+  minWidth: '0',
+  maxWidth: '100%',
+  overflowWrap: 'anywhere',
+} as const
+
+const clerkUserButtonPopoverMax =
+  'min(20rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)))'
 
 const clerkUserProfileFit = {
   modalContent: {
@@ -235,6 +251,11 @@ export const clerkAppearance = {
       width: 'var(--nav-user-size)',
       height: 'var(--nav-user-size)',
     },
+    userPreview: clerkPreviewWrap,
+    userPreviewTextContainer: clerkPreviewWrap,
+    userPreviewMainIdentifier: clerkPreviewWrap,
+    userPreviewMainIdentifierText: clerkPreviewWrap,
+    userPreviewSecondaryIdentifier: clerkPreviewWrap,
   },
   signIn: {
     elements: clerkAuthCardFill,
@@ -254,11 +275,17 @@ export const clerkAppearance = {
       },
       userButtonPopoverRootBox: {
         width: 'auto',
-        maxWidth: 'min(20rem, calc(100vw - 1.5rem))',
+        maxWidth: clerkUserButtonPopoverMax,
+        minWidth: '0',
       },
       userButtonPopoverCard: {
         width: 'auto',
-        maxWidth: 'min(20rem, calc(100vw - 1.5rem))',
+        maxWidth: clerkUserButtonPopoverMax,
+        minWidth: '0',
+      },
+      userButtonPopoverMain: {
+        minWidth: '0',
+        maxWidth: '100%',
       },
     },
   },
