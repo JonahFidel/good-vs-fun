@@ -101,7 +101,10 @@ function idFromLabelAtPoint(
  * toward the marker lands in the 44px ring; that follow-up still
  * zooms this point instead of cancelling as select/cycle, and its
  * pointerdown must not select/cycle either or a stack advances / the
- * Selected bar switches while the ease runs.
+ * Selected bar switches while the ease runs. A follow-up on a different
+ * listed name in that same stacked pill is select, not zoom-out: 2.2x
+ * stacks paint every truncated title in one box, so DOUBLE_TAP_PX always
+ * covers tap-A-then-tap-B.
  */
 export function moviePointAtVisibleLabel(
   root: ParentNode,
@@ -132,7 +135,8 @@ export function moviePointAtVisibleLabel(
 
 /**
  * Movie whose on-canvas title (or the pill that contains it) the pointer is
- * over. Used to select the name you just read after titles appear.
+ * over. Used to select the name you just read after titles appear, and to
+ * tell a stacked 2.2x tap-A-then-tap-B from a same-title double-tap zoom.
  */
 export function movieIdAtVisibleLabel(
   root: ParentNode,
