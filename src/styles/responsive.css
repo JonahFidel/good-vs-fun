@@ -781,10 +781,13 @@
   /*
     Unselected zoomed pills used the selected 0.8rem / 7.25rem size, so even
     at 2.2x they overlapped 1-unit neighbors. Keep every primary title,
-    including the selected one, to about one cell. A wrapping selected
-    readout is only for fit zoom; after double-tap it covers the neighbors
-    you zoomed in to read.
+    including the selected one, to about one cell. Compact the selected
+    readout at 1.4x too: a wrapping half-square pill would cover the
+    region you just pinched into before other titles appear at 2.2x.
   */
+  .grid-zoom-slot--zoomed .movie-point--selected > .movie-label,
+  .grid-zoom-slot--zoomed .movie-point.dragging > .movie-label,
+  .grid-zoom-slot--zoomed .movie-point--highlighted > .movie-label,
   .grid-zoom-slot--labels .movie-point:not(.ghost-point) > .movie-label {
     font-size: 0.65rem;
     padding: 0.08rem 0.28rem;
@@ -823,49 +826,53 @@
 
   /*
     A stacked title+score is taller than the 1-unit margin. Grow down at
-    Fun 9–10 and up at Fun 0–1 so the pill stays inside the square.
+    Fun 9–10 and up at Fun 0–1 so the fit-zoom pill stays inside the square.
+    Past 1.4x the compact one-line title sits beside the marker instead;
+    south/north would push Fun 9–10 names down over the neighbors you
+    zoomed in to read.
   */
-  .movie-point--label-south > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south > .movie-label {
     transform: translate(calc(-100% - 9px), 6px);
   }
 
-  .movie-point--label-south.movie-point--label-end > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south.movie-point--label-end > .movie-label {
     transform: translate(calc(100% + 9px), 6px);
   }
 
-  .movie-point--label-north > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north > .movie-label {
     transform: translate(calc(-100% - 9px), calc(-100% - 6px));
   }
 
-  .movie-point--label-north.movie-point--label-end > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north.movie-point--label-end > .movie-label {
     transform: translate(calc(100% + 9px), calc(-100% - 6px));
   }
 
   /*
     A nowrap 70vw title paints past max-width (overflow: visible) and clips
     on the slot. Wrap inside half the square so a tap keeps the 0–10 grid
-    readable and the full title on-canvas. Fit zoom only: at 2.2x the
-    compact one-cell pills above already show every title, and this wrap
-    plus scores would cover them.
+    readable and the full title on-canvas. Fit zoom only: at 1.4x the
+    compact selected pill above already keeps the title on-canvas without
+    covering the cluster you pinched into, and at 2.2x every title is
+    one-cell so this wrap plus scores would cover them.
   */
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--selected > .movie-label,
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point.dragging > .movie-label,
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--highlighted > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--selected > .movie-label,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point.dragging > .movie-label,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--highlighted > .movie-label {
     max-width: 8.25rem;
     max-width: min(8.25rem, calc(50cqw - 16px));
     overflow: hidden;
     white-space: normal;
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--selected .movie-label-line,
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point.dragging .movie-label-line,
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--highlighted .movie-label-line {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--selected .movie-label-line,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point.dragging .movie-label-line,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--highlighted .movie-label-line {
     white-space: normal;
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--selected .movie-label-title,
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point.dragging .movie-label-title,
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--highlighted .movie-label-title {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--selected .movie-label-title,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point.dragging .movie-label-title,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--highlighted .movie-label-title {
     display: block;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -875,10 +882,10 @@
   /*
     Stacked groups put every title in one pill. A selected wrapping stack
     plus Good/Fun covers the fitted square, and cycling would not change
-    which titles you see. Keep only the active line at fit zoom; the count
-    chip still shows how many share the dot. Zoomed stacks list every
-    truncated title so pinch-in can be read without tapping, including
-    after the stack is selected.
+    which titles you see. Keep only the active line until 2.2x (including
+    1.4x, when the compact selected pill is one title); the count chip
+    still shows how many share the dot. At 2.2x stacks list every
+    truncated title so pinch-in can be read without tapping.
   */
   .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--stacked.movie-point--selected .movie-label-line:not(.movie-label-line--selected):not(.movie-label-line--linked),
   .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--stacked.movie-point.dragging .movie-label-line:not(.movie-label-line--selected):not(.movie-label-line--linked),
@@ -890,16 +897,17 @@
     The hover score pill is centered above the dot, so on a ~370px square it
     clips at Good 0/10 (needs ~60px, margin is ~31px) and at Fun 10 on
     landscape. Fold Good/Fun into the selected title as two short lines
-    at fit zoom. Hide that stack after 2.2x; the compact title and the
-    sidebar Selected bar already carry the readout.
+    at fit zoom. Hide that stack at 1.4x; the compact title and the
+    sidebar Selected bar already carry the readout, and the extra lines
+    would cover the cluster you pinched into.
   */
   .movie-point .movie-point-score {
     display: none;
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--selected .movie-label-score,
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point.dragging .movie-label-score,
-  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--highlighted .movie-label-score {
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--selected .movie-label-score,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point.dragging .movie-label-score,
+  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--highlighted .movie-label-score {
     display: flex;
     flex-direction: column;
     gap: 0.02rem;

@@ -17,7 +17,11 @@ export type ViewSize = {
 export const INITIAL_SCALE = 1
 export const MIN_SCALE = 0.3
 export const MAX_SCALE = 8
-/** Pinch past this scale before odd ticks and half-unit lines return. */
+/**
+ * Pinch past this scale before odd ticks and half-unit lines return.
+ * The wrapping selected title+score readout also ends here so pinch-to-read
+ * is not covered by a half-square pill before other titles appear at 2.2x.
+ */
 export const GRID_DETAIL_SCALE = 1.4
 /**
  * Double-tap zoom-in. Unselected titles wait until this scale: 1.4x on a
