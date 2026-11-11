@@ -473,7 +473,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // The inverse miss is empty-space
     // zoom-out at 2.2x/3.2x: titles and overlay names are painted, so
     // 28px jitter onto a pill or an 11px overlay would read-not-zoom-out
-    // or steal 3.2x unless the first tap stays empty-space. Overlay
+    // or steal 3.2x unless the first tap stays empty-space. Those same
+    // titles sit on 44px rings, so the completing follow-up must skip
+    // marker-first too or select/cycle still cancels zoom-out (and
+    // pointerdown would still switch the Selected bar). Overlay
     // zoom-in still requires that stored overlay contact; a second-tap
     // ghost hit cannot retarget an empty-space pair. Overflowed
     // scales unlock pan, so touch pan slop is 20px (not the 8px mouse
@@ -1012,20 +1015,19 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         return true
       }
 
-      // Completing a stored title or overlay-marker zoom-in. Must match
-      // maybeDoubleTap's storedGhost/storedTitle completing branch: the
-      // follow-up is allowed 28px into a 44px ring so zoom-in still
-      // fires, but that same pointerdown would select/cycle unless
-      // capture-phase stopPropagation runs first.
-      function isCompletingStoredZoomIn(clientX: number, clientY: number) {
+      // Completing any double-tap pair (stored title/overlay zoom-in or
+      // empty-space zoom-out/in). Must match maybeDoubleTap's completing
+      // branch: the follow-up is allowed 28px into a 44px ring so zoom
+      // still fires, but that same pointerdown would select/cycle unless
+      // capture-phase stopPropagation runs first. First-tap empty-space
+      // that then lands on a 44px ring used to skip this stop so
+      // tap-near-then-on-a-dot could select; DOUBLE_TAP_PX is 28px, so
+      // that follow-up is the same jitter, and at 2.2x it cancelled
+      // zoom-out under the titles 152 already ignored.
+      function isCompletingDoubleTap(clientX: number, clientY: number) {
         if (gestureMovedRef.current || pinchOccurredRef.current) return false
         const last = lastTapRef.current
         if (!last) return false
-        const storedGhost =
-          last.ghost != null && last.ghost.isConnected ? last.ghost : null
-        const storedTitle =
-          last.title != null && last.title.isConnected ? last.title : null
-        if (!storedGhost && !storedTitle) return false
         return (
           performance.now() - last.t <= DOUBLE_TAP_MS &&
           Math.hypot(clientX - last.x, clientY - last.y) <= DOUBLE_TAP_PX
@@ -1052,15 +1054,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // ~370px square many movies sit inside DOUBLE_TAP_PX of each
         // other, so tap-A-then-tap-B would jump to 2.2x instead of
         // switching the title. Empty-space double-tap still zooms.
-        // Completing a stored title or overlay-marker zoom-in skips
-        // this: 28px jitter from a 32cqw wrap toward its own dot, or
-        // from an 11px overlay onto the primary sitting next to it,
-        // lands in that 44px ring. Select/cycle on a first tap; on
-        // the follow-up it would cancel the zoom 149/150 just kept.
-        if (
-          isNearMoviePoint(clientX, clientY) &&
-          !(completing && (storedGhost || storedTitle))
-        ) {
+        // Completing any double-tap skips this: 28px jitter from a
+        // 32cqw wrap toward its own dot, from an 11px overlay onto
+        // the primary sitting next to it, or from empty space onto a
+        // 44px ring under a 2.2x title, lands in that ring.
+        // Select/cycle on a first tap; on the follow-up it would
+        // cancel the zoom 149/150/152 just kept.
+        if (isNearMoviePoint(clientX, clientY) && !completing) {
           cancelEmptyTap()
           lastTapRef.current = null
           return false
@@ -1146,8 +1146,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // Completing empty-space double-tap is zoom-out once titles are
         // on (2.2x / 3.2x). Those pills cover most of the square, and
         // 28px jitter onto a name or overlay marker would otherwise
-        // cancel as read-not-zoom-out. First-tap names still return
-        // here so a title tap cannot start that pair.
+        // cancel as read-not-zoom-out. The 44px rings under those
+        // titles are skipped on completing too, or this skip never ran
+        // for names sitting on their markers. First-tap names still
+        // return here so a title tap cannot start that pair.
         if (
           !completing &&
           ((ghostLabelsOn && (hitVisibleLabel || ghostPoint)) ||
@@ -1199,12 +1201,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       function onPointerDown(e: PointerEvent) {
         if (e.pointerType === 'touch') {
           // onTouchSelect (and the movie-point React handler) run on this
-          // pointerdown. Completing stored zoom-in already skips the 44px
+          // pointerdown. Completing double-tap already skips the 44px
           // ring at touchend so the ease still fires; stop this event so
           // jitter into that ring cannot also select a nearby primary or
-          // cycle a stack. Empty-space completing is unchanged: no stored
-          // contact, so tap-near-then-on-a-dot still selects.
-          if (isCompletingStoredZoomIn(e.clientX, e.clientY)) {
+          // cycle a stack. Empty-space completing is included: at 2.2x
+          // that pair is zoom-out, and a 44px ring under a title would
+          // otherwise switch the Selected bar while going home.
+          if (isCompletingDoubleTap(e.clientX, e.clientY)) {
             e.stopPropagation()
           }
           return
