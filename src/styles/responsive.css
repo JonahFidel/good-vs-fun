@@ -2004,10 +2004,12 @@
     toward Bone Temple) reuse them too. Independent same-side
     collisions after those flips (Lebowski vs Palm Springs both
     Good 10, Moana vs On the Basis of Sex both Good 0) add Fun
-    stagger on top of these classes; the combo rules below keep
-    both offsets so Good-side transform does not re-center them.
-    Coincident north/south keep their current Good side so they
-    do not restack on the primary.
+    stagger on top of these classes; remaining 4-cliques
+    (Brokeback / Marriage Story / Room / Nomadland) assign
+    both Fun and Good slots at once. The combo rules below
+    keep both offsets so Good-side transform does not
+    re-center them. Coincident north/south keep their current
+    Good side so they do not restack on the primary.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-10 > .movie-label,
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
@@ -2028,8 +2030,12 @@
     would undo Fun 10 / Fun 0 growth. Combine so Lebowski (Good 10,
     Fun 10) sits above Palm Springs (Good 10, Fun 0) instead of
     covering it, and Moana (Good 0, Fun 10) sits above On the
-    Basis of Sex (Good 0, Fun 0). Coincident north/south keep
-    their slot because both classes skip hasVerticalSlot.
+    Basis of Sex (Good 0, Fun 0). Remaining 4-cliques reuse
+    all four combo slots around the cluster centroid so
+    Brokeback, Marriage Story, Room, and Nomadland sit in
+    opposite corners instead of covering. Coincident
+    north/south keep their slot because both classes skip
+    hasVerticalSlot.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--stagger-good-10 > .movie-label,
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {

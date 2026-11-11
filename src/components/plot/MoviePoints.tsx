@@ -374,8 +374,7 @@ function closeGoodConnectedComponents(
  * centroid, and skip the cluster if that split is not unique so a
  * line-shaped 4 does not stack two titles in one slot. Size-3
  * triangles and Jonah's 2025 9-mesh stay put: four slots cannot
- * unique-pack those. Overlay copies get this stagger at
- * ghost-label zoom.
+ * unique-pack those.
  */
 function interiorCloseGoodCliqueQuadrantStagger(
   groups: PositionGroup[],
