@@ -582,11 +582,10 @@
 
   /*
     Fit-zoom hides unselected on-canvas names, so this list is how you
-    read titles before a tap. One nowrap 0.82rem line next to 44px
-    delete and F/G is ~12-16 characters on landscape, so Pirates of
-    the Caribbean still reads as "Pirates of the C…". Two lines in
-    that leftover width match the Selected bar wrap without growing
-    the 44px row enough to lose the 5.5rem list reservation.
+    read titles before a tap. Two lines of 0.82rem match the Selected
+    bar wrap without growing the 44px row enough to lose the 5.5rem
+    list reservation. Per-row × still stole ~44px (and fat-fingered
+    deletes while scrolling); Selected already has a 44px Delete.
   */
   .movie-list-title strong {
     white-space: normal;
@@ -604,12 +603,7 @@
   }
 
   .movie-list .movie-delete {
-    min-width: 2.75rem;
-    min-height: 2.75rem;
-    padding: 0.5rem;
-    margin: -0.35rem -0.35rem -0.35rem 0;
-    font-size: 1.25rem;
-    line-height: 1;
+    display: none;
   }
 
   .grid-wrapper {
@@ -1469,11 +1463,10 @@
 
   /*
     Landscape leftover is tall but only ~12-15.5rem wide. The portrait
-    row (title | F/G | 44px delete) leaves about 5-8 characters per line,
-    so iteration 98's 2-line wrap still reads as "Pirates of t…". Stack
-    F/G under the title so the name uses the rail minus delete (~13-15
-    characters per line, enough for Pirates of the Caribbean). Portrait
-    keeps the 44px row because leftover height is scarce there.
+    row (title | F/G) is still tight; stacking F/G under the title lets
+    the name use the full rail (~20-24 characters per line, enough for
+    Pirates of the Caribbean: Curse of the Black Pearl on two lines).
+    Portrait keeps title beside F/G because leftover height is scarce.
   */
   .movie-list li {
     flex-direction: column;
@@ -1488,11 +1481,6 @@
     flex: none;
     width: 100%;
     min-height: 2.75rem;
-  }
-
-  .movie-list .movie-delete {
-    /* Keep the 44px hit on the title row; do not overlap F/G below. */
-    margin: -0.3rem -0.3rem 0 0;
   }
 
   .movie-list-scores {
