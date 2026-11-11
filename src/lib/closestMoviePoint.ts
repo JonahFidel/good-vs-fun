@@ -44,6 +44,7 @@ function idFromLabelAtPoint(
   label: HTMLElement,
   clientX: number,
   clientY: number,
+  containingOnly = false,
 ): { id: string; dist: number } | null {
   let closestTitle: { id: string; dist: number } | null = null
   let closestContaining: { id: string; dist: number } | null = null
@@ -73,6 +74,11 @@ function idFromLabelAtPoint(
   // tap, and a two-line 2.2x stack is only ~31px tall, so that
   // follow-up often sits outside this pill; listedMovieIdAtPoint
   // still returns the closer name from the stored point.
+  // containingOnly skips that closest fallback: the inner ~7px of a
+  // 2.2x name sits inside this stack's 44px ring, and right-side
+  // labels put the start of the other title there. Marker jitter
+  // between the names is not in a title box and must still ease home.
+  if (containingOnly) return closestContaining
   return closestContaining ?? closestTitle
 }
 
@@ -105,7 +111,11 @@ function idFromLabelAtPoint(
  * line past the pill. That outside-pill miss still belongs to this
  * stored point: listedMovieIdAtPoint reads it without requiring the
  * pointer to stay in the box. Jitter onto a neighboring movie's title
- * or any 44px ring still has to ease home.
+ * or a neighboring 44px ring still has to ease home. This stack's own
+ * ring is the zoom origin, so marker jitter eases home unless the
+ * pointer is actually on the other listed name: the inner ~7px of a
+ * 2.2x title sits inside that 22px radius, and right-side labels
+ * (Good < 5) put the start of the other title there.
  */
 export function moviePointAtVisibleLabel(
   root: ParentNode,
@@ -165,11 +175,14 @@ export function movieIdAtVisibleLabel(
  * selection. A follow-up in a 44px ring is the same steal inside
  * that window: at 2.2x a cell is ~68px, so 28px from a stacked title
  * toward the next film lands in that neighbor's ring, and jitter
- * toward this movie lands in this stack's own ring. The marker sits
- * between stacked names, so the closer listed line would switch
- * selection instead of easing home the way a neighboring title
- * already does. Skip any ring; only a second listed line of this
- * stored point, off the marker, is select.
+ * toward this movie lands in this stack's own ring. Skip a
+ * neighboring ring the way a neighboring title already eases home.
+ * This stack's own ring still eases home for marker jitter between
+ * the names, but a pointer actually on the other listed title must
+ * select: the inner ~7px of a 2.2x name sits inside that 22px
+ * radius, and right-side labels put the start of that title there.
+ * listedMovieIdContainingPoint is that on-title hit; this closest
+ * fallback stays for the gap and the overshoot past the last line.
  * Fit-zoom stacks hide inactive lines, so this is the
  * selected title and same-title zoom-in still fires.
  */
@@ -181,6 +194,23 @@ export function listedMovieIdAtPoint(
   const label = point.querySelector(':scope > .movie-label')
   if (!(label instanceof HTMLElement)) return null
   return idFromLabelAtPoint(label, clientX, clientY)?.id ?? null
+}
+
+/**
+ * Listed name whose painted title box contains the pointer, with no
+ * closest-name fallback. Stacked tap-A-then-tap-B on the inner ~7px
+ * of the other 2.2x title (inside this stack's 44px ring) has to
+ * select that movie; listedMovieIdAtPoint from the marker between
+ * the names would also return the other line and steal zoom-out.
+ */
+export function listedMovieIdContainingPoint(
+  point: HTMLElement,
+  clientX: number,
+  clientY: number,
+): string | null {
+  const label = point.querySelector(':scope > .movie-label')
+  if (!(label instanceof HTMLElement)) return null
+  return idFromLabelAtPoint(label, clientX, clientY, true)?.id ?? null
 }
 
 /**
@@ -290,10 +320,12 @@ export function nextMovieIdInGroup(
 
 /**
  * Nearest non-ghost movie-point whose 44px hit ring contains the pointer.
- * Stacked tap-A-then-tap-B must not treat a 44px ring as the other listed
- * name: listedMovieIdAtPoint has no max distance, 28px from a 2.2x stacked
- * title toward the next cell lands in that neighbor's ring, and jitter
- * toward this movie lands in this stack's own ring between the names.
+ * Stacked tap-A-then-tap-B must not treat a neighboring 44px ring as the
+ * other listed name: listedMovieIdAtPoint has no max distance, and 28px
+ * from a 2.2x stacked title toward the next cell lands in that ring.
+ * This stack's own ring is the zoom origin between the names, so marker
+ * jitter still eases home unless the pointer is on the other listed
+ * title (the inner ~7px of a 2.2x name sits inside that 22px radius).
  */
 export function moviePointAtHit(
   root: ParentNode,

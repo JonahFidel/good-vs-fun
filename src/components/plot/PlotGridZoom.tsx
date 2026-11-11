@@ -10,6 +10,7 @@ import {
   MOVIE_HIT_RADIUS_PX,
   ghostPointAtMarker,
   listedMovieIdAtPoint,
+  listedMovieIdContainingPoint,
   movieIdAtVisibleLabel,
   moviePointAtHit,
   moviePointAtVisibleLabel,
@@ -1052,9 +1053,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // a follow-up that overshoots the last line past the ~31px pill.
       // movieIdAtVisibleLabel cannot see that miss; listedMovieIdAtPoint
       // on the stored stack still can. Jitter onto a neighboring
-      // movie's title or any 44px ring still eases home. Leave this
-      // false so onTouchSelect can switch to that name instead of
-      // zooming home.
+      // movie's title or a neighboring 44px ring still eases home.
+      // Leave this false so onTouchSelect can switch to that name
+      // instead of zooming home.
       // The outside-pill miss also has no fromLabel, so pointerdown
       // writes data-stacked-retarget-id for onTouchSelect; otherwise
       // closestMovieId would cycle the shared marker.
@@ -1064,13 +1065,14 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // ring) in the half-plane closer to the other listed title would
       // still write that id and steal selection instead of deselecting
       // or selecting the movie you actually tapped.
-      // Inside that window a 44px ring is the same steal: 28px from a
-      // 2.2x stacked title toward the next ~68px cell lands in that
-      // neighbor's ring, and jitter toward this movie (the zoom origin)
-      // lands in this stack's own ring. The marker sits between stacked
-      // names, so the closer listed line would switch selection instead
-      // of easing home. Skip any ring so only a second listed line of
-      // this stored point, off the marker, is select.
+      // Inside that window a neighboring 44px ring is the same steal:
+      // 28px from a 2.2x stacked title toward the next ~68px cell
+      // lands in that ring. This stack's own ring is the zoom origin
+      // between the names, so marker jitter still eases home. The
+      // inner ~7px of a 2.2x title sits inside that 22px radius, and
+      // right-side labels (Good < 5) put the start of the other name
+      // there, so a pointer actually on that listed title still
+      // selects. listedMovieIdContainingPoint is that on-title hit.
       function stackedRetargetId(clientX: number, clientY: number) {
         const last = lastTapRef.current
         if (!last?.title || !last.titleId || !last.title.isConnected) {
@@ -1090,7 +1092,19 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (secondPoint && secondPoint !== last.title) {
           return null
         }
-        if (moviePointAtHit(capturedSlot, clientX, clientY)) {
+        const hitPoint = moviePointAtHit(capturedSlot, clientX, clientY)
+        if (hitPoint && hitPoint !== last.title) {
+          return null
+        }
+        const containingId = listedMovieIdContainingPoint(
+          last.title,
+          clientX,
+          clientY,
+        )
+        if (containingId && containingId !== last.titleId) {
+          return containingId
+        }
+        if (hitPoint) {
           return null
         }
         const secondId = listedMovieIdAtPoint(last.title, clientX, clientY)
@@ -1239,10 +1253,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // a different listed name in that same stacked pill so
         // tap-A-then-tap-B can still select instead of easing home,
         // including a 28px follow-up that overshoots the last line.
-        // A follow-up in a 44px ring is not that overshoot: the next
-        // film's ring and this stack's own marker would both steal the
-        // other listed name, so those taps ease home like a neighboring
-        // title.
+        // A neighboring 44px ring is not that overshoot: 28px toward
+        // the next cell steals the other listed name, so that tap
+        // eases home like a neighboring title. This stack's own ring
+        // still eases home for marker jitter, but a pointer on the
+        // other listed title (the inner ~7px of a 2.2x name sits
+        // inside that ring, and right-side labels put the start of
+        // that name there) still selects.
         if (completing) {
           cancelEmptyTap()
           lastTapRef.current = null
