@@ -388,12 +388,37 @@
     On an 11rem leftover the 9rem floor still has to scroll to reach
     Rename/Delete. Keep the summary stuck so the sheet can be closed
     without scrolling back to the top.
+
+    The collapsed bar is a 4.25rem stacked title + F/G so a grid tap
+    can read a long name. That same summary stayed sticky when open, so
+    on the 9rem SE floor (~144px) the extra ~24px plus the open
+    border-bottom clipped Fun/Good - the only iPhone way to move a
+    point. Collapse the open summary to a 44px title+chevron; the
+    sliders below already show live Fun/Good.
   */
   .deck-sidebar .movie-selection-panel[open] > .deck-sidebar-collapse-summary {
     position: sticky;
     top: -0.45rem;
     z-index: 1;
     background: #eff6ff;
+    grid-template-rows: auto;
+    min-height: 2.75rem;
+    padding: 0 0.65rem;
+    align-content: center;
+  }
+
+  .deck-sidebar .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+  }
+
+  .deck-sidebar .movie-selection-panel[open] > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-meta {
+    display: none;
   }
 
   .deck-sidebar:has(.movie-selection-panel) .deck-sidebar-section--list.movie-list ul {
