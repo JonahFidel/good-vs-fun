@@ -16,21 +16,47 @@
  * resend, use-another-method, and Sign up. Those need the same 44px
  * padding-box as Continue, or the second step is harder to tap than the
  * first. Inline <a> tags ignore min-height unless they are flex.
+ *
+ * The verification-code row is six OTP boxes. The 44px / 0.7rem padding
+ * that email fields need makes that row wider than a 375px leftover
+ * (card padding plus #root inset). Keep 16px so Safari does not page-zoom,
+ * keep 44px height, and let the boxes share the card width. minWidth 0
+ * on the auth card is the same leak UserProfile needed: width 100% does
+ * not beat Clerk's default min-width.
  */
 
 const clerkAuthCardFill = {
   rootBox: {
     width: '100%',
     maxWidth: '100%',
+    minWidth: '0',
   },
   cardBox: {
     width: '100%',
     maxWidth: '100%',
+    minWidth: '0',
   },
   card: {
     width: '100%',
     maxWidth: '100%',
+    minWidth: '0',
   },
+} as const
+
+const clerkOtpFieldFit = {
+  width: '100%',
+  maxWidth: '100%',
+  minWidth: '0',
+} as const
+
+const clerkOtpInputFit = {
+  fontSize: '16px',
+  minHeight: '2.75rem',
+  minWidth: '0',
+  flex: '1 1 0',
+  width: 'auto',
+  aspectRatio: 'auto',
+  padding: '0.35rem 0.15rem',
 } as const
 
 const clerkUserProfileViewportMax =
@@ -132,10 +158,15 @@ export const clerkAppearance = {
       fontSize: '16px',
       minHeight: '2.75rem',
     },
-    otpCodeFieldInput: {
-      fontSize: '16px',
-      minHeight: '2.75rem',
+    otpCodeField: clerkOtpFieldFit,
+    otpCodeFieldInputs: {
+      ...clerkOtpFieldFit,
+      display: 'flex',
+      gap: '0.25rem',
+      justifyContent: 'space-between',
     },
+    otpCodeFieldInputContainer: clerkOtpFieldFit,
+    otpCodeFieldInput: clerkOtpInputFit,
     formButtonPrimary: {
       minHeight: '2.75rem',
     },

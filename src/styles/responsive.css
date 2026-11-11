@@ -1758,7 +1758,10 @@
     beats the generic input 16px rule, so focusing email Safari-zooms
     the page. The default card is also ~400px, wider than a 375px
     leftover after #root padding. 16px / 44px matches create-deck, and
-    the card has to shrink to the slot. After email, edit-identifier,
+    the card has to shrink to the slot (min-width: 0 so Clerk's default
+    min-width cannot keep it at ~400px). After email, the verification
+    code is six OTP boxes: email-field padding on each one overflows
+    that leftover, so those boxes share the card width. Edit-identifier,
     resend, use-another-method, and Sign up stay ~32px text links unless
     those inner steps get the same 44px padding-box as Continue.
     Account popover actions were still ~32px after the avatar grew.
@@ -1775,6 +1778,7 @@
   .sign-in-page .cl-card {
     width: 100%;
     max-width: 100%;
+    min-width: 0;
   }
 
   .nav .cl-rootBox,
@@ -1884,12 +1888,40 @@
   }
 
   .cl-formFieldInput,
-  .cl-otpCodeFieldInput,
   .cl-phoneInputInput,
-  .cl-input {
+  .cl-input:not(.cl-otpCodeFieldInput) {
     font-size: 16px;
     min-height: 2.75rem;
     padding: 0.55rem 0.7rem;
+  }
+
+  /*
+    Email/password padding on each OTP box overflows a 375px leftover:
+    6 * (44px + 0.7rem sides) plus gaps is wider than the card after
+    #root inset. Keep 16px / 44px height and let the row share width.
+  */
+  .cl-otpCodeField,
+  .cl-otpCodeFieldInputs,
+  .cl-otpCodeFieldInputContainer {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .cl-otpCodeFieldInputs {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: space-between;
+  }
+
+  .cl-otpCodeFieldInput {
+    font-size: 16px;
+    min-height: 2.75rem;
+    min-width: 0;
+    flex: 1 1 0;
+    width: auto;
+    aspect-ratio: auto;
+    padding: 0.35rem 0.15rem;
   }
 
   .cl-formButtonPrimary,
