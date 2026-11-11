@@ -1338,10 +1338,22 @@
     Dragging stays above that so a hold-to-move movie is not buried
     by a compare pill. Ghosts are pointer-events: none, so paint
     order does not steal taps.
+
+    Same-score is the leftover of lifting the whole overlay: the
+    purple/teal marker sat on the selected blue ring. Those overlays
+    stay at z-index 2 - above unselected primaries so a neighboring
+    title cannot cover the opposite-side overlay name, below
+    selected/highlighted so the ring you are looking at still paints.
+    GhostPoints also flips that coincident title to the other side
+    of the primary, so both names read without sharing a pill.
   */
   .grid-zoom-slot--ghost-labels .ghost-point {
     opacity: 1;
     z-index: 5;
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point--under-selected {
+    z-index: 2;
   }
 
   .grid-zoom-slot--ghost-labels .movie-point.dragging {

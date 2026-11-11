@@ -92,6 +92,19 @@ export function PlotPanel({
     onClearSelection()
   }
 
+  const primaryKeys = new Set(movieGroups.map((group) => group.key))
+  const raisedPrimaryKeys = new Set(
+    movieGroups
+      .filter((group) => {
+        const ids = group.items.map((item) => item.id)
+        if (selectedMovieId && ids.includes(selectedMovieId)) return true
+        if (hover?.from === 'list' && ids.includes(hover.id)) return true
+        if (draggingIds?.some((id) => ids.includes(id))) return true
+        return false
+      })
+      .map((group) => group.key),
+  )
+
   return (
     <section className="grid-panel">
       <div
@@ -126,8 +139,22 @@ export function PlotPanel({
         <div className="grid-axis grid-axis-x">Good</div>
         <PlotGridZoom ref={gridRef} onEmptyTap={onClearSelection}>
           <GridAxes />
-          {ghostDeckId && <GhostPoints groups={ghostGroups} variant={1} />}
-          {ghost2DeckId && <GhostPoints groups={ghost2Groups} variant={2} />}
+          {ghostDeckId && (
+            <GhostPoints
+              groups={ghostGroups}
+              variant={1}
+              primaryKeys={primaryKeys}
+              raisedPrimaryKeys={raisedPrimaryKeys}
+            />
+          )}
+          {ghost2DeckId && (
+            <GhostPoints
+              groups={ghost2Groups}
+              variant={2}
+              primaryKeys={primaryKeys}
+              raisedPrimaryKeys={raisedPrimaryKeys}
+            />
+          )}
           <MoviePoints
             groups={movieGroups}
             draggingIds={draggingIds}
