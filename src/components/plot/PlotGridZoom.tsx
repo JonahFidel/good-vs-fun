@@ -160,7 +160,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // Isolated overlay marker from the first tap. The painted box is
       // only 11px, so iPhone jitter on the second tap often misses it
       // and empty-space double-tap at 2.2x would reset to fit instead
-      // of finishing the 3.2x overlay readout. That miss also lands in
+      // of finishing the 3.2x overlay readout. Only this stored contact
+      // starts overlay zoom-in: a ghost under the follow-up must not
+      // retarget an empty-space pair to 3.2x. That miss also lands in
       // a nearby primary 44px ring; marker-first must not cancel this.
       ghost: HTMLElement | null
       // Selected fit-zoom title from the first tap. The 32cqw wrap is
@@ -463,7 +465,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // in a 44px primary ring: jitter from a wrap toward its own dot,
     // or from an isolated overlay onto the primary next to it, is
     // select/cycle on a first tap but must not cancel a zoom-in those
-    // first contacts already committed. Overflowed
+    // first contacts already committed. The inverse miss is empty-space
+    // zoom-out at 2.2x/3.2x: titles and overlay names are painted, so
+    // 28px jitter onto a pill or an 11px overlay would read-not-zoom-out
+    // or steal 3.2x unless the first tap stays empty-space. Overlay
+    // zoom-in still requires that stored overlay contact; a second-tap
+    // ghost hit cannot retarget an empty-space pair. Overflowed
     // scales unlock pan, so touch pan slop is 20px (not the 8px mouse
     // value) or iPhone tap jitter cancels that double-tap the same way
     // empty-space jitter did at fit before movement tracking was skipped
@@ -1085,7 +1092,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // first marker, including when this tap landed on a nearby primary
         // title (read-not-zoom-out would otherwise cancel it) or in that
         // primary's 44px ring (marker-first would otherwise select).
-        const overlayForZoom = storedGhost ?? ghostPoint
+        // Do not fall back to a ghost under this tap: an empty-space
+        // first contact that jitters onto an overlay would steal 3.2x
+        // instead of zooming out of the 2.2x title view (or in toward
+        // the tap below that).
         // A fit-zoom tap on the selected 32cqw title still zooms that
         // primary movie. Overlay dots can sit under that pill, and
         // treating them as the double-tap origin would steal 2.2x.
@@ -1094,23 +1104,29 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const primaryTitleZoomIn = Boolean(labelMovie) && !labelsOn
         if (
           completing &&
-          overlayForZoom &&
+          storedGhost &&
           canvas &&
           !ghostLabelsOn &&
           !storedTitle
         ) {
           cancelEmptyTap()
           lastTapRef.current = null
-          const r = overlayForZoom.getBoundingClientRect()
+          const r = storedGhost.getBoundingClientRect()
           applyDoubleTap(
             slotPoint(r.left + r.width / 2, r.top + r.height / 2),
             ghostLabelsVisibleScale(canvas.offsetWidth),
           )
           return true
         }
+        // Completing empty-space double-tap is zoom-out once titles are
+        // on (2.2x / 3.2x). Those pills cover most of the square, and
+        // 28px jitter onto a name or overlay marker would otherwise
+        // cancel as read-not-zoom-out. First-tap names still return
+        // here so a title tap cannot start that pair.
         if (
-          (ghostLabelsOn && (hitVisibleLabel || ghostPoint)) ||
-          (labelsOn && hitVisibleLabel)
+          !completing &&
+          ((ghostLabelsOn && (hitVisibleLabel || ghostPoint)) ||
+            (labelsOn && hitVisibleLabel))
         ) {
           cancelEmptyTap()
           lastTapRef.current = null

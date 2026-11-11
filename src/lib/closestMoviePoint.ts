@@ -180,7 +180,10 @@ export function pointerHitsVisibleMovieLabel(
  * primary 44px ring still loses to marker-first select/cycle on a
  * first tap. Completing an overlay double-tap must keep this point
  * even when the follow-up lands in that nearby ring, or 28px jitter
- * selects the primary instead of finishing 3.2x.
+ * selects the primary instead of finishing 3.2x. A ghost under the
+ * second tap of an empty-space pair must not start overlay zoom-in:
+ * that follow-up is 28px jitter, and at 2.2x it would steal 3.2x
+ * instead of zooming back to the locked 0-10 square.
  *
  * Below 3.2x the overlay name is still hidden, so callers zoom toward
  * this marker's center (not the tap) until ghost titles appear. The
