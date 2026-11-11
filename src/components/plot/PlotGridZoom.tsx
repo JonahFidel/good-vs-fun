@@ -240,9 +240,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // on iPhone. Skipping pointer capture for touch also keeps the first
     // finger from eating the rest of the gesture. Touch pan is allowed to
     // start on a movie: moving points is mouse-only, and the ~44px hit
-    // areas would otherwise eat most of a zoomed one-finger pan. Touch
-    // listeners sit on the plot card so a pinch that starts on a Fun/Good
-    // axis still zooms the grid.
+    // areas would otherwise eat most of a zoomed one-finger pan. Mouse pan,
+    // like wheel, Touch Events, and Safari GestureEvents, sits on the plot
+    // card so a drag that starts on a Fun/Good axis still pans the zoomed
+    // grid. Undo/Redo overlay clicks must not capture, or the button press
+    // never fires.
     useEffect(() => {
       const slot = slotRef.current
       if (!slot) return
@@ -301,15 +303,21 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       function capturePointer(pointerId: number) {
         try {
-          capturedSlot.setPointerCapture(pointerId)
+          gestureRoot.setPointerCapture(pointerId)
         } catch {
           // Pointer may already have been released.
         }
       }
 
+      function setPanCursor(on: boolean) {
+        const cursor = on ? 'grabbing' : ''
+        gestureRoot.style.cursor = cursor
+        capturedSlot.style.cursor = cursor
+      }
+
       function beginPinchFromPoints(a: PointerPos, b: PointerPos) {
         panRef.current = null
-        capturedSlot.style.cursor = ''
+        setPanCursor(false)
         pinchOccurredRef.current = true
         gestureMovedRef.current = true
         cancelEmptyTap()
@@ -368,7 +376,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           tx: stateRef.current.tx,
           ty: stateRef.current.ty,
         }
-        capturedSlot.style.cursor = 'grabbing'
+        setPanCursor(true)
       }
 
       function noteGestureStart(clientX: number, clientY: number) {
@@ -463,12 +471,19 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       function onPointerDown(e: PointerEvent) {
         if (e.pointerType === 'touch') return
         if (e.pointerType === 'mouse' && e.button !== 0) return
+        const target = e.target as Element | null
+        // Plot-card pan would steal Undo/Redo (and any other control on the
+        // wrapper). Fun/Good axis labels are not controls; they should pan.
+        if (target?.closest('.grid-toolbar') || target?.closest('button')) {
+          return
+        }
+
         pointersRef.current.set(e.pointerId, slotPoint(e.clientX, e.clientY))
-        capturePointer(e.pointerId)
         noteGestureStart(e.clientX, e.clientY)
 
         if (pointersRef.current.size >= 2) {
           e.preventDefault()
+          capturePointer(e.pointerId)
           beginPinchFromPointers()
           return
         }
@@ -476,9 +491,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // Hold-to-drag starts from the 7px marker (and its title). Do not
         // also skip the 22px iPhone hit ring or wheel-zoom into a cluster
         // leaves pan holes around every movie.
-        const target = e.target as Element | null
         if (target?.closest('.movie-point')) return
 
+        capturePointer(e.pointerId)
         beginPan(e.pointerId, e.clientX, e.clientY)
       }
 
@@ -504,7 +519,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         pointersRef.current.delete(e.pointerId)
         if (panRef.current?.pointerId === e.pointerId) {
           panRef.current = null
-          capturedSlot.style.cursor = ''
+          setPanCursor(false)
         }
         if (pinchRef.current) {
           if (pointersRef.current.size >= 2) {
@@ -571,7 +586,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       function endTouchGesture() {
         pinchRef.current = null
         panRef.current = null
-        capturedSlot.style.cursor = ''
+        setPanCursor(false)
       }
 
       function onTouchEnd(e: TouchEvent) {
@@ -655,11 +670,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       const touchOpts: AddEventListenerOptions = { passive: false, capture: true }
       const gestureOpts: AddEventListenerOptions = { passive: false }
 
-      // Capture phase so a finger on a movie label still counts toward pinch.
-      capturedSlot.addEventListener('pointerdown', onPointerDown, { capture: true })
-      capturedSlot.addEventListener('pointermove', onPointerMove)
-      capturedSlot.addEventListener('pointerup', onPointerUp)
-      capturedSlot.addEventListener('pointercancel', onPointerUp)
+      // Capture phase so a drag on Fun/Good axis chrome still pans, matching
+      // wheel / GestureEvent / touch listeners already on the plot card.
+      gestureRoot.addEventListener('pointerdown', onPointerDown, { capture: true })
+      gestureRoot.addEventListener('pointermove', onPointerMove)
+      gestureRoot.addEventListener('pointerup', onPointerUp)
+      gestureRoot.addEventListener('pointercancel', onPointerUp)
       gestureRoot.addEventListener('touchstart', onTouchStart, touchOpts)
       gestureRoot.addEventListener('touchmove', onTouchMove, touchOpts)
       gestureRoot.addEventListener('touchend', onTouchEnd, touchOpts)
@@ -670,10 +686,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       return () => {
         cancelEmptyTap()
-        capturedSlot.removeEventListener('pointerdown', onPointerDown, { capture: true })
-        capturedSlot.removeEventListener('pointermove', onPointerMove)
-        capturedSlot.removeEventListener('pointerup', onPointerUp)
-        capturedSlot.removeEventListener('pointercancel', onPointerUp)
+        gestureRoot.removeEventListener('pointerdown', onPointerDown, { capture: true })
+        gestureRoot.removeEventListener('pointermove', onPointerMove)
+        gestureRoot.removeEventListener('pointerup', onPointerUp)
+        gestureRoot.removeEventListener('pointercancel', onPointerUp)
         gestureRoot.removeEventListener('touchstart', onTouchStart, touchOpts)
         gestureRoot.removeEventListener('touchmove', onTouchMove, touchOpts)
         gestureRoot.removeEventListener('touchend', onTouchEnd, touchOpts)
