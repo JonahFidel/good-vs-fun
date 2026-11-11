@@ -514,6 +514,20 @@
   }
 
   /*
+    Fun 10 is the only two-digit left-gutter label. On a 10rem-floor
+    landscape square that gutter is ~13px and bold "10" is wider, so the
+    slot clips it and the fitted Fun scale reads 0/2/4/5/6/8. Sit it in
+    the top gutter to the right of Fun=0 (right: auto, or left+right on a
+    0-size anchor would collapse the box). Portrait 12rem-floor plots
+    have the same width problem.
+  */
+  .grid-tick-y:not(.grid-tick-y-right)[data-tick='10'] > .grid-tick-label {
+    right: auto;
+    left: 0;
+    transform: translate(0, -100%);
+  }
+
+  /*
     0-10 along a ~160-280px axis collides in the gutter. Keep 0/2/4/5/6/8/10
     at fit zoom; restore 1/3/7/9 after pinch so a zoomed corner still has
     unit precision.
