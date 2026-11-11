@@ -33,6 +33,7 @@ import {
   pinchTransform,
   pointerDistance,
   pointerMidpoint,
+  type ViewSize,
   type ZoomState,
 } from '../../lib/plotZoom'
 
@@ -61,7 +62,7 @@ const PAN_SLOP_PX = 8
  * pinch, covering pan is unlocked, so that same 8px slop treats a tap as
  * a pan and cancels double-tap zoom-in (or zoom-out-to-fit once titles
  * are on). 20px is still under DOUBLE_TAP_PX (28) and about 0.25 cells
- * at labels-visible zoom (~93px). A mouse or pen on a coarse-pointer
+ * at labels-visible zoom (88px). A mouse or pen on a coarse-pointer
  * device (iPad) keeps 8px so drag-pan stays snappy.
  */
 const TOUCH_PAN_SLOP_PX = 20
@@ -173,6 +174,16 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // A tap that stops inertia or a zoom ease should not deselect.
     const caughtMotionRef = useRef(false)
 
+    // The plot grows in CSS pixels as it zooms. Keeping its labels and
+    // strokes at native CSS size lets the browser paint them sharply at
+    // every zoom level instead of enlarging a composited bitmap.
+    function unscaledCanvasSize(): ViewSize | null {
+      const slot = slotRef.current
+      if (!slot) return null
+      const size = Math.min(slot.clientWidth, slot.clientHeight)
+      return size > 0 ? { width: size, height: size } : null
+    }
+
     useImperativeHandle(forwardedRef, () => gridRef.current as HTMLDivElement)
 
     useEffect(() => {
@@ -183,27 +194,31 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       const canvas = canvasRef.current
       const slot = slotRef.current
       if (!canvas) return
+      const baseSize = unscaledCanvasSize()
       if (slot && !opts?.skipClamp) {
-        // lockFit matches the coarse-pointer inverse-scale CSS: iPhone
-        // pinch stays at or above the readable 1x grid and covering-clamps
+        // lockFit keeps iPhone pinch at or above the fitted 1x grid and covering-clamps
         // axes that already filled at 1x. iPad landscape is also coarse
         // but letterboxed, so leftover axes keep-visible instead of
         // left-aligning 2x-toward-Fun=0. A mouse always keep-visible.
-        // rubberBand lets a live pinch overshoot 1x / 8x and a zoomed pan
+        // rubberBand lets a live pinch overshoot 1x / MAX_SCALE and a zoomed pan
         // or flicked coast pull past the covering or keep-visible edge;
         // clamp must not re-floor scale or pin pan or the overshoot never paints.
         stateRef.current = clampToSlot(
           stateRef.current,
           { width: slot.offsetWidth, height: slot.offsetHeight },
-          { width: canvas.offsetWidth, height: canvas.offsetHeight },
+          baseSize ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
           isCoarsePointer(),
           opts?.rubberBand,
         )
       }
       const { scale, tx, ty } = stateRef.current
-      canvas.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${scale})`
+      if (baseSize) {
+        canvas.style.width = `${baseSize.width * scale}px`
+        canvas.style.height = `${baseSize.height * scale}px`
+      }
+      canvas.style.transform = `translate3d(${tx}px, ${ty}px, 0)`
       canvas.style.setProperty('--plot-scale', String(scale))
-      const canvasWidth = canvas.offsetWidth
+      const canvasWidth = baseSize?.width ?? canvas.offsetWidth
       slot?.classList.toggle(
         'grid-zoom-slot--zoomed',
         scale >= GRID_DETAIL_SCALE,
@@ -222,18 +237,17 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // scales because a fine pointer does not zoom.
       // Inverse-scaling a 1px background on .grid::before rounded away on
       // WebKit once zoom passed ~1.4x.
-      // Size it from the fractional layout box: offsetWidth rounds to whole
-      // pixels, which left the lines up to 0.5px off the bold outline that
-      // .grid::before draws at the exact 0-10 bounds.
+      // Size it from baseSize, the exact box the canvas was just given:
+      // offsetWidth rounds to whole pixels, which left the lines up to 0.5px
+      // off the bold outline that .grid::before draws at the 0-10 bounds.
       const overlay = overlayRef.current
-      const canvasRect = canvas.getBoundingClientRect()
-      if (overlay && canvasRect.width > 0 && canvasRect.height > 0) {
+      if (overlay && baseSize) {
         const region = scoringRegionScreenRect(
           scale,
           tx,
           ty,
-          canvasRect.width / scale,
-          canvasRect.height / scale,
+          baseSize.width,
+          baseSize.height,
         )
         overlay.style.transform = `translate3d(${region.left}px, ${region.top}px, 0)`
         overlay.style.width = `${region.width}px`
@@ -262,7 +276,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       if (userTransformedRef.current) return
       stateRef.current = centeredTransform(
         { width: slot.offsetWidth, height: slot.offsetHeight },
-        { width: canvas.offsetWidth, height: canvas.offsetHeight },
+        unscaledCanvasSize() ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
         stateRef.current.scale,
       )
     }
@@ -703,7 +717,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
             width: capturedSlot.offsetWidth,
             height: capturedSlot.offsetHeight,
           },
-          canvas: { width: canvas.offsetWidth, height: canvas.offsetHeight },
+          canvas: unscaledCanvasSize() ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
         }
       }
 
@@ -801,7 +815,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (!slot || !canvas) return null
         return centeredTransform(
           { width: slot.offsetWidth, height: slot.offsetHeight },
-          { width: canvas.offsetWidth, height: canvas.offsetHeight },
+          unscaledCanvasSize() ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
           INITIAL_SCALE,
         )
       }
@@ -837,9 +851,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const fit = fitTransform()
         const canvas = canvasRef.current
         if (!fit || !canvas) return
-        // Zoom far enough that 3.75rem seven-line pills fit one cell.
-        // A 370px portrait plot needs ~3.0x; a ~280px landscape plot
-        // needs ~4.0x or titles overlap 1-unit neighbors.
+        // Zoom far enough for the chosen title threshold. On a 370px
+        // portrait plot this is about 2.6x; smaller plots need more.
         // Sub-detail leftover pinches still zoom in: titles
         // are hidden there, so reset-to-fit would undo the closer look.
         // Overlay-marker taps pass ghost-label scale (~3.2x) so one
@@ -848,7 +861,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           stateRef.current,
           point,
           fit,
-          detailScale ?? labelsVisibleScale(canvas.offsetWidth),
+          detailScale ?? labelsVisibleScale(unscaledCanvasSize()?.width ?? canvas.offsetWidth),
         )
         // Keep userTransformed true during the ease so a URL-bar resize
         // cannot recenter a zoom-out mid-flight. Restore fit's pristine
@@ -896,7 +909,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           const next = clampToSlot(
             { ...current, scale: MAX_SCALE },
             { width: slot.offsetWidth, height: slot.offsetHeight },
-            { width: canvas.offsetWidth, height: canvas.offsetHeight },
+            unscaledCanvasSize() ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
             true,
           )
           animateTo(next)
@@ -1082,10 +1095,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const canvas = canvasRef.current
         const labelsOn =
           canvas != null &&
-          stateRef.current.scale >= labelsVisibleScale(canvas.offsetWidth)
+          stateRef.current.scale >= labelsVisibleScale(unscaledCanvasSize()?.width ?? canvas.offsetWidth)
         const ghostLabelsOn =
           canvas != null &&
-          stateRef.current.scale >= ghostLabelsVisibleScale(canvas.offsetWidth)
+          stateRef.current.scale >= ghostLabelsVisibleScale(unscaledCanvasSize()?.width ?? canvas.offsetWidth)
         const hitVisibleLabel = pointerHitsVisibleMovieLabel(
           capturedSlot,
           clientX,
@@ -1144,7 +1157,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           const r = storedGhost.getBoundingClientRect()
           applyDoubleTap(
             slotPoint(r.left + r.width / 2, r.top + r.height / 2),
-            ghostLabelsVisibleScale(canvas.offsetWidth),
+            ghostLabelsVisibleScale(unscaledCanvasSize()?.width ?? canvas.offsetWidth),
           )
           return true
         }

@@ -1067,7 +1067,7 @@
   /*
     Keep 0-10 numbers in the 1-unit margin so they do not cover Fun≈0 /
     Good≈0 movies at default zoom. The label child holds this offset so
-    pinch inverse-scale does not drift numbers off the axes.
+    zoom resizes the canvas around those anchored numbers.
   */
   .grid-tick-label {
     background: rgba(255, 255, 255, 0.92);
@@ -1258,7 +1258,7 @@
   /*
     30+ truncated pills on a ~370px square hide the grid. Keep dots at fit
     zoom and through light pinch; show the selected title, then restore all
-    titles at double-tap zoom (~3.0x on a 370px square, ~93px cells),
+    titles at double-tap zoom (~2.9x on a 370px square, ~88px cells),
     not at 1.4x (~43px).
   */
   .movie-point > .movie-label {
@@ -1336,8 +1336,8 @@
     A 5-line selected pill is ~81px. Unselected names are hidden, and
     Fun 9-10 already grows down / Fun 0-1 up, so the extra line stays
     in the scoring region even on a 10rem landscape square.     Overlay
-    3.2x wrap is seven lines: TARGET_LABEL_UNIT_PX 93 makes that
-    10rem ghost-label unit ~106px, so a ~92px seventh line still
+    3.2x wrap is seven lines: TARGET_LABEL_UNIT_PX 88 makes that
+    10rem ghost-label unit ~101px, so an ~88px seventh line still
     fits the Fun 10 gutter.
   */
   .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
@@ -1408,7 +1408,7 @@
   .grid-zoom-slot--zoomed .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label,
   .grid-zoom-slot--labels .movie-point:not(.ghost-point) > .movie-label,
   .grid-zoom-slot--ghost-labels .ghost-point > .movie-label {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     padding: 0.08rem 0.28rem;
     width: max-content;
     max-width: 3.75rem;
@@ -1565,10 +1565,10 @@
     (1.2) fit those. Longer namesake titles still last-clip
     to the distinctive ending.
 
-    A 7-line overlay is ~92px. Ghost-label zoom keeps at
-    least ~106px per unit even on a 10rem landscape square
+    A 7-line overlay is ~88px. Ghost-label zoom keeps at
+    least ~101px per unit even on a 10rem landscape square
     (labelsVisibleScale plus 1x after TARGET_LABEL_UNIT_PX
-    93), so the extra line stays inside one Fun cell and
+    88), so the extra line stays inside one Fun cell and
     the 1-unit Fun 10 gutter.
 
     Stacked overlays already list every truncated name, the same
@@ -1717,12 +1717,12 @@
     Horrible, No Good, Very Bad Day"), and unselected
     primaries have no Selected bar to recover it. Seven
     line-heights (1.2) fit those once double-tap cells
-    are ~93px. Short names still shrink-to-fit.
+    are ~88px. Short names still shrink-to-fit.
 
-    Compact zoomed titles are 0.65rem, not the 0.8rem
+    Compact zoomed titles are 0.62rem, not the 0.8rem
     fit-hidden size. A 7-line pill (8.4em plus 0.08rem
-    padding and 1px border) is ~92px. Double-tap now
-    raises the cell to ~93px (TARGET_LABEL_UNIT_PX) so
+    padding and 1px border) is ~88px. Double-tap now
+    raises the cell to ~88px (TARGET_LABEL_UNIT_PX) so
     that extra line fits at --labels instead of waiting
     for a deeper pinch. Alexander is the longest
     example-deck title, so eight-line wrap has no
@@ -1778,8 +1778,8 @@
   /*
     Fit-zoom selected wrap grows into the square at Fun 9-10 / Fun 0-1
     because that 1-unit gutter is only ~31px and cannot hold a 5-line
-    pill. Double-tap cells are ~93px, so the same gutter can hold a
-    7-line ~92px wrap. A centered 7-line pill still extends ±0.5
+    pill. Double-tap cells are ~88px, so the same gutter can hold a
+    7-line ~88px wrap. A centered 7-line pill still extends ±0.5
     Fun units, so Pirates (9.55 / 9.83) covers Kill Bill V1
     (8.67 / 9.25) in the namesake corner. Grow into the Fun 10 /
     Fun 0 gutter instead (the inverse of fit-zoom) so those names
@@ -1817,7 +1817,7 @@
     Pirates (9.55 / 9.83) covers Kill Bill V1 (8.67 / 9.25) and
     Inglorious Basterds (9.00 / 9.02) on the same side. Fit-zoom
     selected wrap stays on that interior side because the 1-unit
-    gutter is only ~31px. Double-tap cells are ~93px, so grow into
+    gutter is only ~31px. Double-tap cells are ~88px, so grow into
     the Good 10 / Good 0 gutter instead (the inverse of the Good < 5
     flip). Combine with the Fun 9-10 / Fun 0-1 flip so the namesake
     corner sits in both gutters. Overlay names get the same Good
@@ -2727,23 +2727,15 @@
 /*
   Plot zoom chrome follows the pointer, not the 900px layout breakpoint,
   because only a coarse pointer can zoom. A mouse in a narrow window keeps
-  the fitted, non-zooming chart. A finger still needs
-  inverse-scale so pinch spreads the grid without exploding pills or 1px
-  strokes. iPhone already matches this; iPad landscape does too, even
+  the fitted, non-zooming chart. A finger zooms by growing the canvas in CSS
+  pixels so labels and borders stay sharply rendered. iPhone already matches
+  this; iPad landscape does too, even
   when it keeps the desktop two-column frame.
 */
 @media (pointer: coarse) {
-  .grid-tick,
-  .grid-wrapper--example .grid-tick {
-    transform: scale(var(--plot-inverse-scale, 1));
-    transform-origin: 0 0;
-  }
-
+  /* The canvas grows in CSS pixels, so retain native-size borders and ticks. */
   .deck-page-layout .grid::before,
   .deck-page-layout .grid-wrapper--example .grid::before {
-    --grid-axis-stroke: calc(4px * var(--plot-inverse-scale, 1));
-    --grid-edge-stroke: calc(2px * var(--plot-inverse-scale, 1));
-    border-color: #111827;
     background-image: none;
   }
 
@@ -2772,10 +2764,6 @@
       );
     background-size: var(--grid-unit-lines-size), 100% 95%, 95% 100%;
     background-position: var(--grid-unit-lines-position), 0 100%, 100% 0;
-  }
-
-  .movie-point {
-    transform: translate(-50%, -50%) scale(calc(1 / var(--plot-scale, 1)));
   }
 
   /* Invisible ~44px tap target around the marker. */

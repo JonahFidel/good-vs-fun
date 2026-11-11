@@ -1,4 +1,4 @@
-import { GRID_CANVAS } from './gridCanvas'
+import { GRID_CANVAS } from './gridCanvas.ts'
 
 export type ZoomState = {
   scale: number
@@ -18,7 +18,7 @@ export type ViewSize = {
 
 export const INITIAL_SCALE = 1
 export const MIN_SCALE = 0.3
-export const MAX_SCALE = 8
+export const MAX_SCALE = 6
 /**
  * Pinch past this scale before odd ticks and half-unit lines return.
  * The wrapping selected title+score readout also ends here so pinch-to-read
@@ -33,7 +33,7 @@ export const GRID_DETAIL_SCALE = 1.4
  * double-tap until a cell is TARGET_LABEL_UNIT_PX.
  */
 export const DOUBLE_TAP_SCALE = 2.2
-/** Unselected mobile titles appear at double-tap zoom, not at 1.4x. */
+/** Minimum mobile scale for unselected titles; smaller canvases raise it. */
 export const LABELS_VISIBLE_SCALE = DOUBLE_TAP_SCALE
 /**
  * Ghost compare titles wait until after double-tap zoom. Example decks
@@ -42,14 +42,12 @@ export const LABELS_VISIBLE_SCALE = DOUBLE_TAP_SCALE
  */
 export const GHOST_LABELS_VISIBLE_SCALE = 3.2
 /**
- * Screen-px per score unit at which 3.75rem zoomed pills sit in one cell.
- * One-line pills needed ~68px of width. Unstacked titles wrap seven lines
- * at labels-visible zoom (~92px tall), so the cell has to match that
- * height or 1-unit Fun neighbors overlap. 2.2x on a ~370px portrait
- * square is only ~68px; labelsVisibleScale raises double-tap to ~3.0x
- * there. A ~280px landscape square needs ~4.0x for the same unit.
+ * Screen-px per score unit required before mobile titles appear. Keeping
+ * one title inside an 88px cell leaves enough room to read names while
+ * avoiding the crowded grid at fit and light-pinch scales. Ghost labels
+ * wait one additional zoom level so their seven-line wraps still fit.
  */
-export const TARGET_LABEL_UNIT_PX = 93
+export const TARGET_LABEL_UNIT_PX = 88
 const GHOST_LABELS_AFTER_PRIMARY = 1
 const FIT_SCALE_EPSILON = 0.05
 const FIT_PAN_EPSILON_PX = 8
@@ -282,9 +280,8 @@ function fitsSlot(slot: ViewSize, canvas: ViewSize, scale: number): boolean {
 
 /**
  * Coarse-pointer fit lock: never shrink below 1x after a gesture, and
- * re-center only while the canvas still fits the slot. Inverse-scale
- * holds ticks and markers at screen size, so a settled pinch-out below
- * fit would explode those labels over a shrinking grid.
+ * re-center only while the canvas still fits the slot. A settled pinch-out
+ * below fit would shrink the chart and shift the labels from their anchors.
  *
  * Live pinch/pan/inertia can pass rubberBand to paint a resisted overshoot;
  * clamp must not re-floor that scale or covering/keep-visible-pin pan.
@@ -393,8 +390,8 @@ export function isLeftoverFitScale(
 /**
  * Toggle the readable 0-10 overview vs a detail zoom aimed at `point`.
  *
- * Titles stay hidden until `detailScale` (~3.0x on a 370px square, higher
- * on small squares) so seven-line pills fit one cell.
+ * Titles stay hidden until `detailScale` (at least 2.2x, higher on small
+ * squares) so labels have room to stay readable without crowding cells.
  * A leftover pinch below that scale is still that overview: treating it as
  * "already zoomed" made one-handed double-tap reset to fit instead of
  * finishing the zoom you use to read names. Once titles are visible,
