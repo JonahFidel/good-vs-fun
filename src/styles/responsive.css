@@ -1843,24 +1843,32 @@
     stayed vertically centered, so a 7-line compare pill like Pirates
     (9.55 / 9.83) still covers a 1-unit Fun neighbor such as Kill
     Bill V1 (8.67 / 9.25) on the same label side. Grow unstacked
-    overlays into that same gutter. Coincident north/south keep
-    their interior slot so they do not restack on the primary that
-    already moved into the gutter. Stacked overlays stay one-line
-    and do not need this.
+    overlays into that same gutter. Interior same-Good pairs closer
+    than one Fun unit reuse that vertical growth so both seven-line
+    pills fit instead of covering each other; that stagger is
+    ghost-label only and uses its own classes so Fun 9-10 / Fun 0-1
+    edge flags stay edge-only. Coincident north/south keep their
+    interior slot so they do not restack on the primary that already
+    moved into the gutter. Stacked overlays stay one-line and do
+    not need this.
   */
-  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10 > .movie-label {
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10 > .movie-label {
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--label-start > .movie-label {
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--label-start > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--label-start > .movie-label {
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0 > .movie-label {
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-0 > .movie-label {
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--label-start > .movie-label {
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--label-start > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-0.ghost-point--label-start > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 

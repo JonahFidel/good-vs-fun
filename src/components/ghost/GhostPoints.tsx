@@ -18,6 +18,44 @@ const LABEL_NORTH_FUN = 1
 const LABEL_GUTTER_GOOD_HIGH = 9
 /** Matches MoviePoints: grow into the Good 0 gutter at ghost-label zoom. */
 const LABEL_GUTTER_GOOD_LOW = 1
+/**
+ * Matches MoviePoints: centered 7-line pills extend ±0.5 Fun units, so
+ * same-Good neighbors closer than one unit cover each other. Pair them
+ * with stagger classes instead of Fun 9-10 / Fun 0-1 gutter flags, which
+ * are for the namesake edges. Coincident north/south keep their slot.
+ */
+const INTERIOR_SAME_GOOD_FUN_GAP = 1
+
+function interiorSameGoodVerticalStagger(
+  groups: PositionGroup[],
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const interiorUnstacked = groups.filter(
+    (group) =>
+      group.items.length === 1 &&
+      group.fun > LABEL_NORTH_FUN &&
+      group.fun < LABEL_SOUTH_FUN &&
+      group.good > LABEL_GUTTER_GOOD_LOW &&
+      group.good < LABEL_GUTTER_GOOD_HIGH,
+  )
+  const byGood = new Map<number, PositionGroup[]>()
+  for (const group of interiorUnstacked) {
+    const list = byGood.get(group.good)
+    if (list) list.push(group)
+    else byGood.set(group.good, [group])
+  }
+  for (const list of byGood.values()) {
+    if (list.length !== 2) continue
+    const [higher, lower] =
+      list[0].fun >= list[1].fun ? [list[0], list[1]] : [list[1], list[0]]
+    const gap = higher.fun - lower.fun
+    if (gap > 0 && gap <= INTERIOR_SAME_GOOD_FUN_GAP) {
+      stagger.set(higher.key, 'fun-10')
+      stagger.set(lower.key, 'fun-0')
+    }
+  }
+  return stagger
+}
 
 function overlayLabelPlacement({
   good,
@@ -98,6 +136,7 @@ export function GhostPoints({
   siblingKeys: ReadonlySet<string>
 }) {
   const variantClass = variant === 2 ? 'ghost-point--2' : 'ghost-point--1'
+  const verticalStagger = interiorSameGoodVerticalStagger(groups)
   return (
     <>
       {groups.map((group) => {
@@ -135,6 +174,14 @@ export function GhostPoints({
           !hasVerticalSlot &&
           !gutterIntoGood10 &&
           group.good <= LABEL_GUTTER_GOOD_LOW
+        // Interior same-Good stagger reuses the Fun 10 / Fun 0 growth
+        // at ghost-label zoom. Skip coincident north/south so those
+        // names do not restack on the primary that already occupies
+        // a vertical slot next to the marker.
+        const staggerTowardFun10 =
+          !hasVerticalSlot && verticalStagger.get(group.key) === 'fun-10'
+        const staggerTowardFun0 =
+          !hasVerticalSlot && verticalStagger.get(group.key) === 'fun-0'
 
         return (
           <div
@@ -153,6 +200,8 @@ export function GhostPoints({
               gutterIntoFun0 ? 'ghost-point--gutter-fun-0' : '',
               gutterIntoGood10 ? 'ghost-point--gutter-good-10' : '',
               gutterIntoGood0 ? 'ghost-point--gutter-good-0' : '',
+              staggerTowardFun10 ? 'ghost-point--stagger-fun-10' : '',
+              staggerTowardFun0 ? 'ghost-point--stagger-fun-0' : '',
               underSelected ? 'ghost-point--under-selected' : '',
             ]
               .filter(Boolean)
