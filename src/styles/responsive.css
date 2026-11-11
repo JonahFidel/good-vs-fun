@@ -794,19 +794,25 @@
 
   /*
     Fit-zoom hides unselected on-canvas names, so this list is how you
-    read titles before a tap. Two lines of 0.82rem match the Selected
-    bar wrap without growing the 44px row enough to lose the 5.5rem
-    list reservation. Per-row × still stole ~44px (and fat-fingered
-    deletes while scrolling); Selected already has a 44px Delete.
+    read titles before a tap. Per-row × still stole ~44px (and fat-
+    fingered deletes while scrolling); Selected already has a 44px
+    Delete.
 
-    Line-clamp paints the first two wrapped lines, so the namesake-
-    corner title that justified this wrap still never reached Black
-    Pearl beside Fun/Good on portrait or on the ~12-15.5rem landscape
-    rail (~20-24 characters per line is three wraps). Same column
-    flex-end plus overflow as the Selected bar and 32cqw canvas pill.
-    Two line-heights (1.25); height stays auto so Heat does not sit
-    in an empty two-line box. The inner text must keep its content
-    height so flex-end can hide the start.
+    Line-clamp paints the first wrapped lines, so last-N-lines (column
+    flex-end plus overflow) is the same clip as the Selected bar and
+    32cqw canvas pill. Portrait keeps title beside Fun/Good so the
+    leftover strip still shows a 44px row; that title column is only
+    ~24-29 characters (~200-215px after "F 9.55 · G 9.83"). Two lines
+    already fit Pirates (~50). Alexander and the Terrible, Horrible,
+    No Good, Very Bad Day (~59) is three wraps there ("Alexander and
+    the Terrible," / "Horrible, No Good, Very Bad" / "Day"), so last-
+    two-lines hid Alexander and showed only Horrible… / Day. Three
+    line-heights (1.25) fit those. Short names still shrink-to-fit;
+    only the long wrap grows past the 44px min, so the SE one-title
+    leftover stays a 44px row for Heat. Collapsed portrait Selected
+    stays two lines: that bar stacks F/G under the title and already
+    has ~33-44 characters per line. Landscape already uses three
+    lines on the ~20-24 character rail.
   */
   .movie-list-title strong {
     white-space: normal;
@@ -814,7 +820,7 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    max-height: 2.5em;
+    max-height: 3.75em;
     overflow: hidden;
   }
 
@@ -2100,11 +2106,12 @@
     row (title | F/G) is still tight; stacking F/G under the title lets
     the name use the full rail (~20-24 characters per line). Two lines
     is ~40-48 characters, so Pirates (~50) and Alexander and the
-    Terrible, Horrible, No Good, Very Bad Day (~64) still wrap three
+    Terrible, Horrible, No Good, Very Bad Day (~59) still wrap three
     times; last-two-lines then hid the namesake start (Alexander /
     Pirates). Three line-heights (1.25) fit those on this rail.
-    Portrait keeps two lines beside F/G because leftover height is
-    scarce and that column is already ~33-41 characters.
+    Portrait list already uses the same three-line clip beside F/G;
+    this override is the stacked-score layout plus collapsed Selected
+    three-line wrap, not a further list-clip bump.
   */
   .movie-list li {
     flex-direction: column;
