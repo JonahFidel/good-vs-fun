@@ -11,6 +11,7 @@ import {
   ghostPointAtMarker,
   listedMovieIdAtPoint,
   listedMovieIdContainingPoint,
+  listedMovieLabelContainsPoint,
   movieIdAtVisibleLabel,
   moviePointAtHit,
   moviePointAtVisibleLabel,
@@ -496,8 +497,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // reads/selects. A follow-up on a different listed name in that
     // same stacked pill is tap-A-then-tap-B select, not zoom-out:
     // 28px always covers those lines, including an overshoot past
-    // the ~31px pill, and jitter onto a neighbor movie's title or
-    // any 44px ring still eases home. Overlay zoom-in still requires
+    // the ~31px pill and a miss in the 0.2rem gap whose inner slice
+    // sits inside this stack's 22px ring. Jitter onto a neighbor
+    // movie's title or a neighboring 44px ring still eases home, as
+    // does marker/gutter jitter outside the pill. Overlay zoom-in still requires
     // that stored overlay contact and no stored title, so a 2.2x name
     // that covers a ghost cannot steal 3.2x. A second-tap ghost hit
     // cannot retarget an empty-space pair. Overflowed
@@ -1073,6 +1076,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // right-side labels (Good < 5) put the start of the other name
       // there, so a pointer actually on that listed title still
       // selects. listedMovieIdContainingPoint is that on-title hit.
+      // The 0.2rem gap is the same inner slice: the pill starts
+      // ~14.5px from center, so a tap-A-then-tap-B miss between the
+      // ~12px lines is in this ring without a title box. Keep
+      // closest-name for in-pill gap/padding; only the marker/gutter
+      // (in the ring, outside the pill) eases home.
       function stackedRetargetId(clientX: number, clientY: number) {
         const last = lastTapRef.current
         if (!last?.title || !last.titleId || !last.title.isConnected) {
@@ -1104,7 +1112,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (containingId && containingId !== last.titleId) {
           return containingId
         }
-        if (hitPoint) {
+        if (
+          hitPoint &&
+          !listedMovieLabelContainsPoint(last.title, clientX, clientY)
+        ) {
           return null
         }
         const secondId = listedMovieIdAtPoint(last.title, clientX, clientY)
@@ -1259,7 +1270,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // still eases home for marker jitter, but a pointer on the
         // other listed title (the inner ~7px of a 2.2x name sits
         // inside that ring, and right-side labels put the start of
-        // that name there) still selects.
+        // that name there) still selects. A miss in the 0.2rem gap
+        // is the same inner slice without a title box, so in-pill
+        // closest-name still selects; only marker/gutter jitter
+        // outside the pill eases home.
         if (completing) {
           cancelEmptyTap()
           lastTapRef.current = null

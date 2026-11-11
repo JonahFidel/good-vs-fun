@@ -78,6 +78,9 @@ function idFromLabelAtPoint(
   // 2.2x name sits inside this stack's 44px ring, and right-side
   // labels put the start of the other title there. Marker jitter
   // between the names is not in a title box and must still ease home.
+  // The 0.2rem gap's inner slice is also in that ring without being
+  // in a title box; callers use listedMovieLabelContainsPoint plus
+  // this closest fallback so that miss still selects.
   if (containingOnly) return closestContaining
   return closestContaining ?? closestTitle
 }
@@ -113,9 +116,10 @@ function idFromLabelAtPoint(
  * pointer to stay in the box. Jitter onto a neighboring movie's title
  * or a neighboring 44px ring still has to ease home. This stack's own
  * ring is the zoom origin, so marker jitter eases home unless the
- * pointer is actually on the other listed name: the inner ~7px of a
- * 2.2x title sits inside that 22px radius, and right-side labels
- * (Good < 5) put the start of the other title there.
+ * pointer is actually on the other listed name or in the pill gap:
+ * the inner ~7px of a 2.2x title (and of the 0.2rem gap) sits inside
+ * that 22px radius, and right-side labels (Good < 5) put the start
+ * of the other title there.
  */
 export function moviePointAtVisibleLabel(
   root: ParentNode,
@@ -181,8 +185,12 @@ export function movieIdAtVisibleLabel(
  * the names, but a pointer actually on the other listed title must
  * select: the inner ~7px of a 2.2x name sits inside that 22px
  * radius, and right-side labels put the start of that title there.
- * listedMovieIdContainingPoint is that on-title hit; this closest
- * fallback stays for the gap and the overshoot past the last line.
+ * The 0.2rem gap is the same inner slice: labels sit 9px from the
+ * 11px marker, so the pill's inner edge is ~14.5px from center and
+ * a tap in that gap is in the ring without being in a title box.
+ * listedMovieIdContainingPoint is the on-title hit;
+ * listedMovieLabelContainsPoint is the in-pill gap; this closest
+ * fallback stays for that gap and the overshoot past the last line.
  * Fit-zoom stacks hide inactive lines, so this is the
  * selected title and same-title zoom-in still fires.
  */
@@ -211,6 +219,23 @@ export function listedMovieIdContainingPoint(
   const label = point.querySelector(':scope > .movie-label')
   if (!(label instanceof HTMLElement)) return null
   return idFromLabelAtPoint(label, clientX, clientY, true)?.id ?? null
+}
+
+/**
+ * True when the pointer is inside this movie-point's painted title pill,
+ * including the 0.2rem gap and padding between stacked names. The inner
+ * ~7px of that gap sits inside the 22px hit ring, same as the inner
+ * title slice, so stackedRetarget must not treat "in this ring" as
+ * marker jitter when the tap is still in the pill.
+ */
+export function listedMovieLabelContainsPoint(
+  point: HTMLElement,
+  clientX: number,
+  clientY: number,
+): boolean {
+  const label = point.querySelector(':scope > .movie-label')
+  if (!(label instanceof HTMLElement) || !isPainted(label)) return false
+  return pointInRect(label.getBoundingClientRect(), clientX, clientY)
 }
 
 /**
@@ -325,7 +350,8 @@ export function nextMovieIdInGroup(
  * from a 2.2x stacked title toward the next cell lands in that ring.
  * This stack's own ring is the zoom origin between the names, so marker
  * jitter still eases home unless the pointer is on the other listed
- * title (the inner ~7px of a 2.2x name sits inside that 22px radius).
+ * title or in the pill gap (the inner ~7px of a 2.2x name and of the
+ * 0.2rem gap sit inside that 22px radius).
  */
 export function moviePointAtHit(
   root: ParentNode,

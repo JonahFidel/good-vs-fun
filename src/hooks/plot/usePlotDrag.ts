@@ -155,6 +155,8 @@ export function usePlotDrag({
       // A pointer actually on the other listed title still writes it,
       // even inside this 44px ring: the inner ~7px of a 2.2x name sits
       // there, and right-side labels put the start of that title there.
+      // A miss in the 0.2rem gap is the same inner slice without a
+      // title box, so in-pill closest-name still writes it.
       const stackedRetargetId = plot.dataset.stackedRetargetId
       if (stackedRetargetId) {
         delete plot.dataset.stackedRetargetId
