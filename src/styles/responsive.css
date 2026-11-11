@@ -563,11 +563,16 @@
     The plot is flex-none above the leftover sidebar, so the iOS keyboard
     covers that strip. --keyboard-inset padding cannot lift fields above a
     keyboard taller than the sidebar, and the 12rem plot floor also blocks
-    shrinking enough room. Hide the plot while a text field is focused so
-    Add Movie can use the visual viewport. Range sliders do not open the
-    keyboard and must keep the grid visible for score edits.
+    shrinking enough room.
+
+    Hide the plot while Add Movie is open (not only while the title is
+    focused). Title :focus hid the grid for typing, then a tap on Fun/Good
+    (range, no keyboard) brought the square back and crushed the rest of
+    the form - sliders and submit sat under the plot again. Desktop Add
+    is a div, so [open] is a no-op there. Selected score sliders live in
+    a different panel and still keep the grid on screen.
   */
-  .deck-page-layout:has(input:not([type='range']):focus, textarea:focus) .grid-panel {
+  .deck-page-layout:has(.deck-sidebar-section--add[open]) .grid-panel {
     display: none;
   }
 
