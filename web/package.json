@@ -8,7 +8,9 @@
     "prebuild": "npm run build -w @good-vs-fun/shared",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pretest": "npm run build -w @good-vs-fun/shared",
+    "test": "node --test 'src/**/*.test.ts'"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.60.1",

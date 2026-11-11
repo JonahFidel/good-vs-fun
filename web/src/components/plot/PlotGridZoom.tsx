@@ -66,6 +66,17 @@ const PAN_SLOP_PX = 8
  * device (iPad) keeps 8px so drag-pan stays snappy.
  */
 const TOUCH_PAN_SLOP_PX = 20
+
+/**
+ * The plot grows in CSS pixels as it zooms. Keeping its labels and
+ * strokes at native CSS size lets the browser paint them sharply at
+ * every zoom level instead of enlarging a composited bitmap.
+ */
+function unscaledCanvasSize(slot: HTMLElement | null): ViewSize | null {
+  if (!slot) return null
+  const size = Math.min(slot.clientWidth, slot.clientHeight)
+  return size > 0 ? { width: size, height: size } : null
+}
 const DOUBLE_TAP_MS = 350
 const DOUBLE_TAP_PX = 28
 const COARSE_POINTER_QUERY = '(pointer: coarse)'
@@ -174,16 +185,6 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // A tap that stops inertia or a zoom ease should not deselect.
     const caughtMotionRef = useRef(false)
 
-    // The plot grows in CSS pixels as it zooms. Keeping its labels and
-    // strokes at native CSS size lets the browser paint them sharply at
-    // every zoom level instead of enlarging a composited bitmap.
-    function unscaledCanvasSize(): ViewSize | null {
-      const slot = slotRef.current
-      if (!slot) return null
-      const size = Math.min(slot.clientWidth, slot.clientHeight)
-      return size > 0 ? { width: size, height: size } : null
-    }
-
     useImperativeHandle(forwardedRef, () => gridRef.current as HTMLDivElement)
 
     useEffect(() => {
@@ -194,7 +195,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       const canvas = canvasRef.current
       const slot = slotRef.current
       if (!canvas) return
-      const baseSize = unscaledCanvasSize()
+      const baseSize = unscaledCanvasSize(slotRef.current)
       if (slot && !opts?.skipClamp) {
         // lockFit keeps iPhone pinch at or above the fitted 1x grid and covering-clamps
         // axes that already filled at 1x. iPad landscape is also coarse
@@ -217,7 +218,6 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         canvas.style.height = `${baseSize.height * scale}px`
       }
       canvas.style.transform = `translate3d(${tx}px, ${ty}px, 0)`
-      canvas.style.setProperty('--plot-scale', String(scale))
       const canvasWidth = baseSize?.width ?? canvas.offsetWidth
       slot?.classList.toggle(
         'grid-zoom-slot--zoomed',
@@ -276,7 +276,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       if (userTransformedRef.current) return
       stateRef.current = centeredTransform(
         { width: slot.offsetWidth, height: slot.offsetHeight },
-        unscaledCanvasSize() ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
+        unscaledCanvasSize(slotRef.current) ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
         stateRef.current.scale,
       )
     }
@@ -291,14 +291,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // recentering on those events would fight a pinch-zoom in progress.
     useEffect(() => {
       const slot = slotRef.current
-      const canvas = canvasRef.current
-      if (!slot || !canvas) return
+      if (!slot) return
       const ro = new ResizeObserver(() => {
         centerIfPristine()
         applyTransform()
       })
       ro.observe(slot)
-      ro.observe(canvas)
       return () => ro.disconnect()
     }, [])
 
@@ -717,7 +715,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
             width: capturedSlot.offsetWidth,
             height: capturedSlot.offsetHeight,
           },
-          canvas: unscaledCanvasSize() ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
+          canvas: unscaledCanvasSize(slotRef.current) ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
         }
       }
 
@@ -815,7 +813,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (!slot || !canvas) return null
         return centeredTransform(
           { width: slot.offsetWidth, height: slot.offsetHeight },
-          unscaledCanvasSize() ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
+          unscaledCanvasSize(slotRef.current) ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
           INITIAL_SCALE,
         )
       }
@@ -861,7 +859,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           stateRef.current,
           point,
           fit,
-          detailScale ?? labelsVisibleScale(unscaledCanvasSize()?.width ?? canvas.offsetWidth),
+          detailScale ?? labelsVisibleScale(unscaledCanvasSize(slotRef.current)?.width ?? canvas.offsetWidth),
         )
         // Keep userTransformed true during the ease so a URL-bar resize
         // cannot recenter a zoom-out mid-flight. Restore fit's pristine
@@ -909,7 +907,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           const next = clampToSlot(
             { ...current, scale: MAX_SCALE },
             { width: slot.offsetWidth, height: slot.offsetHeight },
-            unscaledCanvasSize() ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
+            unscaledCanvasSize(slotRef.current) ?? { width: canvas.offsetWidth, height: canvas.offsetHeight },
             true,
           )
           animateTo(next)
@@ -1095,10 +1093,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const canvas = canvasRef.current
         const labelsOn =
           canvas != null &&
-          stateRef.current.scale >= labelsVisibleScale(unscaledCanvasSize()?.width ?? canvas.offsetWidth)
+          stateRef.current.scale >= labelsVisibleScale(unscaledCanvasSize(slotRef.current)?.width ?? canvas.offsetWidth)
         const ghostLabelsOn =
           canvas != null &&
-          stateRef.current.scale >= ghostLabelsVisibleScale(unscaledCanvasSize()?.width ?? canvas.offsetWidth)
+          stateRef.current.scale >= ghostLabelsVisibleScale(unscaledCanvasSize(slotRef.current)?.width ?? canvas.offsetWidth)
         const hitVisibleLabel = pointerHitsVisibleMovieLabel(
           capturedSlot,
           clientX,
@@ -1157,7 +1155,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           const r = storedGhost.getBoundingClientRect()
           applyDoubleTap(
             slotPoint(r.left + r.width / 2, r.top + r.height / 2),
-            ghostLabelsVisibleScale(unscaledCanvasSize()?.width ?? canvas.offsetWidth),
+            ghostLabelsVisibleScale(unscaledCanvasSize(slotRef.current)?.width ?? canvas.offsetWidth),
           )
           return true
         }

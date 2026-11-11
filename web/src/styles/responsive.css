@@ -1335,10 +1335,12 @@
 
     A 5-line selected pill is ~81px. Unselected names are hidden, and
     Fun 9-10 already grows down / Fun 0-1 up, so the extra line stays
-    in the scoring region even on a 10rem landscape square.     Overlay
-    3.2x wrap is seven lines: TARGET_LABEL_UNIT_PX 88 makes that
-    10rem ghost-label unit ~101px, so an ~88px seventh line still
-    fits the Fun 10 gutter.
+    in the scoring region even on a 10rem landscape square. Overlay
+    3.2x wrap is seven lines (~88px). Ghost-label zoom reaches a
+    TARGET_LABEL_UNIT_PX 88 unit from about an 11rem square up.
+    Below that MAX_SCALE 6 caps the unit (~80px on a 10rem
+    landscape square), so a seven-line overlay can overflow its
+    Fun cell there.
   */
   .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     white-space: normal;
@@ -1566,10 +1568,12 @@
     to the distinctive ending.
 
     A 7-line overlay is ~88px. Ghost-label zoom keeps at
-    least ~101px per unit even on a 10rem landscape square
-    (labelsVisibleScale plus 1x after TARGET_LABEL_UNIT_PX
-    88), so the extra line stays inside one Fun cell and
-    the 1-unit Fun 10 gutter.
+    least TARGET_LABEL_UNIT_PX 88 per unit on squares from
+    about 11rem up, so the extra line stays inside one Fun
+    cell and the 1-unit Fun 10 gutter. MAX_SCALE 6 caps a
+    10rem landscape square at ~80px per unit, where ghost
+    titles show at the same scale as primary titles and a
+    seven-line overlay can overflow its cell.
 
     Stacked overlays already list every truncated name, the same
     2.2x primary readout. Wrapping each of those lines too turns

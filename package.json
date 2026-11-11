@@ -10,7 +10,7 @@
     "dev:mobile": "npm run start -w @good-vs-fun/mobile",
     "build": "npm run build -w @good-vs-fun/web",
     "lint": "npm run lint -w @good-vs-fun/web",
-    "test": "npm run test -w @good-vs-fun/shared",
+    "test": "npm run test -w @good-vs-fun/shared && npm run test -w @good-vs-fun/web",
     "preview": "npm run preview -w @good-vs-fun/web",
     "postinstall": "npm run build -w @good-vs-fun/shared"
   },
