@@ -1,11 +1,13 @@
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type Dispatch,
   type PointerEvent as ReactPointerEvent,
   type SetStateAction,
 } from 'react'
+import { closestMovieId } from '../../lib/closestMoviePoint'
 import { snapScoreToStep } from '../../lib/format'
 import { scoresAtPointer } from '../../lib/findSnapTarget'
 import type { Movie } from '../../lib/types'
@@ -119,6 +121,33 @@ export function usePlotDrag({
     onSelectMovie,
     onDragStart: startDrag,
   })
+
+  // Capture-phase so a tap on overlapping 44px rings selects the nearest
+  // dot, not whichever .movie-point is later in the DOM. Stop the event so
+  // the topmost ring's React handler cannot select a farther movie.
+  useEffect(() => {
+    if (!gridRef.current) {
+      return
+    }
+    const plot: HTMLElement = gridRef.current
+
+    function onTouchSelect(event: PointerEvent) {
+      if (event.pointerType !== 'touch') {
+        return
+      }
+      const id = closestMovieId(plot, event.clientX, event.clientY)
+      if (!id) {
+        return
+      }
+      event.stopPropagation()
+      onSelectMovie(id)
+    }
+
+    plot.addEventListener('pointerdown', onTouchSelect, { capture: true })
+    return () => {
+      plot.removeEventListener('pointerdown', onTouchSelect, { capture: true })
+    }
+  }, [onSelectMovie])
 
   const handlePointerDown =
     (key: string, ids: string[], primaryId: string) =>

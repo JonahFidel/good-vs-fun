@@ -5,6 +5,7 @@ import {
   useLayoutEffect,
   useRef,
 } from 'react'
+import { MOVIE_HIT_RADIUS_PX } from '../../lib/closestMoviePoint'
 import { scoringRegionScreenRect } from '../../lib/gridCanvas'
 import {
   INITIAL_SCALE,
@@ -44,7 +45,7 @@ type WebKitGestureEvent = Event & {
   clientY: number
 }
 
-const PAN_DEAD_ZONE_PX = 22
+const PAN_DEAD_ZONE_PX = MOVIE_HIT_RADIUS_PX
 const PAN_SLOP_PX = 8
 const DOUBLE_TAP_MS = 350
 const DOUBLE_TAP_PX = 28
@@ -215,7 +216,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       function isNearMoviePoint(clientX: number, clientY: number) {
-        for (const pt of capturedSlot.querySelectorAll('.movie-point')) {
+        for (const pt of capturedSlot.querySelectorAll(
+          '.movie-point:not(.ghost-point)',
+        )) {
           const r = pt.getBoundingClientRect()
           const dx = clientX - (r.left + r.width / 2)
           const dy = clientY - (r.top + r.height / 2)
