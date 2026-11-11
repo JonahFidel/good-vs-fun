@@ -25,19 +25,32 @@ const LABEL_GUTTER_GOOD_LOW = 1
  * are for the namesake edges. Coincident north/south keep their slot.
  */
 const INTERIOR_SAME_GOOD_FUN_GAP = 1
+/**
+ * Matches MoviePoints: after same-Good vertical stagger, the nearest
+ * close-Good neighbor still covers the pair on the default overlay
+ * side (Grizzly Man at 8.32 vs The Death of Stalin at 8.44). One
+ * neighbor per pair, on the Good side away from the pair. Skip
+ * coincident north/south so those names do not restack on the
+ * primary. Reuse of label-start would also move every left-side
+ * overlay.
+ */
+const INTERIOR_CLOSE_GOOD_GAP = 1
+
+function isInteriorUnstacked(group: PositionGroup): boolean {
+  return (
+    group.items.length === 1 &&
+    group.fun > LABEL_NORTH_FUN &&
+    group.fun < LABEL_SOUTH_FUN &&
+    group.good > LABEL_GUTTER_GOOD_LOW &&
+    group.good < LABEL_GUTTER_GOOD_HIGH
+  )
+}
 
 function interiorSameGoodVerticalStagger(
   groups: PositionGroup[],
 ): Map<string, 'fun-10' | 'fun-0'> {
   const stagger = new Map<string, 'fun-10' | 'fun-0'>()
-  const interiorUnstacked = groups.filter(
-    (group) =>
-      group.items.length === 1 &&
-      group.fun > LABEL_NORTH_FUN &&
-      group.fun < LABEL_SOUTH_FUN &&
-      group.good > LABEL_GUTTER_GOOD_LOW &&
-      group.good < LABEL_GUTTER_GOOD_HIGH,
-  )
+  const interiorUnstacked = groups.filter(isInteriorUnstacked)
   const byGood = new Map<number, PositionGroup[]>()
   for (const group of interiorUnstacked) {
     const list = byGood.get(group.good)
@@ -54,6 +67,55 @@ function interiorSameGoodVerticalStagger(
       stagger.set(lower.key, 'fun-0')
     }
   }
+  return stagger
+}
+
+function interiorCloseGoodHorizontalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
+  if (verticalStagger.size === 0) return stagger
+
+  const interiorUnstacked = groups.filter(isInteriorUnstacked)
+  const pairs = new Map<number, PositionGroup[]>()
+  for (const group of interiorUnstacked) {
+    if (!verticalStagger.has(group.key)) continue
+    const list = pairs.get(group.good)
+    if (list) list.push(group)
+    else pairs.set(group.good, [group])
+  }
+
+  for (const pair of pairs.values()) {
+    const pairGood = pair[0].good
+    let nearest: PositionGroup | null = null
+    let nearestDist = Infinity
+    for (const candidate of interiorUnstacked) {
+      if (verticalStagger.has(candidate.key) || stagger.has(candidate.key)) {
+        continue
+      }
+      for (const member of pair) {
+        const dFun = Math.abs(candidate.fun - member.fun)
+        const dGood = Math.abs(candidate.good - member.good)
+        if (
+          dGood === 0 ||
+          dGood > INTERIOR_CLOSE_GOOD_GAP ||
+          dFun > INTERIOR_SAME_GOOD_FUN_GAP
+        ) {
+          continue
+        }
+        const dist = Math.hypot(dFun, dGood)
+        if (dist < nearestDist) {
+          nearestDist = dist
+          nearest = candidate
+        }
+      }
+    }
+    if (nearest) {
+      stagger.set(nearest.key, nearest.good >= pairGood ? 'good-10' : 'good-0')
+    }
+  }
+
   return stagger
 }
 
@@ -137,6 +199,10 @@ export function GhostPoints({
 }) {
   const variantClass = variant === 2 ? 'ghost-point--2' : 'ghost-point--1'
   const verticalStagger = interiorSameGoodVerticalStagger(groups)
+  const horizontalStagger = interiorCloseGoodHorizontalStagger(
+    groups,
+    verticalStagger,
+  )
   return (
     <>
       {groups.map((group) => {
@@ -175,13 +241,19 @@ export function GhostPoints({
           !gutterIntoGood10 &&
           group.good <= LABEL_GUTTER_GOOD_LOW
         // Interior same-Good stagger reuses the Fun 10 / Fun 0 growth
-        // at ghost-label zoom. Skip coincident north/south so those
-        // names do not restack on the primary that already occupies
-        // a vertical slot next to the marker.
+        // at ghost-label zoom. Close-Good neighbors of that pair flip
+        // left/right like label-start so they sit beside the pair
+        // instead of covering it. Skip coincident north/south so
+        // those names do not restack on the primary that already
+        // occupies a slot next to the marker.
         const staggerTowardFun10 =
           !hasVerticalSlot && verticalStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 =
           !hasVerticalSlot && verticalStagger.get(group.key) === 'fun-0'
+        const staggerTowardGood10 =
+          !hasVerticalSlot && horizontalStagger.get(group.key) === 'good-10'
+        const staggerTowardGood0 =
+          !hasVerticalSlot && horizontalStagger.get(group.key) === 'good-0'
 
         return (
           <div
@@ -202,6 +274,8 @@ export function GhostPoints({
               gutterIntoGood0 ? 'ghost-point--gutter-good-0' : '',
               staggerTowardFun10 ? 'ghost-point--stagger-fun-10' : '',
               staggerTowardFun0 ? 'ghost-point--stagger-fun-0' : '',
+              staggerTowardGood10 ? 'ghost-point--stagger-good-10' : '',
+              staggerTowardGood0 ? 'ghost-point--stagger-good-0' : '',
               underSelected ? 'ghost-point--under-selected' : '',
             ]
               .filter(Boolean)

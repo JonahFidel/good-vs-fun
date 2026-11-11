@@ -1812,7 +1812,7 @@
     leave a one-pill gap and cover Kill Bill V1 instead of
     sitting beside Stalin. One neighbor per pair, away from
     the pair's Good, so Novocaine and Phoenician stay put.
-    Overlay close-Good still covers until it gets this stagger.
+    Overlay close-Good gets this stagger at ghost-label zoom.
   */
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-good-10 > .movie-label {
     left: auto;
@@ -1935,6 +1935,32 @@
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-0 > .movie-label,
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-0.ghost-point--label-start > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Same-Good Fun stagger still leaves a 3.75rem overlay covering a
+    close-Good neighbor on the default overlay side: Grizzly Man
+    (7.59 / 8.32, toward Fun 10) covers The Death of Stalin
+    (8.01 / 8.44). Overlay names wait for ghost-label zoom, so this
+    is ghost-label only and uses its own classes instead of
+    label-start. Anchor left/right like label-start: a transform-only
+    Good 10 shift on left:0 would leave a one-pill gap and cover
+    Kill Bill V1 instead of sitting beside Stalin. One neighbor per
+    pair, away from the pair's Good. Coincident north/south keep
+    their current Good side so they do not restack on the primary.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -50%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -50%);
   }
 
   /*
