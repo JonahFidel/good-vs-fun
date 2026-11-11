@@ -1048,13 +1048,14 @@
   }
 
   /*
-    Sidebar layout sets compare selects to min-height: 0, so 16px font plus
-    0.35rem padding is ~30px. iOS also ignores min-height on native selects
-    unless padding actually grows the box. 44px padding-box so picking a
-    ghost deck is a real tap, matching Swap.
+    Sidebar layout sets compare selects to min-height: 0, and the movie-list
+    sort still uses 0.2rem padding, so 16px font is only ~28-30px. iOS also
+    ignores min-height on native selects unless padding actually grows the
+    box. 44px padding-box so Sort and Compare are real taps, matching Swap.
   */
   .ghost-compare-row select,
-  .deck-sidebar .ghost-compare-row select {
+  .deck-sidebar .ghost-compare-row select,
+  .movie-list-header select {
     min-height: 2.75rem;
     padding: 0.55rem 0.7rem;
   }
