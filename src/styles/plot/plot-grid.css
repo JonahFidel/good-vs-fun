@@ -53,7 +53,7 @@
   min-width: 700px;
   will-change: transform;
   z-index: 1;
-  /* Used by mobile tick inverse-scale and Fun/Good axis-border thickness. */
+  /* Used by mobile tick and Fun/Good axis-border inverse-scale. */
   --plot-inverse-scale: calc(1 / var(--plot-scale, 1));
 }
 
@@ -98,16 +98,16 @@
   width: calc(100% * var(--grid-score-max) / var(--grid-canvas));
   height: calc(100% * var(--grid-score-max) / var(--grid-canvas));
   /*
-    Axis strokes live on the scaled canvas. Inverse-scale keeps Fun=0 /
-    Good=0 at screen thickness so pinch and double-tap do not bury movies
-    on those edges. Keep content-box so changing the border does not
-    resize the scoring region (universal * does not match ::before).
+    Desktop wheel-zoom enlarges Fun=0 / Good=0 with the canvas (Figma-style).
+    Mobile re-applies inverse-scale so pinch does not bury origin movies.
+    Keep content-box so a future border change does not resize the 0-10 box
+    (universal * does not match ::before).
   */
   box-sizing: content-box;
-  border-left: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
-  border-bottom: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
-  border-right: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
-  border-top: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
+  border-left: 4px solid #111827;
+  border-bottom: 4px solid #111827;
+  border-right: 2px solid #111827;
+  border-top: 2px solid #111827;
   pointer-events: none;
   z-index: 0;
 }

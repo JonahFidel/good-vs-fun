@@ -535,7 +535,12 @@
   .deck-page-layout .grid::before,
   .deck-page-layout .grid-wrapper--example .grid::before {
     opacity: 1;
-    border-color: #111827;
+    /* Keep Fun=0 / Good=0 at screen thickness while pinch spreads the grid.
+       Desktop omits this so wheel-zoom enlarges the axes with ticks. */
+    border-left: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
+    border-bottom: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
+    border-right: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
+    border-top: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
   }
 
   .deck-page-layout .grid-line-overlay,
