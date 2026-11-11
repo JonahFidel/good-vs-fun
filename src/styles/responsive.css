@@ -1448,6 +1448,33 @@
   }
 
   /*
+    At 2.2x stacked primaries list every truncated name in the
+    one-cell pill, the same readout overlay stacks got at 3.2x.
+    End ellipsis then hides the sequel: the 2026 stack "Back to
+    the Future 2" + "The Beekeeper" reads as "Back to t…".
+    Primaries have a Selected bar, but pinch-to-read is supposed
+    to identify those names without tapping through the stack.
+    Keep overflow on the title box itself. The overlay isolate
+    is display:inline; overflow:visible, which would grow
+    listedMovieIdContainingPoint into the clipped start and
+    steal tap-A-then-tap-B (right-side labels put that start
+    in this stack's 44px ring). RTL + isolate on the existing
+    block title clips from the start inside the same 3.75rem
+    hit box: "…Future 2". Short names still fit and stay
+    left-aligned. Ghost stacks already clip at --ghost-labels.
+  */
+  .grid-zoom-slot--labels .movie-point--stacked:not(.ghost-point) .movie-label-line {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .grid-zoom-slot--labels .movie-point--stacked:not(.ghost-point) .movie-label-title {
+    direction: rtl;
+    text-align: left;
+    unicode-bidi: isolate;
+  }
+
+  /*
     Keep right-side titles on the right; the rule above would pull them left.
     .movie-label only - the floating score pill is also a child span.
   */
