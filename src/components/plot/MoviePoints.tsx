@@ -20,21 +20,33 @@ const LABEL_GUTTER_GOOD_LOW = 1
  * move the fit-zoom selected pill into the square.
  */
 const INTERIOR_SAME_GOOD_FUN_GAP = 1
+/**
+ * Those same pills cover ~0.75 Good units on the default label side.
+ * After same-Good vertical stagger, the nearest close-Good neighbor
+ * (Grizzly Man at 8.32 vs The Death of Stalin at 8.44) still covers
+ * the pair. One neighbor per pair, on the Good side away from the
+ * pair, so this does not flip every close-Good title onto one side.
+ * Reuse of label-end would also flip the fit-zoom selected pill.
+ */
+const INTERIOR_CLOSE_GOOD_GAP = 1
 /** Slide the stack-count chip left so Fun/Good ≈10 does not clip it in the 1-unit margin. */
 const COUNT_WEST_GOOD = 9
+
+function isInteriorUnstacked(group: PositionGroup): boolean {
+  return (
+    group.items.length === 1 &&
+    group.fun > LABEL_NORTH_FUN &&
+    group.fun < LABEL_SOUTH_FUN &&
+    group.good > LABEL_GUTTER_GOOD_LOW &&
+    group.good < LABEL_GUTTER_GOOD_HIGH
+  )
+}
 
 function interiorSameGoodVerticalStagger(
   groups: PositionGroup[],
 ): Map<string, 'fun-10' | 'fun-0'> {
   const stagger = new Map<string, 'fun-10' | 'fun-0'>()
-  const interiorUnstacked = groups.filter(
-    (group) =>
-      group.items.length === 1 &&
-      group.fun > LABEL_NORTH_FUN &&
-      group.fun < LABEL_SOUTH_FUN &&
-      group.good > LABEL_GUTTER_GOOD_LOW &&
-      group.good < LABEL_GUTTER_GOOD_HIGH,
-  )
+  const interiorUnstacked = groups.filter(isInteriorUnstacked)
   const byGood = new Map<number, PositionGroup[]>()
   for (const group of interiorUnstacked) {
     const list = byGood.get(group.good)
@@ -51,6 +63,55 @@ function interiorSameGoodVerticalStagger(
       stagger.set(lower.key, 'fun-0')
     }
   }
+  return stagger
+}
+
+function interiorCloseGoodHorizontalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
+  if (verticalStagger.size === 0) return stagger
+
+  const interiorUnstacked = groups.filter(isInteriorUnstacked)
+  const pairs = new Map<number, PositionGroup[]>()
+  for (const group of interiorUnstacked) {
+    if (!verticalStagger.has(group.key)) continue
+    const list = pairs.get(group.good)
+    if (list) list.push(group)
+    else pairs.set(group.good, [group])
+  }
+
+  for (const pair of pairs.values()) {
+    const pairGood = pair[0].good
+    let nearest: PositionGroup | null = null
+    let nearestDist = Infinity
+    for (const candidate of interiorUnstacked) {
+      if (verticalStagger.has(candidate.key) || stagger.has(candidate.key)) {
+        continue
+      }
+      for (const member of pair) {
+        const dFun = Math.abs(candidate.fun - member.fun)
+        const dGood = Math.abs(candidate.good - member.good)
+        if (
+          dGood === 0 ||
+          dGood > INTERIOR_CLOSE_GOOD_GAP ||
+          dFun > INTERIOR_SAME_GOOD_FUN_GAP
+        ) {
+          continue
+        }
+        const dist = Math.hypot(dFun, dGood)
+        if (dist < nearestDist) {
+          nearestDist = dist
+          nearest = candidate
+        }
+      }
+    }
+    if (nearest) {
+      stagger.set(nearest.key, nearest.good >= pairGood ? 'good-10' : 'good-0')
+    }
+  }
+
   return stagger
 }
 
@@ -80,6 +141,10 @@ export function MoviePoints({
   onClearHover: () => void
 }) {
   const verticalStagger = interiorSameGoodVerticalStagger(groups)
+  const horizontalStagger = interiorCloseGoodHorizontalStagger(
+    groups,
+    verticalStagger,
+  )
 
   return (
     <>
@@ -98,6 +163,8 @@ export function MoviePoints({
         const labelAbove = !labelBelow && group.fun <= LABEL_NORTH_FUN
         const staggerTowardFun10 = verticalStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 = verticalStagger.get(group.key) === 'fun-0'
+        const staggerTowardGood10 = horizontalStagger.get(group.key) === 'good-10'
+        const staggerTowardGood0 = horizontalStagger.get(group.key) === 'good-0'
         const gutterIntoGood10 = group.good >= LABEL_GUTTER_GOOD_HIGH
         const gutterIntoGood0 =
           !gutterIntoGood10 && group.good <= LABEL_GUTTER_GOOD_LOW
@@ -117,6 +184,8 @@ export function MoviePoints({
               labelAbove ? 'movie-point--label-north' : '',
               staggerTowardFun10 ? 'movie-point--stagger-fun-10' : '',
               staggerTowardFun0 ? 'movie-point--stagger-fun-0' : '',
+              staggerTowardGood10 ? 'movie-point--stagger-good-10' : '',
+              staggerTowardGood0 ? 'movie-point--stagger-good-0' : '',
               gutterIntoGood10 ? 'movie-point--gutter-good-10' : '',
               gutterIntoGood0 ? 'movie-point--gutter-good-0' : '',
               countOnLeft ? 'movie-point--count-west' : '',

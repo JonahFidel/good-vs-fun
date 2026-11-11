@@ -1801,6 +1801,31 @@
     transform: translate(calc(-100% - 9px), 0);
   }
 
+  /*
+    Same-Good Fun stagger still leaves a 3.75rem pill covering a
+    close-Good neighbor on the default label side: Grizzly Man
+    (7.59 / 8.32, toward Fun 10) covers The Death of Stalin
+    (8.01 / 8.44). Fit-zoom selected wrap must stay on that
+    interior side, so this is labels-visible only and uses its
+    own classes instead of label-end. Anchor left/right like
+    label-end: a transform-only Good 10 shift on left:0 would
+    leave a one-pill gap and cover Kill Bill V1 instead of
+    sitting beside Stalin. One neighbor per pair, away from
+    the pair's Good, so Novocaine and Phoenician stay put.
+    Overlay close-Good still covers until it gets this stagger.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-good-10 > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -50%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-good-0 > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -50%);
+  }
+
   .ghost-point--label-start > .movie-label {
     transform: translate(calc(-100% - 9px), -50%);
   }
