@@ -20,6 +20,25 @@ function pointInRect(
   )
 }
 
+/** Visible slice of a title inside its pill. Start-clip uses an
+ *  overflow:visible LTR isolate whose layout box extends into the
+ *  clipped start; right-side 2.2x labels put that start in this
+ *  stack's 44px ring, so an unclipped title rect would steal
+ *  tap-A-then-tap-B and marker-jitter zoom-out. */
+function visibleTitleRect(
+  title: HTMLElement,
+  label: HTMLElement,
+): DOMRect | null {
+  const titleRect = title.getBoundingClientRect()
+  const labelRect = label.getBoundingClientRect()
+  const left = Math.max(titleRect.left, labelRect.left)
+  const right = Math.min(titleRect.right, labelRect.right)
+  const top = Math.max(titleRect.top, labelRect.top)
+  const bottom = Math.min(titleRect.bottom, labelRect.bottom)
+  if (right <= left || bottom <= top) return null
+  return new DOMRect(left, top, right - left, bottom - top)
+}
+
 function distanceToRectCenter(
   rect: DOMRect,
   clientX: number,
@@ -53,7 +72,8 @@ function idFromLabelAtPoint(
     if (!(title instanceof HTMLElement) || !isPainted(title)) continue
     const id = title.getAttribute('data-movie-id')
     if (!id) continue
-    const titleRect = title.getBoundingClientRect()
+    const titleRect = visibleTitleRect(title, label)
+    if (!titleRect) continue
     const dist = distanceToRectCenter(titleRect, clientX, clientY)
     if (!closestTitle || dist < closestTitle.dist) {
       closestTitle = { id, dist }
@@ -76,8 +96,11 @@ function idFromLabelAtPoint(
   // still returns the closer name from the stored point.
   // containingOnly skips that closest fallback: the inner ~7px of a
   // 2.2x name sits inside this stack's 44px ring, and right-side
-  // labels put the start of the other title there. Marker jitter
-  // between the names is not in a title box and must still ease home.
+  // labels put the visible start of the other title there. The
+  // clipped (invisible) start of a start-clipped title also sits
+  // in that ring; visibleTitleRect keeps that from counting as
+  // on-title. Marker jitter between the names is not in a title
+  // box and must still ease home.
   // The 0.2rem gap's inner slice is also in that ring without being
   // in a title box; callers use listedMovieLabelContainsPoint plus
   // this closest fallback so that miss still selects.

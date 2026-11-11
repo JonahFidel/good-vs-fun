@@ -1450,42 +1450,41 @@
   /*
     Compact one-cell primary titles clip from the start so
     sequels stay identifiable without the Selected bar.
-    Iteration 179 only did this for stacked names at --labels
-    (2.2x). That left two end-ellipsis holes on the same
-    3.75rem box:
-
-    1. Light pinch (--zoomed, 1.4x) shrinks the wrapping
-       selected readout to one cell. "Back to the Future 3"
-       was readable at fit wrap, then became "Back to t…"
-       until 2.2x, and stays that way if it is not stacked.
-    2. Unstacked 2.2x titles never clipped. "Back to the
-       Future" and "Back to the Future 3" both read as
-       "Back to t…"; "28 Years Later" and "28 Years Later
-       Bone Temple" both read as "28 Years L…". Stacked
-       "…Future 2" next to those identical starts made
-       pinch-to-read worse, not better.
-
     Gate on --zoomed, not --labels and not --stacked: that
-    is when every compact primary pill exists. Keep overflow
-    on the title box itself. The overlay isolate is
-    display:inline; overflow:visible, which would grow
-    listedMovieIdContainingPoint into the clipped start and
-    steal tap-A-then-tap-B (right-side labels put that start
-    in this stack's 44px ring). RTL + isolate on the existing
-    block title clips from the start inside the same 3.75rem
-    hit box: "…Future 3" / "…Bone Temple". Short names still
-    fit and stay left-aligned. Ghost stacks already clip at
-    --ghost-labels; unstacked overlays wrap 2 lines there.
+    is when every compact primary pill exists.
+
+    RTL + unicode-bidi:isolate on the title itself (iteration
+    180) reorders leading numbers: "28 Days Later" and "28
+    Years Later" both painted as "… Later 28", and "28 Years
+    Later Bone Temple" became "…emple 28". Use the overlay
+    two-element isolate instead: RTL overflow on the line,
+    LTR isolate on the inline title, so "…ays Later" /
+    "…ars Later" / "…e Temple" / "…Future 3" keep English
+    order. Short names still fit and stay left-aligned.
+
+    overflow:visible on that isolate grows the title's layout
+    box into the clipped start. listedMovieIdContainingPoint
+    intersects with the pill so right-side 2.2x labels cannot
+    steal tap-A-then-tap-B from this stack's 44px ring.
+    Ghost stacks already clip at --ghost-labels; unstacked
+    overlays wrap 2 lines there.
   */
   .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) .movie-label-line {
     min-width: 0;
     max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: rtl;
+    text-align: left;
   }
 
   .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) .movie-label-title {
-    direction: rtl;
-    text-align: left;
+    display: inline;
+    direction: ltr;
     unicode-bidi: isolate;
+    overflow: visible;
+    text-overflow: unset;
   }
 
   /*
