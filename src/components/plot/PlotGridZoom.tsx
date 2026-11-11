@@ -56,6 +56,15 @@ type WebKitGestureEvent = Event & {
 }
 
 const PAN_SLOP_PX = 8
+/**
+ * iPhone tap jitter often exceeds 8px. Fit zoom skipped empty-space
+ * tracking so double-tap zoom-in could fire. After a leftover 1.2-2.1x
+ * pinch, covering pan is unlocked, so that same 8px slop treats a tap as
+ * a pan and cancels double-tap zoom-in (or zoom-out-to-fit at 2.2x).
+ * 20px is still under DOUBLE_TAP_PX (28) and about 0.3 cells at 2.2x on
+ * a ~370px square. Mouse keeps 8px so Figma-style drag-pan stays snappy.
+ */
+const TOUCH_PAN_SLOP_PX = 20
 const DOUBLE_TAP_MS = 350
 const DOUBLE_TAP_PX = 28
 const COARSE_POINTER_QUERY = '(pointer: coarse)'
@@ -412,7 +421,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // Fit zoom never pans, so the default 0-10 square stays locked. Double-tap
     // eases to title-visible zoom (~2.2x) from any scale below that,
     // including a 1.2-2.1x leftover pinch, or back to fit once titles
-    // are on screen. Pinch-out past 1x and zoomed pan past a covering or
+    // are on screen. Overflowed scales unlock pan, so touch pan slop is
+    // 20px (not the 8px mouse value) or iPhone tap jitter cancels that
+    // double-tap the same way empty-space jitter did at fit before
+    // movement tracking was skipped there.
+    // Pinch-out past 1x and zoomed pan past a covering or
     // keep-visible edge rubber-band, then ease back on lift, so getting
     // home or hitting an edge is not a wall. Catching a flicked coast
     // resumes from that unconstrained translation and does not count as
@@ -771,19 +784,28 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         beginPan(id, clientX, clientY)
       }
 
-      function noteGestureMove(clientX: number, clientY: number) {
+      function noteGestureMove(
+        clientX: number,
+        clientY: number,
+        slop = PAN_SLOP_PX,
+      ) {
         const start = gestureStartRef.current
         if (!start || gestureMovedRef.current) return
-        if (Math.hypot(clientX - start.x, clientY - start.y) >= PAN_SLOP_PX) {
+        if (Math.hypot(clientX - start.x, clientY - start.y) >= slop) {
           gestureMovedRef.current = true
           cancelEmptyTap()
           lastTapRef.current = null
         }
       }
 
-      function movePan(id: number, clientX: number, clientY: number) {
+      function movePan(
+        id: number,
+        clientX: number,
+        clientY: number,
+        slop = PAN_SLOP_PX,
+      ) {
         if (!panRef.current || panRef.current.pointerId !== id) return
-        noteGestureMove(clientX, clientY)
+        noteGestureMove(clientX, clientY, slop)
         if (!gestureMovedRef.current) return
         samplePanVelocity(clientX, clientY)
         const tx = panRef.current.tx + (clientX - panRef.current.x)
@@ -1115,7 +1137,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const touch = fingers[0]
         if (panRef.current) {
           e.preventDefault()
-          movePan(touch.identifier, touch.clientX, touch.clientY)
+          movePan(
+            touch.identifier,
+            touch.clientX,
+            touch.clientY,
+            TOUCH_PAN_SLOP_PX,
+          )
           return
         }
         // At fit zoom, pan is a no-op so panRef stays null. Track travel on
@@ -1123,7 +1150,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // Empty-space jitter at fit must not count, or zoom-in never fires.
         const target = e.target as Element | null
         if (target?.closest('.movie-point')) {
-          noteGestureMove(touch.clientX, touch.clientY)
+          noteGestureMove(touch.clientX, touch.clientY, TOUCH_PAN_SLOP_PX)
         }
       }
 
