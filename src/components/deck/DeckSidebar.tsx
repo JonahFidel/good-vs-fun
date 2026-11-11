@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useExampleDeckNotice } from '../../hooks/deck/useExampleDeckNotice'
 import { formatTitle, snapScoreToStep } from '../../lib/format'
 import type { Movie, MovieHover } from '../../lib/types'
 import { AddMovieForm } from './AddMovieForm'
@@ -61,6 +62,7 @@ export function DeckSidebar({
   onRemoveMovie: (id: string) => void
   children?: React.ReactNode
 }) {
+  const notice = useExampleDeckNotice()
   const [title, setTitle] = useState('')
   const [fun, setFun] = useState(5)
   const [good, setGood] = useState(5)
@@ -132,6 +134,11 @@ export function DeckSidebar({
         </div>
       </div>
 
+      {notice && (
+        <p className="notice-banner" role="status">
+          {notice}
+        </p>
+      )}
       {error && <p className="error-banner">{error}</p>}
       {loading && <p className="status-line">Syncing changes…</p>}
 

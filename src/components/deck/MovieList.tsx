@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { alertExampleDeckReadOnly } from '../../lib/exampleDeck'
 import { formatScore } from '../../lib/format'
 import { scrollChildIntoAncestor } from '../../lib/scrollChildIntoAncestor'
 import type { Movie, MovieHover } from '../../lib/types'
@@ -59,12 +58,6 @@ export function MovieList({
     scrollChildIntoAncestor(row, { block: 'nearest', behavior: 'smooth' })
   }, [selectedMovieId])
 
-  const handleExampleDelete = (event: React.MouseEvent) => {
-    event.preventDefault()
-    event.stopPropagation()
-    alertExampleDeckReadOnly()
-  }
-
   return (
     <div className="deck-sidebar-section deck-sidebar-section--list movie-list">
       <h3 className="deck-sidebar-section__title deck-sidebar-section__title--inline">
@@ -121,16 +114,7 @@ export function MovieList({
           >
             <div className="movie-list-title">
               <strong title={movie.title}>{movie.title}</strong>
-              {isExampleDeck ? (
-                <button
-                  type="button"
-                  className="movie-delete"
-                  aria-label={`Remove ${movie.title}`}
-                  onClick={handleExampleDelete}
-                >
-                  ×
-                </button>
-              ) : (
+              {!isExampleDeck && (
                 <button
                   type="button"
                   className="movie-delete"

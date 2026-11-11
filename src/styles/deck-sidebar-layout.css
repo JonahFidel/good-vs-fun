@@ -141,6 +141,7 @@
 }
 
 .deck-sidebar .error-banner,
+.deck-sidebar .notice-banner,
 .deck-sidebar .status-line {
   margin: 0;
 }

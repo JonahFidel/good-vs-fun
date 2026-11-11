@@ -1786,11 +1786,14 @@
   }
 
   /*
-    Inline delete confirm replaces window.confirm, the last native iOS
-    dialog on /decks. Keep the copy at 16px so the warning is as readable
-    as the 44px Cancel/Delete hits already on these action buttons.
+    Inline delete confirm replaces window.confirm. Keep the copy at 16px
+    so the warning is as readable as the 44px Cancel/Delete hits already
+    on these action buttons. Example-deck read-only uses a notice banner
+    instead of window.alert, the last native iOS dialog after rename
+    and delete left prompt/confirm.
   */
-  .deck-delete-confirm-copy {
+  .deck-delete-confirm-copy,
+  .notice-banner {
     font-size: 16px;
     line-height: 1.35;
   }

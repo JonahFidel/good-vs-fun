@@ -1,8 +1,10 @@
 import { DeckList } from '../components/decks/DeckList'
+import { useExampleDeckNotice } from '../hooks/deck/useExampleDeckNotice'
 import { useDecks } from '../hooks/decks/useDecks'
 import type { DeckSort } from '../lib/deckOrder'
 
 export function DecksPage() {
+  const notice = useExampleDeckNotice()
   const {
     sortedDecks,
     selectedDeckId,
@@ -21,6 +23,11 @@ export function DecksPage() {
 
   return (
     <div className="panel decks-panel">
+      {notice && (
+        <p className="notice-banner" role="status">
+          {notice}
+        </p>
+      )}
       {error && <p className="error-banner">{error}</p>}
       {loading && <p className="status-line">Syncing changes…</p>}
 

@@ -36,7 +36,7 @@ export function useDeckKeyboard({
       }
 
       if (event.key === 'Backspace' || event.key === 'Delete') {
-        if (!selectedMovieId) {
+        if (!selectedMovieId || isExampleDeck) {
           return
         }
         event.preventDefault()

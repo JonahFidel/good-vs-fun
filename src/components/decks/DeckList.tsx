@@ -185,6 +185,7 @@ export function DeckList({
               }
               if (deck.isExample) {
                 event.preventDefault()
+                // In-app notice replaces window.alert, a blocking iOS dialog.
                 alertExampleDeckReadOnly()
                 return
               }

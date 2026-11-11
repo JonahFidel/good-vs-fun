@@ -1,13 +1,25 @@
-const EXAMPLE_DECK_ALERT =
+export const EXAMPLE_DECK_READ_ONLY =
   'Example decks are read-only. Create your own deck to add, move, or remove movies.'
 
-let lastAlertAt = 0
+type NoticeListener = (message: string | null) => void
+
+const listeners = new Set<NoticeListener>()
+let lastNoticeAt = 0
+
+export function subscribeExampleDeckNotice(listener: NoticeListener) {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
 
 export function alertExampleDeckReadOnly() {
   const now = Date.now()
-  if (now - lastAlertAt < 1500) {
+  if (now - lastNoticeAt < 1500) {
     return
   }
-  lastAlertAt = now
-  window.alert(EXAMPLE_DECK_ALERT)
+  lastNoticeAt = now
+  for (const listener of listeners) {
+    listener(EXAMPLE_DECK_READ_ONLY)
+  }
 }

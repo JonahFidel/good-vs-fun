@@ -19,12 +19,10 @@ function stopSummaryToggle(event: MouseEvent<HTMLButtonElement>) {
 
 function SelectionActions({
   compact = false,
-  isExampleDeck,
   onRename,
   onDelete,
 }: {
   compact?: boolean
-  isExampleDeck: boolean
   onRename: () => void
   onDelete: () => void
 }) {
@@ -36,20 +34,18 @@ function SelectionActions({
           : 'movie-selection-actions'
       }
     >
-      {!isExampleDeck && (
-        <button
-          type="button"
-          className="btn-rename-selected"
-          title="Rename"
-          aria-label="Rename"
-          onClick={(event) => {
-            stopSummaryToggle(event)
-            onRename()
-          }}
-        >
-          {compact ? 'Aa' : 'Rename'}
-        </button>
-      )}
+      <button
+        type="button"
+        className="btn-rename-selected"
+        title="Rename"
+        aria-label="Rename"
+        onClick={(event) => {
+          stopSummaryToggle(event)
+          onRename()
+        }}
+      >
+        {compact ? 'Aa' : 'Rename'}
+      </button>
       <button
         type="button"
         className="btn-delete-selected"
@@ -189,13 +185,8 @@ export function MovieSelectionPanel({
     />
   )
 
-  const actionButtons = (
-    <SelectionActions
-      compact
-      isExampleDeck={isExampleDeck}
-      onRename={beginRename}
-      onDelete={onDelete}
-    />
+  const actionButtons = isExampleDeck ? null : (
+    <SelectionActions compact onRename={beginRename} onDelete={onDelete} />
   )
 
   return (
@@ -217,11 +208,9 @@ export function MovieSelectionPanel({
             {isWide && isRenaming ? renameInput : movie.title}
           </strong>
         </div>
-        <SelectionActions
-          isExampleDeck={isExampleDeck}
-          onRename={beginRename}
-          onDelete={onDelete}
-        />
+        {isExampleDeck ? null : (
+          <SelectionActions onRename={beginRename} onDelete={onDelete} />
+        )}
       </div>
       <div className="score-sliders score-sliders--selected">
         <ScoreSlider
