@@ -76,6 +76,8 @@ export function centeredTransform(
   }
 }
 
+const FILL_EPSILON_PX = 1
+
 function clampAxis(translate: number, slotSize: number, scaledSize: number): number {
   if (scaledSize <= slotSize) {
     return (slotSize - scaledSize) / 2
@@ -85,8 +87,22 @@ function clampAxis(translate: number, slotSize: number, scaledSize: number): num
 }
 
 /**
- * Keep the canvas covering the slot: no empty gutters while zoomed in, and
- * centered while the scaled canvas is smaller than the slot (including fit).
+ * True when the unscaled canvas is the slot (iPhone square). Desktop leaves a
+ * square plot letterboxed in a wider/taller slot; that extra space is not a
+ * gutter to close, it is the pan/zoom room the Figma-style grid needs.
+ */
+export function fillsSlot(slot: ViewSize, canvas: ViewSize): boolean {
+  return (
+    Math.abs(canvas.width - slot.width) <= FILL_EPSILON_PX &&
+    Math.abs(canvas.height - slot.height) <= FILL_EPSILON_PX
+  )
+}
+
+/**
+ * Keep a fitted square covering the slot: no empty gutters while zoomed in,
+ * and centered while the scaled canvas is smaller than the slot (including
+ * fit). Skip that clamp when the canvas is letterboxed, or wheel-zoom toward
+ * the cursor is immediately forced back to center on the leftover axis.
  */
 export function clampToSlot(
   state: ZoomState,
@@ -96,6 +112,9 @@ export function clampToSlot(
   if (slot.width <= 0 || slot.height <= 0 || canvas.width <= 0 || canvas.height <= 0) {
     return state
   }
+  if (!fillsSlot(slot, canvas)) {
+    return state
+  }
   return {
     scale: state.scale,
     tx: clampAxis(state.tx, slot.width, canvas.width * state.scale),
@@ -103,7 +122,7 @@ export function clampToSlot(
   }
 }
 
-/** True when a one-finger pan can actually move the canvas. */
+/** True when a pan can actually move the canvas. */
 export function canPan(
   state: ZoomState,
   slot: ViewSize,
@@ -111,6 +130,9 @@ export function canPan(
 ): boolean {
   if (slot.width <= 0 || slot.height <= 0 || canvas.width <= 0 || canvas.height <= 0) {
     return false
+  }
+  if (!fillsSlot(slot, canvas)) {
+    return true
   }
   return (
     canvas.width * state.scale > slot.width + 0.5 ||

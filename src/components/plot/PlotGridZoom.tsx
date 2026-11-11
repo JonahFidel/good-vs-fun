@@ -408,8 +408,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const touch = e.touches[0]
         pinchOccurredRef.current = false
         noteGestureStart(touch.clientX, touch.clientY)
-        // beginPan is a no-op at fit zoom; when zoomed it must start even if
-        // the finger landed on a movie, or the 44px targets block pan.
+        // beginPan is a no-op at fit zoom on a filled square; when zoomed it
+        // must start even if the finger landed on a movie, or the 44px
+        // targets block pan. Desktop letterboxed slots can pan at fit.
         beginPan(touch.identifier, touch.clientX, touch.clientY)
       }
 
