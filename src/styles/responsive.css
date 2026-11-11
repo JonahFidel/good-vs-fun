@@ -861,10 +861,13 @@
 
     Selected rename is the exception: that 16px field sits in the bottom
     overlay, so the keyboard covers it unless the plot yields the same
-    leftover Add already uses. Range sliders still keep the grid.
+    leftover Add already uses. Hide for the whole --renaming session, not
+    :focus: focusing the new field used to display:none the square, iOS
+    blurred the caret on that layout shift, and blur committed the title
+    with the grid already gone. Range sliders still keep the grid.
   */
   .deck-page-layout:has(.deck-sidebar-section--add[open]) .grid-panel,
-  .deck-page-layout:has(.movie-selection-rename-input:focus) .grid-panel {
+  .deck-page-layout:has(.movie-selection-panel--renaming) .grid-panel {
     display: none;
   }
 
@@ -1644,9 +1647,11 @@
     can use the visual viewport above the keys. Range sliders are not text
     fields, so dragging Fun/Good brings the grid back. The app header is
     already hidden on phone deck pages, so typing no longer needs a second hide.
+    Selected rename uses the --renaming session, not :focus, so hiding the
+    square cannot blur-commit the field before the keyboard opens.
   */
   .deck-page-layout:has(.deck-sidebar-section--add input[type='text']:focus) .grid-panel,
-  .deck-page-layout:has(.movie-selection-rename-input:focus) .grid-panel {
+  .deck-page-layout:has(.movie-selection-panel--renaming) .grid-panel {
     display: none;
   }
 

@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from 'react'
+import { flushSync } from 'react-dom'
 import { useWideLayout } from '../../hooks/deck/useWideLayout'
 import { formatScore } from '../../lib/format'
 import type { Movie } from '../../lib/types'
@@ -87,6 +88,7 @@ export function MovieSelectionPanel({
   const isWide = useWideLayout()
   const inputRef = useRef<HTMLInputElement | null>(null)
   const committingRef = useRef(false)
+  const renameArmedRef = useRef(false)
   const [isRenaming, setIsRenaming] = useState(false)
   const [draft, setDraft] = useState(movie.title)
   const [renameMovieId, setRenameMovieId] = useState(movie.id)
@@ -100,10 +102,17 @@ export function MovieSelectionPanel({
 
   useLayoutEffect(() => {
     if (!isRenaming) {
+      renameArmedRef.current = false
       return
     }
     inputRef.current?.focus()
     inputRef.current?.select()
+    // Ignore blur from the plot-hide layout shift so iOS cannot
+    // immediately commit and unmount the field we just focused.
+    const frame = window.requestAnimationFrame(() => {
+      renameArmedRef.current = true
+    })
+    return () => window.cancelAnimationFrame(frame)
   }, [isRenaming])
 
   const beginRename = () => {
@@ -111,12 +120,19 @@ export function MovieSelectionPanel({
       return
     }
     committingRef.current = false
-    setDraft(movie.title)
-    setIsRenaming(true)
+    // flushSync so the input mounts and useLayoutEffect can focus it
+    // inside this tap. iOS will not open the keyboard for a focus() that
+    // runs after the gesture, and hiding the plot on :focus used to
+    // layout-shift the overlay, blur the field, and commit immediately.
+    flushSync(() => {
+      setDraft(movie.title)
+      setIsRenaming(true)
+    })
   }
 
   const cancelRename = () => {
     committingRef.current = true
+    renameArmedRef.current = false
     setIsRenaming(false)
     setDraft(movie.title)
     queueMicrotask(() => {
@@ -124,11 +140,15 @@ export function MovieSelectionPanel({
     })
   }
 
-  const commitRename = () => {
+  const commitRename = (fromBlur = false) => {
     if (committingRef.current) {
       return
     }
+    if (fromBlur && !renameArmedRef.current) {
+      return
+    }
     committingRef.current = true
+    renameArmedRef.current = false
     setIsRenaming(false)
     onRename(draft)
     queueMicrotask(() => {
@@ -157,12 +177,8 @@ export function MovieSelectionPanel({
       enterKeyHint="done"
       aria-label="Movie title"
       onChange={(event) => setDraft(event.target.value)}
-      onBlur={commitRename}
+      onBlur={() => commitRename(true)}
       onKeyDown={handleRenameKeyDown}
-      onClick={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-      }}
       onPointerDown={(event) => {
         event.stopPropagation()
       }}
