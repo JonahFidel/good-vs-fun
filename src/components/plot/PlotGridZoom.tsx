@@ -135,9 +135,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const pointersRef = useRef<Map<number, PointerPos>>(new Map())
     const panRef = useRef<PanStart | null>(null)
     const pinchRef = useRef<PinchStart | null>(null)
-    // Last pinchTransform before covering/keep-visible pan rubber-band.
-    // 2→1 pan must resume from this, not the compressed stateRef, or a
-    // leftover finger past the edge double-compresses like inertia did.
+    // Last unconstrained pinch or pan translation, before covering/
+    // keep-visible rubber-band. 2→1 pan and 1→2 pinch must resume from
+    // this, not the compressed stateRef, or a leftover finger past the
+    // edge double-compresses like inertia did.
     const pinchUnconstrainedRef = useRef<ZoomState | null>(null)
     const gestureStartRef = useRef<GestureStart | null>(null)
     const gestureMovedRef = useRef(false)
@@ -399,9 +400,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // does not stop dead; that coast rubber-bands past the covering edge
     // (and leftover keep-visible gutters) and eases back, matching a
     // finger-down pull. A 2→1 pinch handoff pans from the unconstrained
-    // pinch translation, so a leftover finger past that edge does not
-    // stick from double-compressing the painted rubber-band. Fit zoom
-    // never pans, so the default 0-10 square stays locked. Double-tap
+    // pinch translation, and a 1→2 pan handoff pinches from the
+    // unconstrained pan translation, so a leftover finger past that
+    // edge does not stick from double-compressing the painted rubber-band.
+    // Fit zoom never pans, so the default 0-10 square stays locked. Double-tap
     // eases to 2.2x or back to fit instead of jumping, matching that
     // coast. Pinch-out past 1x and zoomed pan past a covering or
     // keep-visible edge rubber-band, then ease back on lift, so getting
@@ -631,9 +633,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         cancelEmptyTap()
         lastTapRef.current = null
         pinchRef.current = {
-          // 3→2 restarts from the last unconstrained pinch pan, not the
-          // compressed paint, so a pair that was already past the edge
-          // does not stick the way 2→1 pan used to.
+          // 3→2 and 1→2 restart from the last unconstrained pinch or pan,
+          // not the compressed paint, so a pair that was already past the
+          // edge does not stick the way 2→1 pan used to.
           origin: { ...(pinchUnconstrainedRef.current ?? stateRef.current) },
           originMidpoint: pointerMidpoint(a, b),
           originDistance: pointerDistance(a, b),
@@ -684,7 +686,6 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       function beginPan(id: number, clientX: number, clientY: number) {
         const panOrigin = pinchUnconstrainedRef.current
-        pinchUnconstrainedRef.current = null
         const sizes = viewSizes()
         if (
           !sizes ||
@@ -694,12 +695,22 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         }
         stopTransientMotion()
         resetPanVelocity()
+        const tx = panOrigin?.tx ?? stateRef.current.tx
+        const ty = panOrigin?.ty ?? stateRef.current.ty
         panRef.current = {
           pointerId: id,
           x: clientX,
           y: clientY,
-          tx: panOrigin?.tx ?? stateRef.current.tx,
-          ty: panOrigin?.ty ?? stateRef.current.ty,
+          tx,
+          ty,
+        }
+        // Keep unconstrained pan for a 1→2 pinch. Clearing it here made
+        // the next pinch origin the compressed paint, the same sticky
+        // handoff 2→1 had before this ref existed.
+        pinchUnconstrainedRef.current = {
+          scale: stateRef.current.scale,
+          tx,
+          ty,
         }
         setPanCursor(true)
       }
@@ -747,8 +758,15 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         noteGestureMove(clientX, clientY)
         if (!gestureMovedRef.current) return
         samplePanVelocity(clientX, clientY)
-        stateRef.current.tx = panRef.current.tx + (clientX - panRef.current.x)
-        stateRef.current.ty = panRef.current.ty + (clientY - panRef.current.y)
+        const tx = panRef.current.tx + (clientX - panRef.current.x)
+        const ty = panRef.current.ty + (clientY - panRef.current.y)
+        pinchUnconstrainedRef.current = {
+          scale: stateRef.current.scale,
+          tx,
+          ty,
+        }
+        stateRef.current.tx = tx
+        stateRef.current.ty = ty
         userTransformedRef.current = true
         applyTransform({ rubberBand: isCoarsePointer() })
       }
