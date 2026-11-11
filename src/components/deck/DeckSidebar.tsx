@@ -46,7 +46,7 @@ export function DeckSidebar({
   onRedo: () => void
   onBackgroundPointerDown: (event: React.PointerEvent<HTMLElement>) => void
   onAddMovie: (movie: { title: string; fun: number; good: number }) => Promise<boolean>
-  onRenameSelected: () => void
+  onRenameSelected: (nextTitle: string) => void
   onDeleteSelected: () => void
   onScoreAdjustStart: () => void
   onFunChange: (value: number) => void

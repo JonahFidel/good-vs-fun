@@ -176,7 +176,7 @@ export function DeckPage() {
           onRedo={redo}
           onBackgroundPointerDown={handleSidebarBackgroundPointerDown}
           onAddMovie={handleAddMovie}
-          onRenameSelected={() => void handleRenameSelected()}
+          onRenameSelected={(nextTitle) => void handleRenameSelected(nextTitle)}
           onDeleteSelected={handleDeleteSelected}
           onScoreAdjustStart={handleSelectedScoreAdjustStart}
           onFunChange={handleSelectedFunChange}

@@ -3,6 +3,7 @@ import { useWideLayout } from '../../hooks/deck/useWideLayout'
 
 export function SidebarCollapse({
   title,
+  titleContent,
   meta,
   heading = false,
   className,
@@ -10,6 +11,7 @@ export function SidebarCollapse({
   children,
 }: {
   title: string
+  titleContent?: ReactNode
   meta?: string
   heading?: boolean
   className?: string
@@ -35,7 +37,7 @@ export function SidebarCollapse({
         : target instanceof Node
           ? target.parentElement
           : null
-    if (element?.closest('button')) {
+    if (element?.closest('button, input, textarea, label')) {
       event.preventDefault()
     }
   }
@@ -46,7 +48,9 @@ export function SidebarCollapse({
         className="deck-sidebar-collapse-summary"
         onClick={preventToggleFromActions}
       >
-        <span className="deck-sidebar-collapse-title">{title}</span>
+        {titleContent ?? (
+          <span className="deck-sidebar-collapse-title">{title}</span>
+        )}
         {meta ? <span className="deck-sidebar-collapse-meta">{meta}</span> : null}
         {actions}
       </summary>
