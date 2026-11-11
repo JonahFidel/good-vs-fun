@@ -627,6 +627,28 @@
     display: none;
   }
 
+  /*
+    Compare has the same leftover-strip problem as Add, without a keyboard:
+    two native selects plus swap/legend are taller than an 11rem SE sidebar
+    after the 5.5rem list reservation, so the pickers sat in a ~2rem sliver
+    under the plot. Hide the plot (desktop Compare is a div, so [open] is
+    phone-only). Hide the list and Selected too - you are picking other
+    decks, not browsing this one - so the sheet can fill the sidebar.
+    Close Compare to get the grid back with the overlay.
+  */
+  .deck-page-layout:has(.deck-sidebar-section--tools[open]) .grid-panel {
+    display: none;
+  }
+
+  .deck-sidebar:has(.deck-sidebar-section--tools[open]) .deck-sidebar-section--list.movie-list,
+  .deck-sidebar:has(.deck-sidebar-section--tools[open]) .movie-selection-panel {
+    display: none;
+  }
+
+  .deck-sidebar:has(.deck-sidebar-section--tools[open]) > .deck-sidebar-tools-row {
+    flex: 1 1 auto;
+  }
+
   /* Keep labels and ticks readable at the default (fit-to-width) zoom. */
   .grid {
     text-size-adjust: 100%;
@@ -1023,6 +1045,18 @@
   .movie-form--compact button,
   .deck-sidebar .btn-swap {
     min-height: 2.75rem;
+  }
+
+  /*
+    Sidebar layout sets compare selects to min-height: 0, so 16px font plus
+    0.35rem padding is ~30px. iOS also ignores min-height on native selects
+    unless padding actually grows the box. 44px padding-box so picking a
+    ghost deck is a real tap, matching Swap.
+  */
+  .ghost-compare-row select,
+  .deck-sidebar .ghost-compare-row select {
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
   }
 
   .deck-form {
