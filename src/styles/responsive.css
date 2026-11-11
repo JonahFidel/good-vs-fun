@@ -400,6 +400,44 @@
     padding-bottom: 4.25rem;
   }
 
+  /*
+    The stacked 4.25rem Selected bar plus Add/Compare and Movies/Sort
+    covers the leftover list on a short portrait sidebar. SE 2/3 with
+    the Safari URL bar height-caps the square (~11-13rem leftover);
+    header + tools + list chrome + overlay then leaves 0px of titles,
+    the same bury-the-list failure iteration 56 docked Selected to
+    avoid. While a movie is selected, drop those two chrome rows so
+    the strip still shows at least one title above the bar.
+
+    Keep Add/Compare if either sheet is open (Compare already hides
+    Selected, but :has(.movie-selection-panel) still matches a
+    display:none node). Landscape leftover is the short-side height
+    beside the square, so tools can stay. Empty-grid tap deselects
+    and brings Add/Compare/Sort back.
+  */
+  @media (orientation: portrait) {
+    .deck-sidebar:has(.movie-selection-panel):not(
+      :has(.deck-sidebar-tools-row [open])
+    ) .deck-sidebar-tools-row {
+      display: none;
+    }
+
+    .deck-sidebar:has(.movie-selection-panel):not(
+      :has(.deck-sidebar-tools-row [open])
+    ) .deck-sidebar-section--list.movie-list {
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .deck-sidebar:has(.movie-selection-panel):not(
+      :has(.deck-sidebar-tools-row [open])
+    ) .deck-sidebar-section--list .deck-sidebar-section__title--inline,
+    .deck-sidebar:has(.movie-selection-panel):not(
+      :has(.deck-sidebar-tools-row [open])
+    ) .movie-list-header {
+      display: none;
+    }
+  }
+
   .movie-selection-actions {
     width: 100%;
   }
