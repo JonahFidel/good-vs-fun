@@ -1,5 +1,8 @@
 import type { RefObject } from 'react'
-import { pointerHitsVisibleMovieLabel } from '../../lib/closestMoviePoint'
+import {
+  pointerHitsGhostMarker,
+  pointerHitsVisibleMovieLabel,
+} from '../../lib/closestMoviePoint'
 import type { PositionGroup } from '../../lib/groupByPosition'
 import type { MovieHover } from '../../lib/types'
 import { GhostPoints } from '../ghost/GhostPoints'
@@ -67,12 +70,18 @@ export function PlotPanel({
     // iPhone pills are pointer-events: none so nearby 44px markers stay
     // tappable. A tap on a painted title then hits empty grid and would
     // dismiss the readout (fit) or miss the movie you just pinched to
-    // read (zoom). Compare overlay names are the same: ghosts are
-    // pointer-events: none on the whole marker, so a click would
-    // otherwise fall through as empty-grid deselect. Keep nearby-movie
-    // selection; do not treat a painted pill as empty space.
+    // read (zoom). Compare overlay names and markers are the same:
+    // ghosts are pointer-events: none on the whole point, so a click
+    // on a purple/teal dot or its 3.2x title would otherwise fall
+    // through as empty-grid deselect. Keep nearby-movie selection; do
+    // not treat a painted overlay as empty space.
     if (
       pointerHitsVisibleMovieLabel(
+        event.currentTarget,
+        event.clientX,
+        event.clientY,
+      ) ||
+      pointerHitsGhostMarker(
         event.currentTarget,
         event.clientX,
         event.clientY,
