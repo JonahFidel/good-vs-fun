@@ -1883,6 +1883,27 @@
     min-width: 2.75rem;
   }
 
+  /*
+    Password reveal sits on the input. The 44px hit from iteration 117
+    plus 0.7rem field padding covers the last characters. Keep the
+    button in the field's right edge and pad only those inputs so OTP
+    boxes do not pick up 3rem sides. This rule has to follow the
+    padding shorthand below, or that shorthand resets padding-right.
+  */
+  .cl-formFieldInputGroup {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .cl-formFieldInputShowPasswordButton {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 2.75rem;
+  }
+
   .cl-menuList {
     max-width: min(20rem, calc(100vw - 1.5rem));
   }
@@ -1893,6 +1914,10 @@
     font-size: 16px;
     min-height: 2.75rem;
     padding: 0.55rem 0.7rem;
+  }
+
+  .cl-formFieldInputGroup:has(.cl-formFieldInputShowPasswordButton) :is(.cl-formFieldInput, .cl-input) {
+    padding-right: 3.1rem;
   }
 
   /*

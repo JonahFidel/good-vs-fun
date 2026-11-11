@@ -23,6 +23,13 @@
  * keep 44px height, and let the boxes share the card width. minWidth 0
  * on the auth card is the same leak UserProfile needed: width 100% does
  * not beat Clerk's default min-width.
+ *
+ * Password fields overlay a reveal control on the input. Growing that
+ * control to 44px without extra input padding puts the last characters
+ * under the eye on Sign in, Sign up, and Manage account Security. Do
+ * not put that padding on formFieldInput here: OTP segments also use
+ * that slot, and 3rem sides would overflow a 375px leftover again.
+ * CSS :has(.cl-formFieldInputShowPasswordButton) is the scoped path.
  */
 
 const clerkAuthCardFill = {
@@ -173,9 +180,19 @@ export const clerkAppearance = {
     formButtonReset: {
       minHeight: '2.75rem',
     },
+    formFieldInputGroup: {
+      position: 'relative',
+      width: '100%',
+      maxWidth: '100%',
+      minWidth: '0',
+    },
     formFieldInputShowPasswordButton: {
+      position: 'absolute',
+      top: '0',
+      right: '0',
       minWidth: '2.75rem',
       minHeight: '2.75rem',
+      height: '2.75rem',
     },
     socialButtonsBlockButton: {
       minHeight: '2.75rem',
