@@ -1765,8 +1765,9 @@
     gutter is only ~31px. Double-tap cells are ~93px, so grow into
     the Good 10 / Good 0 gutter instead (the inverse of the Good < 5
     flip). Combine with the Fun 9-10 / Fun 0-1 flip so the namesake
-    corner sits in both gutters. Overlay names still use default
-    Good sides. Stacked stay one-line and do not need this.
+    corner sits in both gutters. Overlay names get the same Good
+    gutter at ghost-label zoom. Stacked stay one-line and do not
+    need this.
   */
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10 > .movie-label {
     transform: translate(calc(100% + 9px), -50%);
@@ -1852,6 +1853,46 @@
   }
 
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Fun 9-10 / Fun 0-1 overlay gutter growth still leaves a 3.75rem
+    pill covering 1-unit Good neighbors: default overlays sit left
+    at Good > 7, so Pirates (9.55 / 9.83) covers Kill Bill V1
+    (8.67 / 9.25) and Inglorious Basterds (9.00 / 9.02) on the same
+    side. Grow unstacked centered overlays into the Good 10 / Good 0
+    gutter, matching primary labels-visible. Combine with Fun
+    gutter growth so the namesake corner sits in both. Coincident
+    north/south keep their current Good side so they do not restack
+    on the primary that already occupies that gutter. Stacked
+    overlays stay one-line and do not need this.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10 > .movie-label {
+    transform: translate(calc(100% + 9px), -50%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--gutter-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0 > .movie-label {
+    transform: translate(calc(-100% - 9px), -50%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--gutter-fun-0.ghost-point--label-start > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 
