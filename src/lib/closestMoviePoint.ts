@@ -138,7 +138,8 @@ export function movieIdAtVisibleLabel(
 /**
  * True when a screen-space point lands on a painted title pill, including
  * compare overlay names. Those pills are pointer-events: none, so a tap
- * would otherwise count as empty grid (deselect / double-tap zoom-out).
+ * would otherwise count as empty grid (deselect / double-tap zoom-out)
+ * or fall through to a nearby primary 44px ring and change selection.
  *
  * Ghost titles have no data-movie-id, so moviePointAtVisibleLabel cannot
  * see them; this only needs a painted box. Opacity-0 pills (fit-zoom

@@ -12,6 +12,7 @@ import {
   movieIdAtVisibleLabel,
   MOVIE_HIT_RADIUS_PX,
   nextMovieIdInGroup,
+  pointerHitsVisibleMovieLabel,
 } from '../../lib/closestMoviePoint'
 import { snapScoreToStep } from '../../lib/format'
 import { scoresAtPointer } from '../../lib/findSnapTarget'
@@ -139,9 +140,6 @@ export function usePlotDrag({
     const plot: HTMLElement = gridRef.current
 
     function onTouchSelect(event: PointerEvent) {
-      if (event.pointerType !== 'touch') {
-        return
-      }
       // After double-tap / deep pinch, titles are visible but
       // pointer-events: none. Prefer the painted title so a tap on
       // "Kill Bill" selects that movie instead of a nearby 44px ring
@@ -152,6 +150,24 @@ export function usePlotDrag({
       const fromLabel = zoomed
         ? movieIdAtVisibleLabel(plot, event.clientX, event.clientY)
         : null
+      // Compare overlay names have no movie id and pointer-events none,
+      // so a tap on a ghost title at 3.2x would otherwise fall through
+      // to a nearby primary 44px ring (touch) or the marker under the
+      // pill (mouse) and switch the selected movie while you are
+      // reading the overlay. Stop the event so the React marker
+      // handler cannot select either. Fit-zoom selected pills stay
+      // marker-first: this skip is zoomed-only, matching fromLabel.
+      if (
+        zoomed &&
+        !fromLabel &&
+        pointerHitsVisibleMovieLabel(plot, event.clientX, event.clientY)
+      ) {
+        event.stopPropagation()
+        return
+      }
+      if (event.pointerType !== 'touch') {
+        return
+      }
       const id =
         fromLabel ??
         closestMovieId(
