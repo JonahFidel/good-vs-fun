@@ -124,8 +124,11 @@
   border-radius: 12px;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  cursor: grab;
   user-select: none;
+}
+
+.deck-list li.deck-list-item--reorderable {
+  cursor: grab;
 }
 
 .deck-list li.active {
@@ -133,7 +136,7 @@
   background: #ffffff;
 }
 
-.deck-list li:active {
+.deck-list li.deck-list-item--reorderable:active {
   cursor: grabbing;
 }
 
@@ -160,6 +163,56 @@
   color: #6b7280;
   font-size: 0.85rem;
   font-weight: 500;
+}
+
+.deck-rename-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.25;
+  cursor: text;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.deck-list li.deck-list-item--renaming {
+  cursor: text;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.deck-list li.deck-list-item--confirming-delete {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.deck-delete-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.deck-delete-confirm-name {
+  margin: 0;
+  font-weight: 600;
+  color: #111827;
+  overflow-wrap: anywhere;
+}
+
+.deck-delete-confirm-copy {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: #6b7280;
 }
 
 .deck-actions {

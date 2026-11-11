@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { alertExampleDeckReadOnly } from '../../lib/exampleDeck'
 import { formatScore } from '../../lib/format'
+import { scrollChildIntoAncestor } from '../../lib/scrollChildIntoAncestor'
 import type { Movie, MovieHover } from '../../lib/types'
 
 type MovieSort = 'title' | 'fun' | 'good'
@@ -11,6 +11,7 @@ export function MovieList({
   selectedMovieId,
   hover,
   onItemPointerDown,
+  onSelect,
   onHighlight,
   onClearHover,
   onRemove,
@@ -22,6 +23,7 @@ export function MovieList({
   onItemPointerDown: (
     id: string,
   ) => (event: React.PointerEvent<HTMLLIElement>) => void
+  onSelect: (id: string) => void
   onHighlight: (id: string) => void
   onClearHover: () => void
   onRemove: (id: string) => void
@@ -49,16 +51,12 @@ export function MovieList({
     if (!selectedMovieId) {
       return
     }
-    document
-      .querySelector(`[data-movie-list-id="${selectedMovieId}"]`)
-      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    const row = document.querySelector(`[data-movie-list-id="${selectedMovieId}"]`)
+    if (!(row instanceof HTMLElement)) {
+      return
+    }
+    scrollChildIntoAncestor(row, { block: 'nearest', behavior: 'smooth' })
   }, [selectedMovieId])
-
-  const handleExampleDelete = (event: React.MouseEvent) => {
-    event.preventDefault()
-    event.stopPropagation()
-    alertExampleDeckReadOnly()
-  }
 
   return (
     <div className="deck-sidebar-section deck-sidebar-section--list movie-list">
@@ -67,7 +65,7 @@ export function MovieList({
       </h3>
       <div className="movie-list-header">
         <label>
-          Sort movies
+          <span className="movie-list-sort-label">Sort movies</span>
           <select
             value={sort}
             onChange={(event) => setSort(event.target.value as MovieSort)}
@@ -94,21 +92,31 @@ export function MovieList({
                 .join(' ') || undefined
             }
             onPointerDown={onItemPointerDown(movie.id)}
-            onMouseEnter={() => onHighlight(movie.id)}
-            onMouseLeave={onClearHover}
+            onClick={(event) => {
+              const target = event.target as HTMLElement | null
+              if (target?.closest('button')) {
+                return
+              }
+              onSelect(movie.id)
+            }}
+            onPointerEnter={(event) => {
+              // iOS keeps a tap as :hover / mouseenter with no mouseleave.
+              // That stuck a title+score pill on the fitted 0-10 grid after
+              // the list tap's selection was cleared. List tap already
+              // selects; hover-link stays a mouse gesture.
+              if (event.pointerType === 'touch') return
+              onHighlight(movie.id)
+            }}
+            onPointerLeave={(event) => {
+              if (event.pointerType === 'touch') return
+              onClearHover()
+            }}
           >
             <div className="movie-list-title">
-              <strong title={movie.title}>{movie.title}</strong>
-              {isExampleDeck ? (
-                <button
-                  type="button"
-                  className="movie-delete"
-                  aria-label={`Remove ${movie.title}`}
-                  onClick={handleExampleDelete}
-                >
-                  ×
-                </button>
-              ) : (
+              <strong title={movie.title}>
+                <span className="movie-list-title-text">{movie.title}</span>
+              </strong>
+              {!isExampleDeck && (
                 <button
                   type="button"
                   className="movie-delete"

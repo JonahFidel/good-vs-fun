@@ -7,7 +7,9 @@ import { useDeckKeyboard } from '../hooks/deck/useDeckKeyboard'
 import { useDeckLoad } from '../hooks/deck/useDeckLoad'
 import { useDeckMovieActions } from '../hooks/deck/useDeckMovieActions'
 import { useDeckSelection } from '../hooks/deck/useDeckSelection'
+import { useDisableIosPageZoom } from '../hooks/deck/useDisableIosPageZoom'
 import { useSelectedMovieActions } from '../hooks/deck/useSelectedMovieActions'
+import { useVisualViewportInset } from '../hooks/deck/useVisualViewportInset'
 import { useGhostCompare } from '../hooks/ghost/useGhostCompare'
 import { useMoveHistory } from '../hooks/plot/useMoveHistory'
 import { usePlotDrag } from '../hooks/plot/usePlotDrag'
@@ -16,6 +18,8 @@ import { groupByPosition } from '../lib/groupByPosition'
 export function DeckPage() {
   const { deckId } = useParams()
   const resolvedDeckId = typeof deckId === 'string' ? deckId : null
+  useVisualViewportInset()
+  useDisableIosPageZoom()
 
   const {
     deckName,
@@ -115,6 +119,7 @@ export function DeckPage() {
     captureDragSnapshot,
     discardDragSnapshot,
     recordUndoIfChanged,
+    selectedMovieId,
     onSelectMovie: selectMovie,
   })
 
@@ -165,15 +170,20 @@ export function DeckPage() {
           movies={deckMovies}
           selectedMovieId={selectedMovieId}
           hover={hoverLink}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={undo}
+          onRedo={redo}
           onBackgroundPointerDown={handleSidebarBackgroundPointerDown}
           onAddMovie={handleAddMovie}
-          onRenameSelected={() => void handleRenameSelected()}
+          onRenameSelected={(nextTitle) => void handleRenameSelected(nextTitle)}
           onDeleteSelected={handleDeleteSelected}
           onScoreAdjustStart={handleSelectedScoreAdjustStart}
           onFunChange={handleSelectedFunChange}
           onGoodChange={handleSelectedGoodChange}
           onScoreCommit={() => void handleSelectedScoreCommit()}
           onMoviePointerDown={handleMovieListPointerDown}
+          onSelectMovie={selectMovie}
           onHighlightFromList={highlightFromList}
           onClearHover={clearHoverLink}
           onRemoveMovie={(id) => void removeMovie(id)}

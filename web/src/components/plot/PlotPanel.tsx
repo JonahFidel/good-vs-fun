@@ -1,9 +1,14 @@
 import type { RefObject } from 'react'
+import {
+  pointerHitsGhostMarker,
+  pointerHitsVisibleMovieLabel,
+} from '../../lib/closestMoviePoint'
 import type { PositionGroup } from '../../lib/groupByPosition'
 import type { MovieHover } from '../../lib/types'
 import { GhostPoints } from '../ghost/GhostPoints'
 import { GridAxes } from './GridAxes'
 import { MoviePoints } from './MoviePoints'
+import { PlotGridZoom } from './PlotGridZoom'
 
 export function PlotPanel({
   isExampleDeck,
@@ -53,12 +58,54 @@ export function PlotPanel({
   onClearHover: () => void
 }) {
   const handleBackgroundPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    // iOS fires pointerdown for the first finger. Clearing here would
+    // hide the selected fit-zoom title as soon as a pinch, pan, or
+    // double-tap starts. Touch deselect waits for a confirmed empty tap
+    // in PlotGridZoom.
+    if (event.pointerType === 'touch') return
     const target = event.target as Element
     if (target.closest('.movie-point') || target.closest('.grid-toolbar')) {
       return
     }
+    // iPhone pills are pointer-events: none so nearby 44px markers stay
+    // tappable. A tap on a painted title then hits empty grid and would
+    // dismiss the readout (fit) or miss the movie you just pinched to
+    // read (zoom). Compare overlay names and markers are the same:
+    // ghosts are pointer-events: none on the whole point, so a click
+    // on a purple/teal dot or its 3.2x title would otherwise fall
+    // through as empty-grid deselect. Keep nearby-movie selection; do
+    // not treat a painted overlay as empty space.
+    if (
+      pointerHitsVisibleMovieLabel(
+        event.currentTarget,
+        event.clientX,
+        event.clientY,
+      ) ||
+      pointerHitsGhostMarker(
+        event.currentTarget,
+        event.clientX,
+        event.clientY,
+      )
+    ) {
+      return
+    }
     onClearSelection()
   }
+
+  const primaryKeys = new Set(movieGroups.map((group) => group.key))
+  const ghostKeys = new Set(ghostGroups.map((group) => group.key))
+  const ghost2Keys = new Set(ghost2Groups.map((group) => group.key))
+  const raisedPrimaryKeys = new Set(
+    movieGroups
+      .filter((group) => {
+        const ids = group.items.map((item) => item.id)
+        if (selectedMovieId && ids.includes(selectedMovieId)) return true
+        if (hover?.from === 'list' && ids.includes(hover.id)) return true
+        if (draggingIds?.some((id) => ids.includes(id))) return true
+        return false
+      })
+      .map((group) => group.key),
+  )
 
   return (
     <section className="grid-panel">
@@ -92,23 +139,37 @@ export function PlotPanel({
         )}
         <div className="grid-axis grid-axis-y">Fun</div>
         <div className="grid-axis grid-axis-x">Good</div>
-        <div className="grid-fit">
-          <div ref={gridRef} className="grid">
-            <GridAxes />
-            {ghostDeckId && <GhostPoints groups={ghostGroups} variant={1} />}
-            {ghost2DeckId && <GhostPoints groups={ghost2Groups} variant={2} />}
-            <MoviePoints
-              groups={movieGroups}
-              draggingIds={draggingIds}
-              selectedMovieId={selectedMovieId}
-              hover={hover}
-              onGroupPointerDown={onGroupPointerDown}
-              onLabelPointerDown={onLabelPointerDown}
-              onHighlight={onHighlight}
-              onClearHover={onClearHover}
+        <PlotGridZoom ref={gridRef} onEmptyTap={onClearSelection}>
+          <GridAxes />
+          {ghostDeckId && (
+            <GhostPoints
+              groups={ghostGroups}
+              variant={1}
+              primaryKeys={primaryKeys}
+              raisedPrimaryKeys={raisedPrimaryKeys}
+              siblingKeys={ghost2Keys}
             />
-          </div>
-        </div>
+          )}
+          {ghost2DeckId && (
+            <GhostPoints
+              groups={ghost2Groups}
+              variant={2}
+              primaryKeys={primaryKeys}
+              raisedPrimaryKeys={raisedPrimaryKeys}
+              siblingKeys={ghostKeys}
+            />
+          )}
+          <MoviePoints
+            groups={movieGroups}
+            draggingIds={draggingIds}
+            selectedMovieId={selectedMovieId}
+            hover={hover}
+            onGroupPointerDown={onGroupPointerDown}
+            onLabelPointerDown={onLabelPointerDown}
+            onHighlight={onHighlight}
+            onClearHover={onClearHover}
+          />
+        </PlotGridZoom>
       </div>
     </section>
   )

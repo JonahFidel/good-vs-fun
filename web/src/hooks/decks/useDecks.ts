@@ -82,16 +82,15 @@ export function useDecks() {
     }
   }
 
-  const handleRenameDeck = async (deck: Deck) => {
-    const nextName = window.prompt('Rename deck', deck.name)
-    if (!nextName) {
+  const handleRenameDeck = async (deck: Deck, nextName: string) => {
+    const formattedName = formatTitle(nextName)
+    if (!formattedName || formattedName === deck.name) {
       return
     }
 
     setLoading(true)
     setError(null)
     try {
-      const formattedName = formatTitle(nextName)
       const data = await apiFetch(deckPath(deck.id), {
         method: 'PUT',
         body: JSON.stringify({ name: formattedName }),
@@ -111,13 +110,6 @@ export function useDecks() {
   }
 
   const handleDeleteDeck = async (deck: Deck) => {
-    const confirmed = window.confirm(
-      `Delete "${deck.name}" and its movies? This cannot be undone.`,
-    )
-    if (!confirmed) {
-      return
-    }
-
     setLoading(true)
     setError(null)
     try {

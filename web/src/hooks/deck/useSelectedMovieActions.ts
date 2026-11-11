@@ -51,7 +51,7 @@ export function useSelectedMovieActions({
     void removeMovie(selectedMovieId)
   }, [removeMovie, selectedMovieId])
 
-  const handleRenameSelected = useCallback(async () => {
+  const handleRenameSelected = useCallback(async (nextTitle: string) => {
     if (!selectedMovieId || !deckId) {
       return
     }
@@ -62,11 +62,6 @@ export function useSelectedMovieActions({
 
     const current = moviesRef.current.find((movie) => movie.id === selectedMovieId)
     if (!current) {
-      return
-    }
-
-    const nextTitle = window.prompt('Rename movie', current.title)
-    if (!nextTitle) {
       return
     }
 

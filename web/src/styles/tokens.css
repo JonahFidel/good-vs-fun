@@ -11,6 +11,22 @@
   --grid-tick-outset-minor-top: calc(var(--grid-tick-outset-minor) + 5px);
   --grid-tick-outset-minor-right: calc(var(--grid-tick-outset-minor) + 5px);
   --deck-rail-width: 280px;
+  /*
+    Locked deck layout height. 100dvh grows when iOS hides the URL bar, so a
+    fitted square sized from it is taller than the visible screen and the
+    Good axis (or the sidebar) sits behind Safari chrome. 100svh is the
+    chrome-visible viewport, which is what overflow:hidden can actually show.
+    Custom properties do not fall back at parse time, so svh is gated below.
+  */
+  --deck-viewport-h: 100dvh;
+  /* Square plot cap — scales with vmin, hard-stops on very large displays */
+  --plot-side-max: min(1400px, 92vmin);
   --large-monitor-width: 1800px;
   --decks-panel-max-width: calc(var(--large-monitor-width) * 2 / 3);
+}
+
+@supports (height: 100svh) {
+  :root {
+    --deck-viewport-h: 100svh;
+  }
 }

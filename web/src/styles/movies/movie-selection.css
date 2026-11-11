@@ -39,6 +39,31 @@
   text-overflow: ellipsis;
 }
 
+.movie-selection-title:has(.movie-selection-rename-input) {
+  overflow: visible;
+  white-space: normal;
+}
+
+.movie-selection-rename-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1e3a8a;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: text;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .movie-selection-scores {
   font-size: 0.72rem;
   color: #64748b;

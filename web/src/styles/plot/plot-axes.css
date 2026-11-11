@@ -13,8 +13,19 @@
   letter-spacing: 0.02em;
 }
 
+/*
+  Tick anchors sit on the axis. A fine pointer never zooms, so numbers keep
+  their drawn size. Coarse pointers re-apply inverse-scale on the
+  anchor so pinch keeps 0-10 numbers screen-sized while the label child's
+  margin offset stays in screen pixels. Combining those on one transform
+  made pinch drift the numbers off the axes. Gated on pointer: coarse, not
+  900px, because only a coarse pointer can zoom.
+*/
 .grid-tick {
   position: absolute;
+  width: 0;
+  height: 0;
+  overflow: visible;
   font-size: 0.62rem;
   font-weight: 700;
   color: #9ca3af;
@@ -22,20 +33,35 @@
   z-index: 0;
 }
 
+.grid-tick-label {
+  position: absolute;
+  white-space: nowrap;
+}
+
 /* Bottom axis labels — anchored on y=0, shifted into the margin below */
 .grid-tick-x {
   bottom: calc(100% * var(--grid-margin) / var(--grid-canvas));
-  transform: translate(-50%, calc(100% + var(--grid-tick-outset-major)));
+}
+
+.grid-tick-x > .grid-tick-label {
+  top: var(--grid-tick-outset-major);
+  left: 0;
+  transform: translate(-50%, 0);
 }
 
 /* Left axis labels — anchored on x=0, shifted into the margin left */
 .grid-tick-y {
   left: calc(100% * var(--grid-margin) / var(--grid-canvas));
-  transform: translate(calc(-100% - var(--grid-tick-outset-major)), -50%);
+}
+
+.grid-tick-y > .grid-tick-label {
+  right: var(--grid-tick-outset-major);
+  top: 0;
+  transform: translate(0, -50%);
 }
 
 /* Tick notch points toward the axis line it labels */
-.grid-tick-x::before {
+.grid-tick-x > .grid-tick-label::before {
   content: '';
   position: absolute;
   left: 50%;
@@ -47,7 +73,7 @@
   background: #9ca3af;
 }
 
-.grid-tick-y::before {
+.grid-tick-y > .grid-tick-label::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -94,11 +120,15 @@
 .grid-tick-x-top {
   bottom: auto;
   top: calc(100% * var(--grid-margin) / var(--grid-canvas));
-  transform: translate(-50%, calc(-100% - var(--grid-tick-outset-top)));
+}
+
+.grid-tick-x-top > .grid-tick-label {
+  top: auto;
+  bottom: var(--grid-tick-outset-top);
 }
 
 /* Tick notch points downward toward y=10 */
-.grid-tick-x-top::before {
+.grid-tick-x-top > .grid-tick-label::before {
   top: auto;
   bottom: -9px;
 }
@@ -114,11 +144,15 @@
 .grid-tick-y-right {
   left: auto;
   right: calc(100% * var(--grid-margin) / var(--grid-canvas));
-  transform: translate(calc(100% + var(--grid-tick-outset-right)), -50%);
+}
+
+.grid-tick-y-right > .grid-tick-label {
+  right: auto;
+  left: var(--grid-tick-outset-right);
 }
 
 /* Tick notch points leftward toward x=10 */
-.grid-tick-y-right::before {
+.grid-tick-y-right > .grid-tick-label::before {
   right: auto;
   left: -9px;
 }
@@ -130,14 +164,9 @@
   transform: translate(var(--grid-tick-outset-minor-right), -50%);
 }
 
-/* Bottom axis "10" — keep centered on x=10 like other ticks (aligns with subtick) */
-.grid-tick-end-x {
-  transform: translate(-50%, calc(100% + var(--grid-tick-outset-major)));
-}
-
 /* Right axis "10" shifts slightly down to avoid the top-right corner */
-.grid-tick-end-y-right {
-  transform: translate(calc(100% + var(--grid-tick-outset-right)), calc(-50% + 3px));
+.grid-tick-end-y-right > .grid-tick-label {
+  transform: translate(0, calc(-50% + 3px));
 }
 
 .grid-axis-y {

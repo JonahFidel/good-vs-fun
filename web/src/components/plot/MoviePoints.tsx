@@ -3,6 +3,1698 @@ import type { MovieHover } from '../../lib/types'
 import { scoreToPlotPercent } from '../../lib/gridCanvas'
 import type { PositionGroup } from '../../lib/groupByPosition'
 
+/** Put the title on the roomier side so a selected pill stays inside the square. */
+const LABEL_FLIP_GOOD = 5
+/** Grow the selected pill down so a stacked title+score stays on-canvas at Fun 9–10. */
+const LABEL_SOUTH_FUN = 9
+/** Grow the selected pill up so a stacked title+score stays on-canvas at Fun 0–1. */
+const LABEL_NORTH_FUN = 1
+/** Grow into the Good 10 gutter at labels-visible zoom (CSS), matching Fun 9-10. */
+const LABEL_GUTTER_GOOD_HIGH = 9
+/** Grow into the Good 0 gutter at labels-visible zoom (CSS), matching Fun 0-1. */
+const LABEL_GUTTER_GOOD_LOW = 1
+/**
+ * Centered 7-line pills extend ±0.5 Fun units at labels-visible zoom, so
+ * same-Good neighbors closer than one unit cover each other. Pair them
+ * instead of using the Fun 9-10 / Fun 0-1 edge classes, which would also
+ * move the fit-zoom selected pill into the square.
+ */
+const INTERIOR_SAME_GOOD_FUN_GAP = 1
+/**
+ * Those same pills cover ~0.75 Good units on the default label side.
+ * After same-Good vertical stagger, the nearest close-Good neighbor
+ * (Grizzly Man at 8.32 vs The Death of Stalin at 8.44) still covers
+ * the pair. One neighbor per pair, on the Good side away from the
+ * pair, so this does not flip every close-Good title onto one side.
+ * Isolated close-Good pairs that are not next to a same-Good pair
+ * (Frankenstein vs Back to the Future 3, Ad Astra vs Sicario) get
+ * the same left/right flip: one title, the side away from its
+ * partner. Remaining degree-1 ends of longer close-Good chains
+ * (28 Years Later / Alexander / Bone Temple / Pizza) get that
+ * flip next, so the two-partner interiors do not block the ends.
+ * Odd-length leftovers of those peels (Indiana Jones after
+ * Bourne / Black Panther) flip opposite the claimed partner so
+ * the leftover does not keep covering the unflipped middle.
+ * Independent same-side collisions after those flips (Lebowski
+ * vs Palm Springs both Good 10, Moana vs On the Basis of Sex
+ * both Good 0) then split vertically so they do not keep
+ * covering on that side. Remaining 4-cliques with no degree-1
+ * end (Brokeback / Marriage Story / Room / Nomadland) then take
+ * the four Fun-plus-Good quadrants around the cluster centroid
+ * so those interiors do not keep covering. Size-3 triangles
+ * that fail that unique-quadrant pack (Naked Gun / Naked Gun
+ * old / One of Them Days) then take a 2-vs-1 split of those
+ * same slots. Size-5+ meshes that fail both guards (Jonah's
+ * 2025 9-mesh around Knives Out 3) then peel the hub so a
+ * leftover unique-quadrant 4 can occupy those slots.
+ * Leftover size-5 of that peel (Challengers / Logan Lucky /
+ * Knives Out 3 / The Vvitch / The Killer) then peels the
+ * pair whose isolated Good flip would restack, so the
+ * remaining 3 occupy triangle slots. The leftover size-2
+ * (Challengers / Logan Lucky) then splits vertically so
+ * that pair does not keep covering after the Good flip is
+ * skipped. Interior Fun-plus-Good slots that grow into
+ * the Good 10 / Good 0 gutter still cover a gutter title
+ * in that same slot (Mickey 17 at Fun 0 / Good 10 vs
+ * Stand by Me), so those gutter neighbors then take Fun
+ * stagger: higher Fun grows toward Fun 10, lower toward
+ * Fun 0. Fun 0-1 / Fun 9-10 gutter titles next to
+ * those same slots (Manchester by the Sea at Fun 1 /
+ * Good 9.1 beside Room at Fun 0 / Good 10) then take
+ * Good stagger opposite the interior so they split
+ * horizontally instead of covering in the Fun gutter.
+ * Isolated Fun-gutter close-Good pairs that are not
+ * next to those interiors (Airplane vs Ghostbusters,
+ * Inglorious Basterds vs Pirates) then take that same
+ * left/right flip. Remaining degree-1 ends of Fun-gutter
+ * 3-chains (Top Gun / Die Hard / Kill Bill) get that
+ * flip next, so the two-partner middle does not block
+ * the ends. Odd-length leftovers of those peels (Kill
+ * Bill after Top Gun claims Die Hard) then flip
+ * opposite the claimed partner. Overlay copies of
+ * those 3-chains match at ghost-label zoom. Leftover
+ * Fun-gutter meshes with no degree-1 (Drama's 12
+ * Years / Schindler / Requiem / Tree of Life) then
+ * peel already-opposite titles and Fun-stagger the
+ * remaining same-side triangle: 12 Years grows
+ * toward Fun 10 so it sits above Schindler and
+ * Requiem. Good flips restack on Manchester, so
+ * that pass is Fun-only. The leftover pair on
+ * that north/Good-10 slot then takes the unused
+ * Fun-plus-Good corner: Schindler grows toward
+ * Fun 10 / Good 0 so it sits left of 12 Years
+ * and above Requiem. That Fun 10 still grows
+ * into Room (Fun 0 / Good 10) at dFun 1.0, so
+ * Room then matches 12 Years' Fun 10 and sits
+ * above it instead of covering. Overlay copies
+ * of that triangle, leftover pair, and Room
+ * Fun match wait for ghost-label zoom. Reuse
+ * of label-end would also flip the fit-zoom
+ * selected pill.
+ */
+const INTERIOR_CLOSE_GOOD_GAP = 1
+/** A 4-clique can occupy the four Fun-plus-Good stagger slots. */
+const INTERIOR_CLIQUE_SIZE = 4
+/** A triangle occupies three of those slots as a 2-vs-1 split. */
+const INTERIOR_TRIANGLE_SIZE = 3
+/** Leftover mesh after a unique-quadrant-4 peel is a size-5 bowtie. */
+const INTERIOR_LEFTOVER_MESH_SIZE = 5
+/** Slide the stack-count chip left so Fun/Good ≈10 does not clip it in the 1-unit margin. */
+const COUNT_WEST_GOOD = 9
+
+function isInteriorUnstacked(group: PositionGroup): boolean {
+  return (
+    group.items.length === 1 &&
+    group.fun > LABEL_NORTH_FUN &&
+    group.fun < LABEL_SOUTH_FUN &&
+    group.good > LABEL_GUTTER_GOOD_LOW &&
+    group.good < LABEL_GUTTER_GOOD_HIGH
+  )
+}
+
+function isGoodGutterUnstacked(group: PositionGroup): boolean {
+  return (
+    group.items.length === 1 &&
+    group.fun > LABEL_NORTH_FUN &&
+    group.fun < LABEL_SOUTH_FUN &&
+    (group.good >= LABEL_GUTTER_GOOD_HIGH ||
+      group.good <= LABEL_GUTTER_GOOD_LOW)
+  )
+}
+
+function isFunGutterUnstacked(group: PositionGroup): boolean {
+  return (
+    group.items.length === 1 &&
+    (group.fun >= LABEL_SOUTH_FUN || group.fun <= LABEL_NORTH_FUN)
+  )
+}
+
+function funGutterResolvedGoodSide(group: PositionGroup): 'left' | 'right' {
+  if (group.good >= LABEL_GUTTER_GOOD_HIGH) return 'right'
+  if (group.good <= LABEL_GUTTER_GOOD_LOW) return 'left'
+  return group.good < LABEL_FLIP_GOOD ? 'right' : 'left'
+}
+
+function interiorSameGoodVerticalStagger(
+  groups: PositionGroup[],
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const interiorUnstacked = groups.filter(isInteriorUnstacked)
+  const byGood = new Map<number, PositionGroup[]>()
+  for (const group of interiorUnstacked) {
+    const list = byGood.get(group.good)
+    if (list) list.push(group)
+    else byGood.set(group.good, [group])
+  }
+  for (const list of byGood.values()) {
+    if (list.length !== 2) continue
+    const [higher, lower] =
+      list[0].fun >= list[1].fun ? [list[0], list[1]] : [list[1], list[0]]
+    const gap = higher.fun - lower.fun
+    if (gap > 0 && gap <= INTERIOR_SAME_GOOD_FUN_GAP) {
+      stagger.set(higher.key, 'fun-10')
+      stagger.set(lower.key, 'fun-0')
+    }
+  }
+  return stagger
+}
+
+function interiorCloseGoodHorizontalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
+  if (verticalStagger.size === 0) return stagger
+
+  const interiorUnstacked = groups.filter(isInteriorUnstacked)
+  const pairs = new Map<number, PositionGroup[]>()
+  for (const group of interiorUnstacked) {
+    if (!verticalStagger.has(group.key)) continue
+    const list = pairs.get(group.good)
+    if (list) list.push(group)
+    else pairs.set(group.good, [group])
+  }
+
+  for (const pair of pairs.values()) {
+    const pairGood = pair[0].good
+    let nearest: PositionGroup | null = null
+    let nearestDist = Infinity
+    for (const candidate of interiorUnstacked) {
+      if (verticalStagger.has(candidate.key) || stagger.has(candidate.key)) {
+        continue
+      }
+      for (const member of pair) {
+        const dFun = Math.abs(candidate.fun - member.fun)
+        const dGood = Math.abs(candidate.good - member.good)
+        if (
+          dGood === 0 ||
+          dGood > INTERIOR_CLOSE_GOOD_GAP ||
+          dFun > INTERIOR_SAME_GOOD_FUN_GAP
+        ) {
+          continue
+        }
+        const dist = Math.hypot(dFun, dGood)
+        if (dist < nearestDist) {
+          nearestDist = dist
+          nearest = candidate
+        }
+      }
+    }
+    if (nearest) {
+      stagger.set(nearest.key, nearest.good >= pairGood ? 'good-10' : 'good-0')
+    }
+  }
+
+  return stagger
+}
+
+function closeGoodAwayFromPartner(
+  a: PositionGroup,
+  b: PositionGroup,
+): { key: string; side: 'good-10' | 'good-0' } | null {
+  const [higherGood, lowerGood] =
+    a.good >= b.good ? [a, b] : [b, a]
+  const higherOnRight = higherGood.good < LABEL_FLIP_GOOD
+  const lowerOnRight = lowerGood.good < LABEL_FLIP_GOOD
+  // Already on opposite default sides, so a flip would grow them
+  // toward each other across the Good 5 boundary.
+  if (higherOnRight !== lowerOnRight) return null
+  if (higherOnRight) {
+    return { key: lowerGood.key, side: 'good-0' }
+  }
+  return { key: higherGood.key, side: 'good-10' }
+}
+
+function resolvedGoodSide(
+  group: PositionGroup,
+  assigned: 'good-10' | 'good-0' | undefined,
+): 'left' | 'right' {
+  if (assigned === 'good-10') return 'right'
+  if (assigned === 'good-0') return 'left'
+  return group.good < LABEL_FLIP_GOOD ? 'right' : 'left'
+}
+
+function closeGoodPartners(
+  candidates: PositionGroup[],
+): Map<string, PositionGroup[]> {
+  const partners = new Map<string, PositionGroup[]>()
+  for (const group of candidates) {
+    partners.set(group.key, [])
+  }
+  for (let i = 0; i < candidates.length; i++) {
+    for (let j = i + 1; j < candidates.length; j++) {
+      const a = candidates[i]
+      const b = candidates[j]
+      const dFun = Math.abs(a.fun - b.fun)
+      const dGood = Math.abs(a.good - b.good)
+      if (
+        dGood === 0 ||
+        dGood > INTERIOR_CLOSE_GOOD_GAP ||
+        dFun > INTERIOR_SAME_GOOD_FUN_GAP
+      ) {
+        continue
+      }
+      partners.get(a.key)!.push(b)
+      partners.get(b.key)!.push(a)
+    }
+  }
+  return partners
+}
+
+function applyCloseGoodEndFlips(
+  candidates: PositionGroup[],
+  partners: Map<string, PositionGroup[]>,
+  requireBothDegreeOne: boolean,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
+  const used = new Set<string>()
+  for (const group of candidates) {
+    if (used.has(group.key)) continue
+    const list = partners.get(group.key) ?? []
+    if (list.length !== 1) continue
+    const other = list[0]
+    if (used.has(other.key)) {
+      // Odd-length leftover: the partner was already claimed by
+      // the other end of a 3-chain. closeGoodAwayFromPartner
+      // would move that claimed middle (Indiana Jones vs Black
+      // Panther would restack Black Panther on Bourne). Flip
+      // only the leftover, opposite the partner's resolved side.
+      if (!requireBothDegreeOne) {
+        const otherSide = resolvedGoodSide(other, stagger.get(other.key))
+        const mySide = resolvedGoodSide(group, undefined)
+        if (mySide === otherSide) {
+          stagger.set(
+            group.key,
+            otherSide === 'left' ? 'good-10' : 'good-0',
+          )
+        }
+      }
+      used.add(group.key)
+      continue
+    }
+    if (
+      requireBothDegreeOne &&
+      (partners.get(other.key) ?? []).length !== 1
+    ) {
+      continue
+    }
+
+    const flip = closeGoodAwayFromPartner(group, other)
+    if (flip) stagger.set(flip.key, flip.side)
+    used.add(group.key)
+    used.add(other.key)
+  }
+  return stagger
+}
+
+/**
+ * Close-Good pairs with no same-Good neighbor still cover each other
+ * on the default label side. Pair movies that have exactly one such
+ * partner among remaining interior titles, then flip the title that
+ * sits toward its partner. Skip pairs already on opposite Good sides,
+ * and skip anyone already in same-Good or neighbor stagger so this
+ * does not restack Stalin or swallow the 28 Years Later chain.
+ */
+function interiorIsolatedCloseGoodHorizontalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  neighborStagger: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !neighborStagger.has(group.key),
+  )
+  return applyCloseGoodEndFlips(
+    candidates,
+    closeGoodPartners(candidates),
+    true,
+  )
+}
+
+/**
+ * Isolated pairs leave longer close-Good chains unstaggered because
+ * interiors have two partners. Peel remaining degree-1 ends with the
+ * same away-from-partner flip so Alexander (toward 28 Years Later)
+ * and Pizza Movie (toward Bone Temple) sit on the opposite Good side
+ * instead of covering the chain. Odd-length leftovers of those peels
+ * (Indiana Jones after Bourne / Black Panther) then flip opposite
+ * the claimed partner. Clique interiors with two leftover partners
+ * stay put until the 4-clique quadrant pass.
+ */
+function interiorCloseGoodChainHorizontalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  claimedHorizontal: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !claimedHorizontal.has(group.key),
+  )
+  return applyCloseGoodEndFlips(
+    candidates,
+    closeGoodPartners(candidates),
+    false,
+  )
+}
+
+/**
+ * Neighbor, isolated, and chain flips can land two titles on the
+ * same Good side still close enough to cover: Palm Springs
+ * (neighbor Good 10) vs Lebowski (isolated Good 10), and Moana
+ * vs On the Basis of Sex (both chain-end Good 0). Pair remaining
+ * degree-1 same-side neighbors and grow them toward opposite Fun
+ * gutters. Skip anyone already in same-Good vertical stagger, and
+ * skip clusters with two leftover partners so this does not fight
+ * the Drama 4-clique, which gets Fun-plus-Good quadrants next.
+ * Overlay same-side collisions get this stagger at ghost-label zoom.
+ */
+function interiorSameSideCloseGoodVerticalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const bySide = new Map<'good-10' | 'good-0', PositionGroup[]>()
+  for (const group of groups) {
+    if (
+      !isInteriorUnstacked(group) ||
+      verticalStagger.has(group.key)
+    ) {
+      continue
+    }
+    const side = horizontalStagger.get(group.key)
+    if (!side) continue
+    const list = bySide.get(side)
+    if (list) list.push(group)
+    else bySide.set(side, [group])
+  }
+  for (const list of bySide.values()) {
+    const partners = closeGoodPartners(list)
+    const used = new Set<string>()
+    for (const group of list) {
+      if (used.has(group.key)) continue
+      const others = partners.get(group.key) ?? []
+      if (others.length !== 1) continue
+      const other = others[0]
+      if (used.has(other.key)) continue
+      if ((partners.get(other.key) ?? []).length !== 1) continue
+      const [higher, lower] =
+        group.fun >= other.fun ? [group, other] : [other, group]
+      stagger.set(higher.key, 'fun-10')
+      stagger.set(lower.key, 'fun-0')
+      used.add(group.key)
+      used.add(other.key)
+    }
+  }
+  return stagger
+}
+
+function closeGoodConnectedComponents(
+  candidates: PositionGroup[],
+): PositionGroup[][] {
+  const partners = closeGoodPartners(candidates)
+  const visited = new Set<string>()
+  const components: PositionGroup[][] = []
+  for (const group of candidates) {
+    if (visited.has(group.key)) continue
+    const stack = [group]
+    const component: PositionGroup[] = []
+    visited.add(group.key)
+    while (stack.length > 0) {
+      const current = stack.pop()
+      if (!current) break
+      component.push(current)
+      for (const partner of partners.get(current.key) ?? []) {
+        if (visited.has(partner.key)) continue
+        visited.add(partner.key)
+        stack.push(partner)
+      }
+    }
+    components.push(component)
+  }
+  return components
+}
+
+/**
+ * Clique interiors never received a horizontal class: every leftover
+ * has two partners, so isolated pairs, chain peels, leftover 3-chains,
+ * and same-side Fun stagger all skip them. A remaining 4-clique
+ * (Brokeback / Marriage Story / Room / Nomadland) can occupy the
+ * four Fun-plus-Good slots the combo CSS already paints. Assign
+ * each title the quadrant of its marker relative to the cluster
+ * centroid, and skip the cluster if that split is not unique so a
+ * line-shaped 4 does not stack two titles in one slot. Size-3
+ * triangles get a 2-vs-1 split next; size-5+ meshes peel a hub
+ * after that so a leftover unique-quadrant 4 can still pack.
+ * Leftover size-5 of that peel packs a triangle after that,
+ * then leftover size-2 splits vertically.
+ */
+function uniqueQuadrantAssignment(
+  component: PositionGroup[],
+): {
+  key: string
+  fun: 'fun-10' | 'fun-0'
+  good: 'good-10' | 'good-0'
+}[] | null {
+  if (component.length !== INTERIOR_CLIQUE_SIZE) return null
+  const centroidFun =
+    component.reduce((sum, group) => sum + group.fun, 0) / component.length
+  const centroidGood =
+    component.reduce((sum, group) => sum + group.good, 0) / component.length
+  const assigned: {
+    key: string
+    fun: 'fun-10' | 'fun-0'
+    good: 'good-10' | 'good-0'
+  }[] = []
+  const quadrants = new Set<string>()
+  for (const group of component) {
+    const funSide: 'fun-10' | 'fun-0' =
+      group.fun >= centroidFun ? 'fun-10' : 'fun-0'
+    const goodSide: 'good-10' | 'good-0' =
+      group.good >= centroidGood ? 'good-10' : 'good-0'
+    assigned.push({ key: group.key, fun: funSide, good: goodSide })
+    quadrants.add(`${funSide}:${goodSide}`)
+  }
+  if (quadrants.size !== INTERIOR_CLIQUE_SIZE) return null
+  return assigned
+}
+
+function interiorCloseGoodCliqueQuadrantStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+  sameSideVertical: Map<string, 'fun-10' | 'fun-0'>,
+): {
+  fun: Map<string, 'fun-10' | 'fun-0'>
+  good: Map<string, 'good-10' | 'good-0'>
+} {
+  const fun = new Map<string, 'fun-10' | 'fun-0'>()
+  const good = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !horizontalStagger.has(group.key) &&
+      !sameSideVertical.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    const assigned = uniqueQuadrantAssignment(component)
+    if (!assigned) continue
+    for (const entry of assigned) {
+      fun.set(entry.key, entry.fun)
+      good.set(entry.key, entry.good)
+    }
+  }
+  return { fun, good }
+}
+
+function oppositeFunSide(side: 'fun-10' | 'fun-0'): 'fun-10' | 'fun-0' {
+  return side === 'fun-10' ? 'fun-0' : 'fun-10'
+}
+
+function oppositeGoodSide(side: 'good-10' | 'good-0'): 'good-10' | 'good-0' {
+  return side === 'good-10' ? 'good-0' : 'good-10'
+}
+
+function pickTowardShared<T>(
+  first: T,
+  second: T,
+  score: (entry: T) => number,
+  towardHigh: boolean,
+): T {
+  const firstScore = score(first)
+  const secondScore = score(second)
+  if (towardHigh) return firstScore >= secondScore ? first : second
+  return firstScore <= secondScore ? first : second
+}
+
+/**
+ * Size-3 triangles fail the 4-clique unique-quadrant pack:
+ * Naked Gun and Naked Gun old both land Fun 10 / Good 10
+ * around the cluster centroid, while One of Them Days is
+ * uniquely Fun 0 / Good 0. Keep the singleton in its
+ * centroid slot, keep the pair member that already sits
+ * toward the shared slot, and move the other into the
+ * unused adjacent quadrant along the pair's larger
+ * separation (Fun for those two Naked Guns). Overlay
+ * copies of this triangle get the same split at
+ * ghost-label zoom. Leftover size-5 of the 9-mesh peel
+ * reuses this next so Knives Out 3 / The Vvitch / The
+ * Killer can occupy three slots.
+ */
+function triangleAssignment(
+  component: PositionGroup[],
+): {
+  key: string
+  fun: 'fun-10' | 'fun-0'
+  good: 'good-10' | 'good-0'
+}[] | null {
+  if (component.length !== INTERIOR_TRIANGLE_SIZE) return null
+  const centroidFun =
+    component.reduce((sum, group) => sum + group.fun, 0) / component.length
+  const centroidGood =
+    component.reduce((sum, group) => sum + group.good, 0) / component.length
+  const assigned: {
+    group: PositionGroup
+    fun: 'fun-10' | 'fun-0'
+    good: 'good-10' | 'good-0'
+  }[] = []
+  const byQuadrant = new Map<
+    string,
+    {
+      group: PositionGroup
+      fun: 'fun-10' | 'fun-0'
+      good: 'good-10' | 'good-0'
+    }[]
+  >()
+  for (const group of component) {
+    const funSide: 'fun-10' | 'fun-0' =
+      group.fun >= centroidFun ? 'fun-10' : 'fun-0'
+    const goodSide: 'good-10' | 'good-0' =
+      group.good >= centroidGood ? 'good-10' : 'good-0'
+    const entry = { group, fun: funSide, good: goodSide }
+    assigned.push(entry)
+    const key = `${funSide}:${goodSide}`
+    const list = byQuadrant.get(key)
+    if (list) list.push(entry)
+    else byQuadrant.set(key, [entry])
+  }
+  if (byQuadrant.size === INTERIOR_TRIANGLE_SIZE) {
+    return assigned.map((entry) => ({
+      key: entry.group.key,
+      fun: entry.fun,
+      good: entry.good,
+    }))
+  }
+  if (byQuadrant.size !== 2) return null
+  const pair = [...byQuadrant.values()].find((list) => list.length === 2)
+  const singletonList = [...byQuadrant.values()].find(
+    (list) => list.length === 1,
+  )
+  if (!pair || !singletonList) return null
+  const singleton = singletonList[0]
+  const [first, second] = pair
+  const sharedFun = first.fun
+  const sharedGood = first.good
+  const uniqueKey = `${singleton.fun}:${singleton.good}`
+  const funFlip = {
+    fun: oppositeFunSide(sharedFun),
+    good: sharedGood,
+  }
+  const goodFlip = {
+    fun: sharedFun,
+    good: oppositeGoodSide(sharedGood),
+  }
+  const funFlipKey = `${funFlip.fun}:${funFlip.good}`
+  const dFun = Math.abs(first.group.fun - second.group.fun)
+  const dGood = Math.abs(first.group.good - second.group.good)
+  let splitOnFun = dFun >= dGood
+  if (splitOnFun && funFlipKey === uniqueKey) splitOnFun = false
+  if (!splitOnFun && `${goodFlip.fun}:${goodFlip.good}` === uniqueKey) {
+    splitOnFun = true
+  }
+  const keep = pickTowardShared(
+    first,
+    second,
+    splitOnFun
+      ? (entry) => entry.group.fun
+      : (entry) => entry.group.good,
+    splitOnFun ? sharedFun === 'fun-10' : sharedGood === 'good-10',
+  )
+  const move = keep === first ? second : first
+  const moveSlot = splitOnFun ? funFlip : goodFlip
+  return [
+    {
+      key: singleton.group.key,
+      fun: singleton.fun,
+      good: singleton.good,
+    },
+    {
+      key: keep.group.key,
+      fun: sharedFun,
+      good: sharedGood,
+    },
+    {
+      key: move.group.key,
+      fun: moveSlot.fun,
+      good: moveSlot.good,
+    },
+  ]
+}
+
+function interiorCloseGoodTriangleStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+  sameSideVertical: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueFun: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueGood: Map<string, 'good-10' | 'good-0'>,
+): {
+  fun: Map<string, 'fun-10' | 'fun-0'>
+  good: Map<string, 'good-10' | 'good-0'>
+} {
+  const fun = new Map<string, 'fun-10' | 'fun-0'>()
+  const good = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !horizontalStagger.has(group.key) &&
+      !sameSideVertical.has(group.key) &&
+      !cliqueFun.has(group.key) &&
+      !cliqueGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    const assigned = triangleAssignment(component)
+    if (!assigned) continue
+    for (const entry of assigned) {
+      fun.set(entry.key, entry.fun)
+      good.set(entry.key, entry.good)
+    }
+  }
+  return { fun, good }
+}
+
+/**
+ * Size-5+ leftover meshes fail clique and triangle guards:
+ * Jonah's 2025 9-mesh around Knives Out 3 puts four titles
+ * in one centroid quadrant. Peel the highest-degree hub
+ * whose removal leaves a unique-quadrant 4 (Knives Out 3)
+ * so Sinners, Clerks, One Battle After Another, and
+ * Mickey 17 occupy opposite Fun-plus-Good corners of that
+ * subcluster. Size-2 leftovers of that peel (Challengers /
+ * Logan Lucky, The Vvitch / The Killer) stay put so this
+ * does not restack Challengers on Some Like It Hot's
+ * chain Good-10. Leftover size-5 of that peel packs a
+ * triangle next, then the leftover size-2 splits
+ * vertically. Overlay copies get the same peel at
+ * ghost-label zoom.
+ */
+function interiorCloseGoodMeshHubStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+  sameSideVertical: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueFun: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueGood: Map<string, 'good-10' | 'good-0'>,
+  triangleFun: Map<string, 'fun-10' | 'fun-0'>,
+  triangleGood: Map<string, 'good-10' | 'good-0'>,
+): {
+  fun: Map<string, 'fun-10' | 'fun-0'>
+  good: Map<string, 'good-10' | 'good-0'>
+} {
+  const fun = new Map<string, 'fun-10' | 'fun-0'>()
+  const good = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !horizontalStagger.has(group.key) &&
+      !sameSideVertical.has(group.key) &&
+      !cliqueFun.has(group.key) &&
+      !cliqueGood.has(group.key) &&
+      !triangleFun.has(group.key) &&
+      !triangleGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    if (component.length <= INTERIOR_CLIQUE_SIZE) continue
+    const partners = closeGoodPartners(component)
+    const hubs = [...component].sort(
+      (a, b) =>
+        (partners.get(b.key)?.length ?? 0) -
+        (partners.get(a.key)?.length ?? 0),
+    )
+    let packed = false
+    for (const hub of hubs) {
+      if (packed) break
+      const remaining = component.filter((group) => group.key !== hub.key)
+      for (const piece of closeGoodConnectedComponents(remaining)) {
+        const assigned = uniqueQuadrantAssignment(piece)
+        if (!assigned) continue
+        for (const entry of assigned) {
+          fun.set(entry.key, entry.fun)
+          good.set(entry.key, entry.good)
+        }
+        packed = true
+      }
+    }
+  }
+  return { fun, good }
+}
+
+/**
+ * Isolated Good flip of Challengers vs Logan Lucky would
+ * restack Challengers on Some Like It Hot's chain Good-10.
+ * Skip a leftover pair when that flip lands on the same
+ * Good side as a nearby already-staggered title.
+ */
+function isolatedCloseGoodFlipRestacks(
+  pair: PositionGroup[],
+  assignedGood: Map<string, 'good-10' | 'good-0'>,
+  groups: PositionGroup[],
+): boolean {
+  if (pair.length !== 2) return false
+  const flip = closeGoodAwayFromPartner(pair[0], pair[1])
+  if (!flip) return false
+  const flipped = pair[0].key === flip.key ? pair[0] : pair[1]
+  for (const other of groups) {
+    if (other.key === pair[0].key || other.key === pair[1].key) continue
+    if (assignedGood.get(other.key) !== flip.side) continue
+    const dFun = Math.abs(flipped.fun - other.fun)
+    const dGood = Math.abs(flipped.good - other.good)
+    if (
+      dGood === 0 ||
+      dGood > INTERIOR_CLOSE_GOOD_GAP ||
+      dFun > INTERIOR_SAME_GOOD_FUN_GAP
+    ) {
+      continue
+    }
+    return true
+  }
+  return false
+}
+
+/**
+ * Leftover size-5 after a unique-quadrant-4 hub peel fails
+ * unique-4 and triangle guards: peeling Knives Out 3 from
+ * Challengers / Logan Lucky / Knives Out 3 / The Vvitch /
+ * The Killer leaves two size-2s. Pack the hub with the
+ * size-2 whose isolated Good flip would not restack
+ * (The Vvitch / The Killer) so those three occupy triangle
+ * slots. Challengers / Logan Lucky get Fun stagger next so
+ * Challengers does not restack on Some Like It Hot.
+ * Overlay copies get the same peel at ghost-label zoom.
+ */
+function interiorCloseGoodLeftoverMeshTriangleStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+  sameSideVertical: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueFun: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueGood: Map<string, 'good-10' | 'good-0'>,
+  triangleFun: Map<string, 'fun-10' | 'fun-0'>,
+  triangleGood: Map<string, 'good-10' | 'good-0'>,
+  meshFun: Map<string, 'fun-10' | 'fun-0'>,
+  meshGood: Map<string, 'good-10' | 'good-0'>,
+): {
+  fun: Map<string, 'fun-10' | 'fun-0'>
+  good: Map<string, 'good-10' | 'good-0'>
+} {
+  const fun = new Map<string, 'fun-10' | 'fun-0'>()
+  const good = new Map<string, 'good-10' | 'good-0'>()
+  const assignedGood = new Map([
+    ...horizontalStagger,
+    ...cliqueGood,
+    ...triangleGood,
+    ...meshGood,
+  ])
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !horizontalStagger.has(group.key) &&
+      !sameSideVertical.has(group.key) &&
+      !cliqueFun.has(group.key) &&
+      !cliqueGood.has(group.key) &&
+      !triangleFun.has(group.key) &&
+      !triangleGood.has(group.key) &&
+      !meshFun.has(group.key) &&
+      !meshGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    if (component.length !== INTERIOR_LEFTOVER_MESH_SIZE) continue
+    const partners = closeGoodPartners(component)
+    const hub = [...component].sort(
+      (a, b) =>
+        (partners.get(b.key)?.length ?? 0) -
+        (partners.get(a.key)?.length ?? 0),
+    )[0]
+    if (!hub) continue
+    const remaining = component.filter((group) => group.key !== hub.key)
+    let packed = false
+    for (const piece of closeGoodConnectedComponents(remaining)) {
+      if (packed) break
+      if (piece.length !== 2) continue
+      if (isolatedCloseGoodFlipRestacks(piece, assignedGood, groups)) {
+        continue
+      }
+      const assigned = triangleAssignment([hub, ...piece])
+      if (!assigned) continue
+      for (const entry of assigned) {
+        fun.set(entry.key, entry.fun)
+        good.set(entry.key, entry.good)
+      }
+      packed = true
+    }
+  }
+  return { fun, good }
+}
+
+/**
+ * Leftover size-2 after a leftover-mesh triangle peel cannot
+ * take the isolated Good flip: Challengers vs Logan Lucky
+ * would restack Challengers on Some Like It Hot's chain
+ * Good-10 (0.33 Fun, 0.06 Good). Split them vertically on
+ * the default label side instead so both seven-line pills
+ * fit. Skip a leftover pair whose Good flip would not
+ * restack; those were packed with the hub. Overlay copies
+ * of this pair sit in a leftover size-5 that peels the
+ * vertex whose removal leaves a unique-quadrant 4.
+ */
+function interiorCloseGoodLeftoverPairVerticalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+  sameSideVertical: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueFun: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueGood: Map<string, 'good-10' | 'good-0'>,
+  triangleFun: Map<string, 'fun-10' | 'fun-0'>,
+  triangleGood: Map<string, 'good-10' | 'good-0'>,
+  meshFun: Map<string, 'fun-10' | 'fun-0'>,
+  meshGood: Map<string, 'good-10' | 'good-0'>,
+  leftoverMeshFun: Map<string, 'fun-10' | 'fun-0'>,
+  leftoverMeshGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const assignedGood = new Map([
+    ...horizontalStagger,
+    ...cliqueGood,
+    ...triangleGood,
+    ...meshGood,
+    ...leftoverMeshGood,
+  ])
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !horizontalStagger.has(group.key) &&
+      !sameSideVertical.has(group.key) &&
+      !cliqueFun.has(group.key) &&
+      !cliqueGood.has(group.key) &&
+      !triangleFun.has(group.key) &&
+      !triangleGood.has(group.key) &&
+      !meshFun.has(group.key) &&
+      !meshGood.has(group.key) &&
+      !leftoverMeshFun.has(group.key) &&
+      !leftoverMeshGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    if (component.length !== 2) continue
+    if (!isolatedCloseGoodFlipRestacks(component, assignedGood, groups)) {
+      continue
+    }
+    const [higher, lower] =
+      component[0].fun >= component[1].fun
+        ? [component[0], component[1]]
+        : [component[1], component[0]]
+    stagger.set(higher.key, 'fun-10')
+    stagger.set(lower.key, 'fun-0')
+  }
+  return stagger
+}
+
+/**
+ * Interior Fun-plus-Good slots that grow into the Good 10 /
+ * Good 0 gutter still cover a 1-unit gutter title already
+ * parked there: Mickey 17 (7.58 / 8.78, Fun 0 / Good 10)
+ * covers Stand by Me (7.13 / 9.19). Pair each gutter title
+ * with the nearest interior that already occupies that
+ * Good slot and has a Fun class, then grow the gutter
+ * title toward Fun 10 if it sits higher or Fun 0 if
+ * lower so both seven-line pills fit. Skip Fun 9-10 /
+ * Fun 0-1 titles (Manchester by the Sea) so this does
+ * not fight Fun edge-gutter CSS; those titles get a
+ * Good-side split next. Skip interiors that only have
+ * a Good class (Stalin) so Kill Bill V1 stays in the
+ * namesake Good 10 gutter. Overlay copies of these
+ * gutter neighbors wait for ghost-label zoom.
+ */
+function interiorGutterNeighborFunStagger(
+  groups: PositionGroup[],
+  interiorFun: Map<string, 'fun-10' | 'fun-0'>,
+  interiorGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const gutters = groups.filter(isGoodGutterUnstacked)
+  const interiors = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      interiorFun.has(group.key) &&
+      interiorGood.has(group.key),
+  )
+  const pairs: {
+    gutter: PositionGroup
+    interior: PositionGroup
+    dist: number
+  }[] = []
+  for (const gutter of gutters) {
+    const wantGood: 'good-10' | 'good-0' =
+      gutter.good >= LABEL_GUTTER_GOOD_HIGH ? 'good-10' : 'good-0'
+    for (const interior of interiors) {
+      if (interiorGood.get(interior.key) !== wantGood) continue
+      const dFun = Math.abs(gutter.fun - interior.fun)
+      const dGood = Math.abs(gutter.good - interior.good)
+      if (
+        dFun > INTERIOR_SAME_GOOD_FUN_GAP ||
+        dGood > INTERIOR_CLOSE_GOOD_GAP
+      ) {
+        continue
+      }
+      pairs.push({
+        gutter,
+        interior,
+        dist: Math.hypot(dFun, dGood),
+      })
+    }
+  }
+  pairs.sort((a, b) => a.dist - b.dist)
+  const usedGutter = new Set<string>()
+  const usedInterior = new Set<string>()
+  for (const pair of pairs) {
+    if (
+      usedGutter.has(pair.gutter.key) ||
+      usedInterior.has(pair.interior.key)
+    ) {
+      continue
+    }
+    const side: 'fun-10' | 'fun-0' =
+      pair.gutter.fun >= pair.interior.fun ? 'fun-10' : 'fun-0'
+    stagger.set(pair.gutter.key, side)
+    usedGutter.add(pair.gutter.key)
+    usedInterior.add(pair.interior.key)
+  }
+  return stagger
+}
+
+/**
+ * Interior Fun-plus-Good slots that grow into the Fun 10 /
+ * Fun 0 gutter still cover a 1-unit Fun-gutter title already
+ * parked there: Room (1.8 / 8.9, Fun 0 / Good 10) covers
+ * Manchester by the Sea (1.0 / 9.1). Pair each Fun-gutter
+ * title with the nearest interior that already occupies that
+ * Fun slot and has a Good class, then grow the gutter title
+ * to the opposite Good side so both seven-line pills fit.
+ * Skip pairs already on opposite Good sides, and skip
+ * interiors that only have a Fun class so same-Good
+ * vertical stagger does not pull a Fun-gutter title onto
+ * Grizzly Man. Overlay copies of these Fun-gutter
+ * neighbors wait for ghost-label zoom.
+ */
+function interiorFunGutterNeighborGoodStagger(
+  groups: PositionGroup[],
+  interiorFun: Map<string, 'fun-10' | 'fun-0'>,
+  interiorGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
+  const gutters = groups.filter(isFunGutterUnstacked)
+  const interiors = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      interiorFun.has(group.key) &&
+      interiorGood.has(group.key),
+  )
+  const pairs: {
+    gutter: PositionGroup
+    interior: PositionGroup
+    dist: number
+  }[] = []
+  for (const gutter of gutters) {
+    const wantFun: 'fun-10' | 'fun-0' =
+      gutter.fun >= LABEL_SOUTH_FUN ? 'fun-10' : 'fun-0'
+    for (const interior of interiors) {
+      if (interiorFun.get(interior.key) !== wantFun) continue
+      const dFun = Math.abs(gutter.fun - interior.fun)
+      const dGood = Math.abs(gutter.good - interior.good)
+      if (
+        dFun > INTERIOR_SAME_GOOD_FUN_GAP ||
+        dGood > INTERIOR_CLOSE_GOOD_GAP
+      ) {
+        continue
+      }
+      pairs.push({
+        gutter,
+        interior,
+        dist: Math.hypot(dFun, dGood),
+      })
+    }
+  }
+  pairs.sort((a, b) => a.dist - b.dist)
+  const usedGutter = new Set<string>()
+  const usedInterior = new Set<string>()
+  for (const pair of pairs) {
+    if (
+      usedGutter.has(pair.gutter.key) ||
+      usedInterior.has(pair.interior.key)
+    ) {
+      continue
+    }
+    const interiorSide = interiorGood.get(pair.interior.key)
+    if (!interiorSide) continue
+    const interiorResolved: 'left' | 'right' =
+      interiorSide === 'good-10' ? 'right' : 'left'
+    if (funGutterResolvedGoodSide(pair.gutter) !== interiorResolved) {
+      continue
+    }
+    const side: 'good-10' | 'good-0' =
+      interiorResolved === 'right' ? 'good-0' : 'good-10'
+    stagger.set(pair.gutter.key, side)
+    usedGutter.add(pair.gutter.key)
+    usedInterior.add(pair.interior.key)
+  }
+  return stagger
+}
+
+/**
+ * Isolated Fun-gutter close-Good pairs still cover each
+ * other after the interior-neighbor pass: Airplane
+ * (9.9 / 7.5) covers Ghostbusters (9.0 / 7.2) on the
+ * default left, and Inglorious Basterds (9.0 / 9.02)
+ * covers Pirates (9.55 / 9.83) in the namesake Good 10
+ * gutter. Pair movies that have exactly one such
+ * partner among remaining Fun-gutter titles, then flip
+ * the title that sits toward its partner using the
+ * Fun-gutter resolved side (namesake Good 10 is already
+ * right, unlike interior Good >= 5). Skip pairs already
+ * on opposite sides, skip Fun-gutter titles already
+ * claimed by the interior neighbor pass so Manchester
+ * stays opposite Room, skip a 3-chain whose middle has
+ * two partners (Top Gun / Die Hard / Kill Bill), and
+ * skip a flip that would restack on a nearby claimed
+ * or same-side Fun-gutter title. Overlay copies of
+ * those 3-chains match at ghost-label zoom.
+ */
+function funGutterIsolatedFlipRestacks(
+  flipped: PositionGroup,
+  side: 'good-10' | 'good-0',
+  pairOther: PositionGroup,
+  assignedGood: Map<string, 'good-10' | 'good-0'>,
+  groups: PositionGroup[],
+): boolean {
+  const want: 'left' | 'right' = side === 'good-10' ? 'right' : 'left'
+  for (const other of groups) {
+    if (other.key === flipped.key || other.key === pairOther.key) continue
+    if (other.items.length !== 1) continue
+    const assigned = assignedGood.get(other.key)
+    const otherSide: 'left' | 'right' | null = assigned
+      ? assigned === 'good-10'
+        ? 'right'
+        : 'left'
+      : isFunGutterUnstacked(other)
+        ? funGutterResolvedGoodSide(other)
+        : null
+    if (otherSide !== want) continue
+    const dFun = Math.abs(flipped.fun - other.fun)
+    const dGood = Math.abs(flipped.good - other.good)
+    if (
+      dGood === 0 ||
+      dGood > INTERIOR_CLOSE_GOOD_GAP ||
+      dFun > INTERIOR_SAME_GOOD_FUN_GAP
+    ) {
+      continue
+    }
+    return true
+  }
+  return false
+}
+
+function funGutterIsolatedCloseGoodHorizontalStagger(
+  groups: PositionGroup[],
+  claimedGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isFunGutterUnstacked(group) && !claimedGood.has(group.key),
+  )
+  const partners = closeGoodPartners(candidates)
+  const used = new Set<string>()
+  for (const group of candidates) {
+    if (used.has(group.key)) continue
+    const list = partners.get(group.key) ?? []
+    if (list.length !== 1) continue
+    const other = list[0]
+    if (used.has(other.key)) continue
+    if ((partners.get(other.key) ?? []).length !== 1) continue
+    const groupSide = funGutterResolvedGoodSide(group)
+    const otherSide = funGutterResolvedGoodSide(other)
+    if (groupSide !== otherSide) {
+      used.add(group.key)
+      used.add(other.key)
+      continue
+    }
+    const [higherGood, lowerGood] =
+      group.good >= other.good ? [group, other] : [other, group]
+    const side: 'good-10' | 'good-0' =
+      groupSide === 'left' ? 'good-10' : 'good-0'
+    const flipped = groupSide === 'left' ? higherGood : lowerGood
+    const pairOther = flipped.key === group.key ? other : group
+    if (
+      funGutterIsolatedFlipRestacks(
+        flipped,
+        side,
+        pairOther,
+        claimedGood,
+        groups,
+      )
+    ) {
+      used.add(group.key)
+      used.add(other.key)
+      continue
+    }
+    stagger.set(flipped.key, side)
+    used.add(group.key)
+    used.add(other.key)
+  }
+  return stagger
+}
+
+function funGutterAssignedGoodSide(
+  group: PositionGroup,
+  assigned: Map<string, 'good-10' | 'good-0'>,
+): 'left' | 'right' {
+  const side = assigned.get(group.key)
+  if (side === 'good-10') return 'right'
+  if (side === 'good-0') return 'left'
+  return funGutterResolvedGoodSide(group)
+}
+
+/**
+ * Isolated Fun-gutter pairs leave 3-chains unstaggered
+ * because the middle has two partners. Peel remaining
+ * degree-1 ends with the same away-from-partner flip so
+ * Top Gun (toward Die Hard) sits on the opposite Good
+ * side instead of covering the chain. Odd-length leftovers
+ * of those peels (Kill Bill after Top Gun claims Die Hard)
+ * then flip opposite the claimed partner. Skip Fun-gutter
+ * titles already claimed by isolated or interior-neighbor
+ * passes so Airplane stays opposite Ghostbusters and
+ * Manchester stays opposite Room. Drama's Fun 0-1 mesh
+ * has no degree-1 end, so leftover Fun-gutter
+ * triangles take Fun stagger next, then leftover
+ * pairs on that slot take Fun-plus-Good. Overlay
+ * copies of those 3-chains, leftover triangles,
+ * and leftover pairs match at ghost-label zoom.
+ */
+function funGutterCloseGoodChainHorizontalStagger(
+  groups: PositionGroup[],
+  claimedGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isFunGutterUnstacked(group) && !claimedGood.has(group.key),
+  )
+  const partners = closeGoodPartners(candidates)
+  const used = new Set<string>()
+  for (const group of candidates) {
+    if (used.has(group.key)) continue
+    const list = partners.get(group.key) ?? []
+    if (list.length !== 1) continue
+    const other = list[0]
+    const assignedGood = new Map([...claimedGood, ...stagger])
+    if (used.has(other.key)) {
+      const otherSide = funGutterAssignedGoodSide(other, assignedGood)
+      const mySide = funGutterResolvedGoodSide(group)
+      if (mySide === otherSide) {
+        const side: 'good-10' | 'good-0' =
+          otherSide === 'left' ? 'good-10' : 'good-0'
+        if (
+          !funGutterIsolatedFlipRestacks(
+            group,
+            side,
+            other,
+            assignedGood,
+            groups,
+          )
+        ) {
+          stagger.set(group.key, side)
+        }
+      }
+      used.add(group.key)
+      continue
+    }
+    const groupSide = funGutterResolvedGoodSide(group)
+    const otherSide = funGutterResolvedGoodSide(other)
+    if (groupSide !== otherSide) {
+      used.add(group.key)
+      used.add(other.key)
+      continue
+    }
+    const [higherGood, lowerGood] =
+      group.good >= other.good ? [group, other] : [other, group]
+    const side: 'good-10' | 'good-0' =
+      groupSide === 'left' ? 'good-10' : 'good-0'
+    const flipped = groupSide === 'left' ? higherGood : lowerGood
+    const pairOther = flipped.key === group.key ? other : group
+    if (
+      funGutterIsolatedFlipRestacks(
+        flipped,
+        side,
+        pairOther,
+        assignedGood,
+        groups,
+      )
+    ) {
+      used.add(group.key)
+      used.add(other.key)
+      continue
+    }
+    stagger.set(flipped.key, side)
+    used.add(group.key)
+    used.add(other.key)
+  }
+  return stagger
+}
+
+/**
+ * Leftover Fun-gutter meshes have no degree-1, so chain
+ * peels skip them: Drama's 12 Years / Schindler /
+ * Requiem / Tree of Life. Tree of Life already sits
+ * left at Good 8.5 while the other three occupy
+ * namesake Good 10, and a Good flip of any of those
+ * three restacks on Manchester (already Good 0
+ * opposite Room). Peel the already-opposite vertex
+ * and Fun-stagger the remaining same-side triangle:
+ * the highest Fun 0-1 title grows toward Fun 10 so
+ * 12 Years sits above Schindler and Requiem instead
+ * of covering them. Fun 9-10 leftover triangles
+ * grow the lowest title toward Fun 0. Schindler vs
+ * Requiem still cover on that north/Good-10 slot
+ * until leftover pairs take Fun-plus-Good next.
+ * Overlay copies match at ghost-label zoom.
+ */
+function funGutterLeftoverTriangleFunStagger(
+  groups: PositionGroup[],
+  claimedGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isFunGutterUnstacked(group) && !claimedGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    const partners = closeGoodPartners(component)
+    if (
+      component.some(
+        (group) => (partners.get(group.key) ?? []).length === 1,
+      )
+    ) {
+      continue
+    }
+    const bySide = new Map<'left' | 'right', PositionGroup[]>()
+    for (const group of component) {
+      const side = funGutterResolvedGoodSide(group)
+      const list = bySide.get(side)
+      if (list) list.push(group)
+      else bySide.set(side, [group])
+    }
+    for (const list of bySide.values()) {
+      if (list.length !== INTERIOR_TRIANGLE_SIZE) continue
+      const sidePartners = closeGoodPartners(list)
+      if (
+        list.some(
+          (group) => (sidePartners.get(group.key) ?? []).length !== 2,
+        )
+      ) {
+        continue
+      }
+      const inNorth = list.every((group) => group.fun <= LABEL_NORTH_FUN)
+      const inSouth = list.every((group) => group.fun >= LABEL_SOUTH_FUN)
+      if (inNorth) {
+        const highest = list.reduce((best, group) =>
+          group.fun >= best.fun ? group : best,
+        )
+        stagger.set(highest.key, 'fun-10')
+      } else if (inSouth) {
+        const lowest = list.reduce((best, group) =>
+          group.fun <= best.fun ? group : best,
+        )
+        stagger.set(lowest.key, 'fun-0')
+      }
+    }
+  }
+  return stagger
+}
+
+/**
+ * Leftover Fun-gutter same-side triangles Fun-stagger
+ * the highest (12 Years Fun 10) but leave the other
+ * two covering on that north/Good-10 slot: Schindler
+ * vs Requiem. A Good-only flip restacks on Manchester
+ * (already Good 0 opposite Room). Move the higher
+ * remaining Fun title into the unused Fun-plus-Good
+ * corner: Schindler grows toward Fun 10 / Good 0 so
+ * it sits left of 12 Years and above Requiem. Fun
+ * 9-10 leftover pairs move the lower remaining title
+ * toward Fun 0 / opposite Good. 12 Years Fun 10 still
+ * meets Room until Room matches that Fun next.
+ * Overlay copies match at ghost-label zoom.
+ */
+function funGutterLeftoverPairQuadrantStagger(
+  groups: PositionGroup[],
+  claimedGood: Map<string, 'good-10' | 'good-0'>,
+  claimedFun: Map<string, 'fun-10' | 'fun-0'>,
+): {
+  fun: Map<string, 'fun-10' | 'fun-0'>
+  good: Map<string, 'good-10' | 'good-0'>
+} {
+  const fun = new Map<string, 'fun-10' | 'fun-0'>()
+  const good = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isFunGutterUnstacked(group) && !claimedGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    const partners = closeGoodPartners(component)
+    if (
+      component.some(
+        (group) => (partners.get(group.key) ?? []).length === 1,
+      )
+    ) {
+      continue
+    }
+    const bySide = new Map<'left' | 'right', PositionGroup[]>()
+    for (const group of component) {
+      const side = funGutterResolvedGoodSide(group)
+      const list = bySide.get(side)
+      if (list) list.push(group)
+      else bySide.set(side, [group])
+    }
+    for (const [side, list] of bySide) {
+      if (list.length !== INTERIOR_TRIANGLE_SIZE) continue
+      const sidePartners = closeGoodPartners(list)
+      if (
+        list.some(
+          (group) => (sidePartners.get(group.key) ?? []).length !== 2,
+        )
+      ) {
+        continue
+      }
+      const remaining = list.filter((group) => !claimedFun.has(group.key))
+      if (remaining.length !== 2) continue
+      const inNorth = list.every((group) => group.fun <= LABEL_NORTH_FUN)
+      const inSouth = list.every((group) => group.fun >= LABEL_SOUTH_FUN)
+      const oppositeGood: 'good-10' | 'good-0' =
+        side === 'right' ? 'good-0' : 'good-10'
+      if (inNorth) {
+        const higher =
+          remaining[0].fun >= remaining[1].fun ? remaining[0] : remaining[1]
+        fun.set(higher.key, 'fun-10')
+        good.set(higher.key, oppositeGood)
+      } else if (inSouth) {
+        const lower =
+          remaining[0].fun <= remaining[1].fun ? remaining[0] : remaining[1]
+        fun.set(lower.key, 'fun-0')
+        good.set(lower.key, oppositeGood)
+      }
+    }
+  }
+  return { fun, good }
+}
+
+/**
+ * Leftover Fun-gutter Fun stagger still grows into an
+ * interior Fun-plus-Good slot on that same Good side:
+ * 12 Years (0.8 / 9.4, Fun 10) covers Room (1.8 / 8.9,
+ * Fun 0 / Good 10) at dFun 1.0. Flip the interior to
+ * the gutter title's Fun so they grow the same way
+ * instead of toward each other: Room grows toward
+ * Fun 10 above 12 Years. Skip an interior already
+ * on that Fun, skip opposite Good sides (Schindler
+ * Fun 10 / Good 0 vs Room), and skip a flip that
+ * would restack on another interior in the new
+ * Fun-plus-Good slot (Brokeback is Fun 10 / Good
+ * 10 at dFun 1.2). Fun 9-10 leftover Fun 0 titles
+ * flip the interior toward Fun 0. Overlay copies
+ * match at ghost-label zoom.
+ */
+function funGutterLeftoverMeetsInteriorFunStagger(
+  groups: PositionGroup[],
+  leftoverFun: Map<string, 'fun-10' | 'fun-0'>,
+  leftoverGood: Map<string, 'good-10' | 'good-0'>,
+  interiorFun: Map<string, 'fun-10' | 'fun-0'>,
+  interiorGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const gutters = groups.filter(
+    (group) => isFunGutterUnstacked(group) && leftoverFun.has(group.key),
+  )
+  const interiors = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      interiorFun.has(group.key) &&
+      interiorGood.has(group.key),
+  )
+  const pairs: {
+    gutter: PositionGroup
+    interior: PositionGroup
+    dist: number
+    fun: 'fun-10' | 'fun-0'
+  }[] = []
+  for (const gutter of gutters) {
+    const funSide = leftoverFun.get(gutter.key)
+    if (!funSide) continue
+    const gutterSide = leftoverGood.has(gutter.key)
+      ? resolvedGoodSide(gutter, leftoverGood.get(gutter.key))
+      : funGutterResolvedGoodSide(gutter)
+    for (const interior of interiors) {
+      const interiorFunSide = interiorFun.get(interior.key)
+      const interiorGoodSide = interiorGood.get(interior.key)
+      if (!interiorFunSide || !interiorGoodSide) continue
+      if (interiorFunSide === funSide) continue
+      if (
+        resolvedGoodSide(interior, interiorGoodSide) !== gutterSide
+      ) {
+        continue
+      }
+      const dFun = Math.abs(gutter.fun - interior.fun)
+      const dGood = Math.abs(gutter.good - interior.good)
+      if (
+        dFun > INTERIOR_SAME_GOOD_FUN_GAP ||
+        dGood > INTERIOR_CLOSE_GOOD_GAP
+      ) {
+        continue
+      }
+      pairs.push({
+        gutter,
+        interior,
+        dist: Math.hypot(dFun, dGood),
+        fun: funSide,
+      })
+    }
+  }
+  pairs.sort((a, b) => a.dist - b.dist)
+  const usedGutter = new Set<string>()
+  const usedInterior = new Set<string>()
+  for (const pair of pairs) {
+    if (
+      usedGutter.has(pair.gutter.key) ||
+      usedInterior.has(pair.interior.key) ||
+      stagger.has(pair.interior.key)
+    ) {
+      continue
+    }
+    if (
+      interiorFunFlipRestacks(
+        pair.interior,
+        pair.fun,
+        interiorFun,
+        interiorGood,
+        groups,
+      )
+    ) {
+      continue
+    }
+    stagger.set(pair.interior.key, pair.fun)
+    usedGutter.add(pair.gutter.key)
+    usedInterior.add(pair.interior.key)
+  }
+  return stagger
+}
+
+function interiorFunFlipRestacks(
+  interior: PositionGroup,
+  newFun: 'fun-10' | 'fun-0',
+  interiorFun: Map<string, 'fun-10' | 'fun-0'>,
+  interiorGood: Map<string, 'good-10' | 'good-0'>,
+  groups: PositionGroup[],
+): boolean {
+  const wantGood = interiorGood.get(interior.key)
+  if (!wantGood) return false
+  for (const other of groups) {
+    if (other.key === interior.key) continue
+    if (!isInteriorUnstacked(other)) continue
+    if (interiorFun.get(other.key) !== newFun) continue
+    if (interiorGood.get(other.key) !== wantGood) continue
+    const dFun = Math.abs(interior.fun - other.fun)
+    const dGood = Math.abs(interior.good - other.good)
+    if (
+      dFun > INTERIOR_SAME_GOOD_FUN_GAP ||
+      dGood > INTERIOR_CLOSE_GOOD_GAP
+    ) {
+      continue
+    }
+    return true
+  }
+  return false
+}
+
+function computeMoviePointStagger(groups: PositionGroup[]) {
+  const verticalStagger = interiorSameGoodVerticalStagger(groups)
+  const neighborStagger = interiorCloseGoodHorizontalStagger(
+    groups,
+    verticalStagger,
+  )
+  const isolatedStagger = interiorIsolatedCloseGoodHorizontalStagger(
+    groups,
+    verticalStagger,
+    neighborStagger,
+  )
+  const chainStagger = interiorCloseGoodChainHorizontalStagger(
+    groups,
+    verticalStagger,
+    new Map([...neighborStagger, ...isolatedStagger]),
+  )
+  const horizontalStagger = new Map([
+    ...neighborStagger,
+    ...isolatedStagger,
+    ...chainStagger,
+  ])
+  const sameSideVertical = interiorSameSideCloseGoodVerticalStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+  )
+  const cliqueStagger = interiorCloseGoodCliqueQuadrantStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+    sameSideVertical,
+  )
+  const triangleStagger = interiorCloseGoodTriangleStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+    sameSideVertical,
+    cliqueStagger.fun,
+    cliqueStagger.good,
+  )
+  const meshStagger = interiorCloseGoodMeshHubStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+    sameSideVertical,
+    cliqueStagger.fun,
+    cliqueStagger.good,
+    triangleStagger.fun,
+    triangleStagger.good,
+  )
+  const leftoverMeshStagger = interiorCloseGoodLeftoverMeshTriangleStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+    sameSideVertical,
+    cliqueStagger.fun,
+    cliqueStagger.good,
+    triangleStagger.fun,
+    triangleStagger.good,
+    meshStagger.fun,
+    meshStagger.good,
+  )
+  const leftoverPairVertical = interiorCloseGoodLeftoverPairVerticalStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+    sameSideVertical,
+    cliqueStagger.fun,
+    cliqueStagger.good,
+    triangleStagger.fun,
+    triangleStagger.good,
+    meshStagger.fun,
+    meshStagger.good,
+    leftoverMeshStagger.fun,
+    leftoverMeshStagger.good,
+  )
+  const interiorFun = new Map([
+    ...verticalStagger,
+    ...sameSideVertical,
+    ...cliqueStagger.fun,
+    ...triangleStagger.fun,
+    ...meshStagger.fun,
+    ...leftoverMeshStagger.fun,
+    ...leftoverPairVertical,
+  ])
+  const interiorGood = new Map([
+    ...horizontalStagger,
+    ...cliqueStagger.good,
+    ...triangleStagger.good,
+    ...meshStagger.good,
+    ...leftoverMeshStagger.good,
+  ])
+  const gutterNeighborFun = interiorGutterNeighborFunStagger(
+    groups,
+    interiorFun,
+    interiorGood,
+  )
+  const funGutterNeighborGood = interiorFunGutterNeighborGoodStagger(
+    groups,
+    interiorFun,
+    interiorGood,
+  )
+  const claimedGood = new Map([...interiorGood, ...funGutterNeighborGood])
+  const funGutterIsolatedGood = funGutterIsolatedCloseGoodHorizontalStagger(
+    groups,
+    claimedGood,
+  )
+  const funGutterChainGood = funGutterCloseGoodChainHorizontalStagger(
+    groups,
+    new Map([...claimedGood, ...funGutterIsolatedGood]),
+  )
+  const funGutterClaimedGood = new Map([
+    ...claimedGood,
+    ...funGutterIsolatedGood,
+    ...funGutterChainGood,
+  ])
+  const funGutterLeftoverFun = funGutterLeftoverTriangleFunStagger(
+    groups,
+    funGutterClaimedGood,
+  )
+  const funGutterLeftoverPair = funGutterLeftoverPairQuadrantStagger(
+    groups,
+    funGutterClaimedGood,
+    funGutterLeftoverFun,
+  )
+  const leftoverGutterFun = new Map([
+    ...funGutterLeftoverFun,
+    ...funGutterLeftoverPair.fun,
+  ])
+  const leftoverInteriorFun = funGutterLeftoverMeetsInteriorFunStagger(
+    groups,
+    leftoverGutterFun,
+    funGutterLeftoverPair.good,
+    interiorFun,
+    interiorGood,
+  )
+  const funStagger = new Map([
+    ...interiorFun,
+    ...gutterNeighborFun,
+    ...leftoverGutterFun,
+    ...leftoverInteriorFun,
+  ])
+  const goodStagger = new Map([
+    ...interiorGood,
+    ...funGutterNeighborGood,
+    ...funGutterIsolatedGood,
+    ...funGutterChainGood,
+    ...funGutterLeftoverPair.good,
+  ])
+  return { funStagger, goodStagger }
+}
+
 export function MoviePoints({
   groups,
   draggingIds,
@@ -28,6 +1720,8 @@ export function MoviePoints({
   onHighlight: (id: string) => void
   onClearHover: () => void
 }) {
+  const { funStagger, goodStagger } = computeMoviePointStagger(groups)
+
   return (
     <>
       {groups.map((group) => {
@@ -40,6 +1734,20 @@ export function MoviePoints({
         const isGridHighlighted = hover?.from === 'list' && ids.includes(hover.id)
         const isGridSelected = selectedMovieId !== null && ids.includes(selectedMovieId)
         const onlyItem = group.items.length === 1 ? group.items[0] : null
+        const labelOnRight = group.good < LABEL_FLIP_GOOD
+        const labelBelow = group.fun >= LABEL_SOUTH_FUN
+        const labelAbove = !labelBelow && group.fun <= LABEL_NORTH_FUN
+        const staggerTowardFun10 = funStagger.get(group.key) === 'fun-10'
+        const staggerTowardFun0 = funStagger.get(group.key) === 'fun-0'
+        const staggerTowardGood10 = goodStagger.get(group.key) === 'good-10'
+        const staggerTowardGood0 = goodStagger.get(group.key) === 'good-0'
+        const gutterIntoGood10 =
+          group.good >= LABEL_GUTTER_GOOD_HIGH && !staggerTowardGood0
+        const gutterIntoGood0 =
+          !gutterIntoGood10 &&
+          group.good <= LABEL_GUTTER_GOOD_LOW &&
+          !staggerTowardGood10
+        const countOnLeft = group.good >= COUNT_WEST_GOOD
 
         return (
           <div
@@ -49,13 +1757,41 @@ export function MoviePoints({
               isDragging ? 'dragging' : '',
               isGridSelected ? 'movie-point--selected' : '',
               isGridHighlighted ? 'movie-point--highlighted' : '',
+              group.items.length > 1 ? 'movie-point--stacked' : '',
+              labelOnRight ? 'movie-point--label-end' : '',
+              labelBelow ? 'movie-point--label-south' : '',
+              labelAbove ? 'movie-point--label-north' : '',
+              staggerTowardFun10 ? 'movie-point--stagger-fun-10' : '',
+              staggerTowardFun0 ? 'movie-point--stagger-fun-0' : '',
+              staggerTowardGood10 ? 'movie-point--stagger-good-10' : '',
+              staggerTowardGood0 ? 'movie-point--stagger-good-0' : '',
+              gutterIntoGood10 ? 'movie-point--gutter-good-10' : '',
+              gutterIntoGood0 ? 'movie-point--gutter-good-0' : '',
+              countOnLeft ? 'movie-point--count-west' : '',
             ]
               .filter(Boolean)
               .join(' ')}
             style={{ left: `${left}%`, top: `${top}%` }}
             onPointerDown={onGroupPointerDown(group.key, ids, group.items[0].id)}
-            onMouseEnter={onlyItem ? () => onHighlight(onlyItem.id) : undefined}
-            onMouseLeave={onlyItem ? onClearHover : undefined}
+            onPointerEnter={
+              onlyItem
+                ? (event) => {
+                    // iOS synthesizes mouseenter after a tap and never
+                    // mouseleave, which would leave a title+score pill on
+                    // the fitted grid after deselect. Hover-link is mouse.
+                    if (event.pointerType === 'touch') return
+                    onHighlight(onlyItem.id)
+                  }
+                : undefined
+            }
+            onPointerLeave={
+              onlyItem
+                ? (event) => {
+                    if (event.pointerType === 'touch') return
+                    onClearHover()
+                  }
+                : undefined
+            }
             data-group-key={group.key}
           >
             <span
@@ -81,14 +1817,29 @@ export function MoviePoints({
                     className="movie-label-title"
                     data-movie-id={item.id}
                     onPointerDownCapture={onLabelPointerDown(item.id)}
-                    onMouseEnter={() => onHighlight(item.id)}
-                    onMouseLeave={onClearHover}
+                    onPointerEnter={(event) => {
+                      if (event.pointerType === 'touch') return
+                      onHighlight(item.id)
+                    }}
+                    onPointerLeave={(event) => {
+                      if (event.pointerType === 'touch') return
+                      onClearHover()
+                    }}
                   >
                     {item.title}
                   </span>
                 </span>
               ))}
+              <span className="movie-label-score">
+                <span>Good {formatScore(group.good)}</span>
+                <span>Fun {formatScore(group.fun)}</span>
+              </span>
             </span>
+            {group.items.length > 1 ? (
+              <span className="movie-point-count" aria-hidden="true">
+                {group.items.length}
+              </span>
+            ) : null}
             <span className="movie-point-score" aria-hidden="true">
               Good {formatScore(group.good)} · Fun {formatScore(group.fun)}
             </span>
