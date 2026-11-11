@@ -667,20 +667,41 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         return slotPoint(touch.clientX, touch.clientY)
       }
 
-      function beginPinchFromTouches(touches: TouchList) {
-        if (touches.length < 2) return
-        beginPinchFromPoints(touchPoint(touches[0]), touchPoint(touches[1]))
+      // TouchEvent.touches is every contact on the screen, including a
+      // thumb on the sidebar. Pinch/pan/double-tap must only count fingers
+      // that started on the plot card (slot, axes, padding). Otherwise a
+      // list-scroll plus a grid tap is a two-finger pinch, and a 2→1 lift
+      // while the other thumb is on the list pinches against that thumb
+      // instead of handing off to pan.
+      function isPlotTouch(touch: Touch) {
+        const target = touch.target
+        return target instanceof Node && gestureRoot.contains(target)
+      }
+
+      function plotTouches(list: TouchList) {
+        const fingers: Touch[] = []
+        for (let i = 0; i < list.length; i += 1) {
+          const touch = list[i]
+          if (isPlotTouch(touch)) fingers.push(touch)
+        }
+        return fingers
+      }
+
+      function beginPinchFromTouches(fingers: Touch[]) {
+        if (fingers.length < 2) return
+        beginPinchFromPoints(touchPoint(fingers[0]), touchPoint(fingers[1]))
       }
 
       function onTouchStart(e: TouchEvent) {
-        if (e.touches.length >= 2) {
+        const fingers = plotTouches(e.touches)
+        if (fingers.length >= 2) {
           e.preventDefault()
-          beginPinchFromTouches(e.touches)
+          beginPinchFromTouches(fingers)
           return
         }
 
-        if (e.touches.length !== 1) return
-        const touch = e.touches[0]
+        if (fingers.length !== 1) return
+        const touch = fingers[0]
         pinchOccurredRef.current = false
         // A follow-up finger may be the second half of a double-tap or a
         // pan. Cancel the pending empty-tap deselect without clearing
@@ -694,14 +715,15 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       function onTouchMove(e: TouchEvent) {
-        if (pinchRef.current && e.touches.length >= 2) {
+        const fingers = plotTouches(e.touches)
+        if (pinchRef.current && fingers.length >= 2) {
           e.preventDefault()
-          applyPinch(touchPoint(e.touches[0]), touchPoint(e.touches[1]))
+          applyPinch(touchPoint(fingers[0]), touchPoint(fingers[1]))
           return
         }
 
-        if (e.touches.length !== 1) return
-        const touch = e.touches[0]
+        if (fingers.length !== 1) return
+        const touch = fingers[0]
         if (panRef.current) {
           e.preventDefault()
           movePan(touch.identifier, touch.clientX, touch.clientY)
@@ -723,21 +745,22 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       function onTouchEnd(e: TouchEvent) {
-        if (e.touches.length >= 2) {
-          beginPinchFromTouches(e.touches)
+        const fingers = plotTouches(e.touches)
+        if (fingers.length >= 2) {
+          beginPinchFromTouches(fingers)
           return
         }
-        if (e.touches.length === 1) {
-          // 2→1 must keep the remaining finger as a pan. Ending the whole
-          // gesture here left pinch-then-slide dead until a lift and retouch,
-          // so a zoomed iPhone grid could not be dragged with the finger
-          // that was still down.
+        if (fingers.length === 1) {
+          // 2→1 must keep the remaining plot finger as a pan. Count only
+          // plot-card contacts: e.touches also includes a sidebar thumb,
+          // which would restart pinch against that off-grid finger or skip
+          // this handoff entirely (length stays >= 2).
           pinchRef.current = null
-          const touch = e.touches[0]
+          const touch = fingers[0]
           beginPan(touch.identifier, touch.clientX, touch.clientY)
           return
         }
-        const ended = e.changedTouches[0]
+        const ended = plotTouches(e.changedTouches)[0] ?? e.changedTouches[0]
         if (ended) {
           if (maybeDoubleTap(ended.clientX, ended.clientY)) {
             e.preventDefault()
