@@ -80,8 +80,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         'grid-zoom-slot--zoomed',
         scale >= LABELS_VISIBLE_SCALE,
       )
-      // Grid lines live on this unscaled overlay so 1px strokes stay 1px
-      // while the canvas pinch-scales. Inverse-scaling a 1px background on
+      // Mobile paints unit lines on this unscaled overlay so 1px strokes
+      // stay 1px while pinch scales the canvas. Desktop hides the overlay
+      // and paints the same lines on .grid::before so wheel-zoom enlarges
+      // them with titles and ticks. Inverse-scaling a 1px background on
       // .grid::before rounded away on WebKit once zoom passed ~1.4x.
       const overlay = overlayRef.current
       if (overlay && canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {

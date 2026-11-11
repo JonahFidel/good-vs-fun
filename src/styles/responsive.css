@@ -541,10 +541,13 @@
     border-bottom: calc(4px * var(--plot-inverse-scale, 1)) solid #111827;
     border-right: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
     border-top: calc(2px * var(--plot-inverse-scale, 1)) solid #111827;
+    /* Overlay owns unit lines so pinch cannot thicken 1px strokes. */
+    background-image: none;
   }
 
   .deck-page-layout .grid-line-overlay,
   .deck-page-layout .grid-wrapper--example .grid-line-overlay {
+    display: block;
     opacity: 1;
     --grid-line-unit: #94a3b8;
   }

@@ -58,11 +58,13 @@
 }
 
 /*
-  Unit grid lines live on the unscaled slot, sized to the 0-10 region in
-  screen pixels. 1px strokes stay 1px while pinch scales the canvas. Painting
-  them on .grid::before made 1px local lines 8px thick at max zoom.
+  Mobile-only unit lines. Hidden on desktop so wheel-zoom can enlarge the
+  1px strokes painted on .grid::before. Narrow/coarse screens re-enable this
+  overlay so pinch keeps 1px screen thickness (canvas-local 1px lines round
+  away on WebKit past ~1.4x, and 1px local becomes 8px at max zoom).
 */
 .grid-line-overlay {
+  display: none;
   position: absolute;
   top: 0;
   left: 0;
@@ -108,6 +110,15 @@
   border-bottom: 4px solid #111827;
   border-right: 2px solid #111827;
   border-top: 2px solid #111827;
+  /*
+    Desktop wheel-zoom enlarges unit lines with the canvas (Figma-style).
+    Mobile clears this background and paints the same lines on the unscaled
+    overlay so 1px strokes stay 1px.
+  */
+  background-image: linear-gradient(#e5e7eb 1px, transparent 1px),
+    linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+  background-size: 10% 10%;
+  background-position: 0 0;
   pointer-events: none;
   z-index: 0;
 }
