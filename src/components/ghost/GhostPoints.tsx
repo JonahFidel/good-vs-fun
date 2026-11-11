@@ -47,9 +47,14 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * old / One of Them Days) then take a 2-vs-1 split of those
  * same slots. Size-5+ meshes that fail both guards (Jonah's
  * 2025 9-mesh around Knives Out 3) then peel the hub so a
- * leftover unique-quadrant 4 can occupy those slots. Skip
- * coincident north/south so those names do not restack on
- * the primary. Reuse of label-start would also move every
+ * leftover unique-quadrant 4 can occupy those slots.
+ * Leftover mesh of that peel then packs a triangle: overlay
+ * chain stagger leaves Some Like It Hot / John Wick /
+ * Inside the Mind of a Dog in the cluster, so the leftover
+ * is size-8 rather than the primary's size-5, but peeling
+ * Knives Out 3 still frees The Vvitch / The Killer.
+ * Skip coincident north/south so those names do not restack
+ * on the primary. Reuse of label-start would also move every
  * left-side overlay.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
@@ -57,6 +62,11 @@ const INTERIOR_CLOSE_GOOD_GAP = 1
 const INTERIOR_CLIQUE_SIZE = 4
 /** A triangle occupies three of those slots as a 2-vs-1 split. */
 const INTERIOR_TRIANGLE_SIZE = 3
+/**
+ * Leftover mesh after a unique-quadrant-4 peel is at least a
+ * size-5 bowtie. Overlay leftovers can be larger.
+ */
+const INTERIOR_LEFTOVER_MESH_SIZE = 5
 
 function isInteriorUnstacked(group: PositionGroup): boolean {
   return (
@@ -356,7 +366,8 @@ function closeGoodConnectedComponents(
  * is not unique so a line-shaped 4 does not stack two titles
  * in one slot. Size-3 triangles get a 2-vs-1 split next;
  * size-5+ meshes peel a hub after that so a leftover
- * unique-quadrant 4 can still pack. Coincident north/south
+ * unique-quadrant 4 can still pack. Leftover mesh of that
+ * peel packs a triangle after that. Coincident north/south
  * stay put at class apply.
  */
 function uniqueQuadrantAssignment(
@@ -446,9 +457,111 @@ function pickTowardShared<T>(
  * its centroid slot, keep the pair member that already sits
  * toward the shared slot, and move the other into the unused
  * adjacent quadrant along the pair's larger separation (Fun
- * for those two Naked Guns). Coincident north/south stay put
- * at class apply. Jonah's 2025 9-mesh peels next.
+ * for those two Naked Guns). Leftover mesh of the 9-mesh peel
+ * reuses this next so Knives Out 3 / The Vvitch / The Killer
+ * can occupy three slots. Coincident north/south stay put at
+ * class apply.
  */
+function triangleAssignment(
+  component: PositionGroup[],
+): {
+  key: string
+  fun: 'fun-10' | 'fun-0'
+  good: 'good-10' | 'good-0'
+}[] | null {
+  if (component.length !== INTERIOR_TRIANGLE_SIZE) return null
+  const centroidFun =
+    component.reduce((sum, group) => sum + group.fun, 0) / component.length
+  const centroidGood =
+    component.reduce((sum, group) => sum + group.good, 0) / component.length
+  const assigned: {
+    group: PositionGroup
+    fun: 'fun-10' | 'fun-0'
+    good: 'good-10' | 'good-0'
+  }[] = []
+  const byQuadrant = new Map<
+    string,
+    {
+      group: PositionGroup
+      fun: 'fun-10' | 'fun-0'
+      good: 'good-10' | 'good-0'
+    }[]
+  >()
+  for (const group of component) {
+    const funSide: 'fun-10' | 'fun-0' =
+      group.fun >= centroidFun ? 'fun-10' : 'fun-0'
+    const goodSide: 'good-10' | 'good-0' =
+      group.good >= centroidGood ? 'good-10' : 'good-0'
+    const entry = { group, fun: funSide, good: goodSide }
+    assigned.push(entry)
+    const key = `${funSide}:${goodSide}`
+    const list = byQuadrant.get(key)
+    if (list) list.push(entry)
+    else byQuadrant.set(key, [entry])
+  }
+  if (byQuadrant.size === INTERIOR_TRIANGLE_SIZE) {
+    return assigned.map((entry) => ({
+      key: entry.group.key,
+      fun: entry.fun,
+      good: entry.good,
+    }))
+  }
+  if (byQuadrant.size !== 2) return null
+  const pair = [...byQuadrant.values()].find((list) => list.length === 2)
+  const singletonList = [...byQuadrant.values()].find(
+    (list) => list.length === 1,
+  )
+  if (!pair || !singletonList) return null
+  const singleton = singletonList[0]
+  const [first, second] = pair
+  const sharedFun = first.fun
+  const sharedGood = first.good
+  const uniqueKey = `${singleton.fun}:${singleton.good}`
+  const funFlip = {
+    fun: oppositeFunSide(sharedFun),
+    good: sharedGood,
+  }
+  const goodFlip = {
+    fun: sharedFun,
+    good: oppositeGoodSide(sharedGood),
+  }
+  const funFlipKey = `${funFlip.fun}:${funFlip.good}`
+  const dFun = Math.abs(first.group.fun - second.group.fun)
+  const dGood = Math.abs(first.group.good - second.group.good)
+  let splitOnFun = dFun >= dGood
+  if (splitOnFun && funFlipKey === uniqueKey) splitOnFun = false
+  if (!splitOnFun && `${goodFlip.fun}:${goodFlip.good}` === uniqueKey) {
+    splitOnFun = true
+  }
+  const keep = pickTowardShared(
+    first,
+    second,
+    splitOnFun
+      ? (entry) => entry.group.fun
+      : (entry) => entry.group.good,
+    splitOnFun ? sharedFun === 'fun-10' : sharedGood === 'good-10',
+  )
+  const move = keep === first ? second : first
+  const moveSlot = splitOnFun ? funFlip : goodFlip
+  return [
+    {
+      key: singleton.group.key,
+      fun: singleton.fun,
+      good: singleton.good,
+    },
+    {
+      key: keep.group.key,
+      fun: sharedFun,
+      good: sharedGood,
+    },
+    {
+      key: move.group.key,
+      fun: moveSlot.fun,
+      good: moveSlot.good,
+    },
+  ]
+}
+
 function interiorCloseGoodTriangleStagger(
   groups: PositionGroup[],
   verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
@@ -472,87 +585,12 @@ function interiorCloseGoodTriangleStagger(
       !cliqueGood.has(group.key),
   )
   for (const component of closeGoodConnectedComponents(candidates)) {
-    if (component.length !== INTERIOR_TRIANGLE_SIZE) continue
-    const centroidFun =
-      component.reduce((sum, group) => sum + group.fun, 0) / component.length
-    const centroidGood =
-      component.reduce((sum, group) => sum + group.good, 0) / component.length
-    const assigned: {
-      group: PositionGroup
-      fun: 'fun-10' | 'fun-0'
-      good: 'good-10' | 'good-0'
-    }[] = []
-    const byQuadrant = new Map<
-      string,
-      {
-        group: PositionGroup
-        fun: 'fun-10' | 'fun-0'
-        good: 'good-10' | 'good-0'
-      }[]
-    >()
-    for (const group of component) {
-      const funSide: 'fun-10' | 'fun-0' =
-        group.fun >= centroidFun ? 'fun-10' : 'fun-0'
-      const goodSide: 'good-10' | 'good-0' =
-        group.good >= centroidGood ? 'good-10' : 'good-0'
-      const entry = { group, fun: funSide, good: goodSide }
-      assigned.push(entry)
-      const key = `${funSide}:${goodSide}`
-      const list = byQuadrant.get(key)
-      if (list) list.push(entry)
-      else byQuadrant.set(key, [entry])
+    const assigned = triangleAssignment(component)
+    if (!assigned) continue
+    for (const entry of assigned) {
+      fun.set(entry.key, entry.fun)
+      good.set(entry.key, entry.good)
     }
-    if (byQuadrant.size === INTERIOR_TRIANGLE_SIZE) {
-      for (const entry of assigned) {
-        fun.set(entry.group.key, entry.fun)
-        good.set(entry.group.key, entry.good)
-      }
-      continue
-    }
-    if (byQuadrant.size !== 2) continue
-    const pair = [...byQuadrant.values()].find((list) => list.length === 2)
-    const singletonList = [...byQuadrant.values()].find(
-      (list) => list.length === 1,
-    )
-    if (!pair || !singletonList) continue
-    const singleton = singletonList[0]
-    fun.set(singleton.group.key, singleton.fun)
-    good.set(singleton.group.key, singleton.good)
-
-    const [first, second] = pair
-    const sharedFun = first.fun
-    const sharedGood = first.good
-    const uniqueKey = `${singleton.fun}:${singleton.good}`
-    const funFlip = {
-      fun: oppositeFunSide(sharedFun),
-      good: sharedGood,
-    }
-    const goodFlip = {
-      fun: sharedFun,
-      good: oppositeGoodSide(sharedGood),
-    }
-    const funFlipKey = `${funFlip.fun}:${funFlip.good}`
-    const dFun = Math.abs(first.group.fun - second.group.fun)
-    const dGood = Math.abs(first.group.good - second.group.good)
-    let splitOnFun = dFun >= dGood
-    if (splitOnFun && funFlipKey === uniqueKey) splitOnFun = false
-    if (!splitOnFun && `${goodFlip.fun}:${goodFlip.good}` === uniqueKey) {
-      splitOnFun = true
-    }
-    const keep = pickTowardShared(
-      first,
-      second,
-      splitOnFun
-        ? (entry) => entry.group.fun
-        : (entry) => entry.group.good,
-      splitOnFun ? sharedFun === 'fun-10' : sharedGood === 'good-10',
-    )
-    const move = keep === first ? second : first
-    const moveSlot = splitOnFun ? funFlip : goodFlip
-    fun.set(keep.group.key, sharedFun)
-    good.set(keep.group.key, sharedGood)
-    fun.set(move.group.key, moveSlot.fun)
-    good.set(move.group.key, moveSlot.good)
   }
   return { fun, good }
 }
@@ -565,9 +603,9 @@ function interiorCloseGoodTriangleStagger(
  * quadrant 4 (Knives Out 3) so Sinners, Clerks, One
  * Battle After Another, and Mickey 17 occupy opposite
  * Fun-plus-Good corners of that subcluster. Size-2
- * leftovers of that peel (Challengers / Logan Lucky,
- * The Vvitch / The Killer) stay put so this does not
+ * leftovers of that peel stay put so this does not
  * restack Challengers on a leftover isolated-pair flip.
+ * Leftover mesh of that peel packs a triangle next.
  * Coincident north/south stay put at class apply.
  */
 function interiorCloseGoodMeshHubStagger(
@@ -617,6 +655,117 @@ function interiorCloseGoodMeshHubStagger(
         }
         packed = true
       }
+    }
+  }
+  return { fun, good }
+}
+
+/**
+ * Isolated Good flip of Challengers vs Logan Lucky would
+ * restack Challengers on an already-staggered Good-10 title
+ * when that pair is a leftover size-2. Skip a leftover pair
+ * when that flip lands on the same Good side as a nearby
+ * already-staggered title.
+ */
+function isolatedCloseGoodFlipRestacks(
+  pair: PositionGroup[],
+  assignedGood: Map<string, 'good-10' | 'good-0'>,
+  groups: PositionGroup[],
+): boolean {
+  if (pair.length !== 2) return false
+  const flip = closeGoodAwayFromPartner(pair[0], pair[1])
+  if (!flip) return false
+  const flipped = pair[0].key === flip.key ? pair[0] : pair[1]
+  for (const other of groups) {
+    if (other.key === pair[0].key || other.key === pair[1].key) continue
+    if (assignedGood.get(other.key) !== flip.side) continue
+    const dFun = Math.abs(flipped.fun - other.fun)
+    const dGood = Math.abs(flipped.good - other.good)
+    if (
+      dGood === 0 ||
+      dGood > INTERIOR_CLOSE_GOOD_GAP ||
+      dFun > INTERIOR_SAME_GOOD_FUN_GAP
+    ) {
+      continue
+    }
+    return true
+  }
+  return false
+}
+
+/**
+ * Matches MoviePoints: leftover mesh after a unique-quadrant-4
+ * hub peel fails unique-4 and triangle guards. Overlay chain
+ * stagger does not claim Some Like It Hot / John Wick /
+ * Inside the Mind of a Dog, so the leftover is size-8 rather
+ * than the primary's size-5. Peel the hub (Knives Out 3) and
+ * pack it with the size-2 whose isolated Good flip would not
+ * restack (The Vvitch / The Killer) so those three occupy
+ * triangle slots. The remaining size-5 Challengers cluster
+ * stays put. Allow leftover meshes larger than 5 so this is
+ * not a no-op on overlay. Coincident north/south stay put at
+ * class apply.
+ */
+function interiorCloseGoodLeftoverMeshTriangleStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+  sameSideVertical: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueFun: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueGood: Map<string, 'good-10' | 'good-0'>,
+  triangleFun: Map<string, 'fun-10' | 'fun-0'>,
+  triangleGood: Map<string, 'good-10' | 'good-0'>,
+  meshFun: Map<string, 'fun-10' | 'fun-0'>,
+  meshGood: Map<string, 'good-10' | 'good-0'>,
+): {
+  fun: Map<string, 'fun-10' | 'fun-0'>
+  good: Map<string, 'good-10' | 'good-0'>
+} {
+  const fun = new Map<string, 'fun-10' | 'fun-0'>()
+  const good = new Map<string, 'good-10' | 'good-0'>()
+  const assignedGood = new Map([
+    ...horizontalStagger,
+    ...cliqueGood,
+    ...triangleGood,
+    ...meshGood,
+  ])
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !horizontalStagger.has(group.key) &&
+      !sameSideVertical.has(group.key) &&
+      !cliqueFun.has(group.key) &&
+      !cliqueGood.has(group.key) &&
+      !triangleFun.has(group.key) &&
+      !triangleGood.has(group.key) &&
+      !meshFun.has(group.key) &&
+      !meshGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    if (component.length < INTERIOR_LEFTOVER_MESH_SIZE) continue
+    const partners = closeGoodPartners(component)
+    const hub = [...component].sort(
+      (a, b) =>
+        (partners.get(b.key)?.length ?? 0) -
+        (partners.get(a.key)?.length ?? 0),
+    )[0]
+    if (!hub) continue
+    const remaining = component.filter((group) => group.key !== hub.key)
+    let packed = false
+    for (const piece of closeGoodConnectedComponents(remaining)) {
+      if (packed) break
+      if (piece.length !== 2) continue
+      if (isolatedCloseGoodFlipRestacks(piece, assignedGood, groups)) {
+        continue
+      }
+      const assigned = triangleAssignment([hub, ...piece])
+      if (!assigned) continue
+      for (const entry of assigned) {
+        fun.set(entry.key, entry.fun)
+        good.set(entry.key, entry.good)
+      }
+      packed = true
     }
   }
   return { fun, good }
@@ -750,18 +899,32 @@ export function GhostPoints({
     triangleStagger.fun,
     triangleStagger.good,
   )
+  const leftoverMeshStagger = interiorCloseGoodLeftoverMeshTriangleStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+    sameSideVertical,
+    cliqueStagger.fun,
+    cliqueStagger.good,
+    triangleStagger.fun,
+    triangleStagger.good,
+    meshStagger.fun,
+    meshStagger.good,
+  )
   const funStagger = new Map([
     ...verticalStagger,
     ...sameSideVertical,
     ...cliqueStagger.fun,
     ...triangleStagger.fun,
     ...meshStagger.fun,
+    ...leftoverMeshStagger.fun,
   ])
   const goodStagger = new Map([
     ...horizontalStagger,
     ...cliqueStagger.good,
     ...triangleStagger.good,
     ...meshStagger.good,
+    ...leftoverMeshStagger.good,
   ])
   return (
     <>
@@ -811,12 +974,14 @@ export function GhostPoints({
         // Remaining 4-cliques (Brokeback / Marriage Story / Room /
         // Nomadland) assign both Fun and Good slots at once,
         // size-3 triangles (Naked Gun / Naked Gun old / One of Them
-        // Days) reuse three of those slots as a 2-vs-1 split, and
+        // Days) reuse three of those slots as a 2-vs-1 split,
         // size-5+ mesh hub peels (Sinners / Clerks / One Battle
         // After Another / Mickey 17 around Knives Out 3) reuse a
-        // leftover unique-quadrant 4. Skip coincident north/south
-        // so those names do not restack on the primary that
-        // already occupies a slot next to the marker.
+        // leftover unique-quadrant 4, and leftover mesh of that
+        // peel (Knives Out 3 / The Vvitch / The Killer) reuse
+        // three of those slots as a triangle. Skip coincident
+        // north/south so those names do not restack on the
+        // primary that already occupies a slot next to the marker.
         const staggerTowardFun10 =
           !hasVerticalSlot && funStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 =
