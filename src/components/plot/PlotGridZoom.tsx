@@ -68,6 +68,11 @@ const INERTIA_SAMPLE_MAX_DT_MS = 64
 const INERTIA_MIN_VELOCITY = 0.05
 /** Exponential friction time constant; ~260ms feels like Maps, not ice. */
 const INERTIA_FRICTION_MS = 260
+/**
+ * Faster decay once a flicked pan is past the covering edge, so the
+ * rubber-band overshoot stays small before the ease-back.
+ */
+const INERTIA_OVERSHOOT_FRICTION_MS = 90
 /** Ease-out duration for one-handed double-tap zoom in/out. */
 const DOUBLE_TAP_ANIM_MS = 280
 
@@ -174,8 +179,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // but letterboxed, so leftover axes keep-visible instead of
         // left-aligning 2x-toward-Fun=0. A mouse always keep-visible.
         // rubberBand lets a live pinch overshoot 1x / 8x and a zoomed pan
-        // pull past the covering edge; clamp must not re-floor scale or
-        // covering-pin pan or the overshoot never paints.
+        // or flicked coast pull past the covering edge; clamp must not
+        // re-floor scale or covering-pin pan or the overshoot never paints.
         stateRef.current = clampToSlot(
           stateRef.current,
           { width: slot.offsetWidth, height: slot.offsetHeight },
@@ -387,11 +392,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // start on a movie: moving points is mouse-only, and the ~44px hit
     // areas would otherwise eat most of a zoomed one-finger pan. A flicked
     // one-finger pan coasts with friction after lift so the zoomed grid
-    // does not stop dead; fit zoom never pans, so the default 0-10 square
-    // stays locked. Double-tap eases to 2.2x or back to fit instead of
-    // jumping, matching that coast. Pinch-out past 1x and zoomed pan past
-    // the covering edge rubber-band, then ease back on lift, so getting
-    // home or hitting an edge is not a wall.
+    // does not stop dead; that coast rubber-bands past the covering edge
+    // and eases back, matching a finger-down pull. Fit zoom never pans, so
+    // the default 0-10 square stays locked. Double-tap eases to 2.2x or
+    // back to fit instead of jumping, matching that coast. Pinch-out past
+    // 1x and zoomed pan past the covering edge rubber-band, then ease back
+    // on lift, so getting home or hitting an edge is not a wall.
     // Mouse pan, like wheel and Touch Events, sits on the
     // plot card so a drag that starts on a Fun/Good axis still pans the
     // zoomed grid. Safari GestureEvents listen on window capture because
@@ -483,32 +489,65 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
         stopInertia()
+        const coarse = isCoarsePointer()
+        // Live pan recomputes unconstrained offset from panRef origin each
+        // move. Inertia has no finger, so keep unconstrained tx/ty here:
+        // applyTransform(rubberBand) writes the compressed overshoot back
+        // into stateRef, and adding velocity onto that would shrink the
+        // overshoot every frame.
+        let ux = stateRef.current.tx
+        let uy = stateRef.current.ty
         let last = performance.now()
         const tick = (now: number) => {
           inertiaRafRef.current = null
           const dt = Math.min(32, now - last)
           last = now
           const v = panVelocityRef.current
-          const friction = Math.exp(-dt / INERTIA_FRICTION_MS)
+          let frictionMs = INERTIA_FRICTION_MS
+          if (coarse) {
+            const sizes = viewSizes()
+            if (sizes) {
+              const clamped = clampToSlot(
+                { ...stateRef.current, tx: ux, ty: uy },
+                sizes.slot,
+                sizes.canvas,
+                true,
+              )
+              if (
+                Math.abs(clamped.tx - ux) >= 0.5 ||
+                Math.abs(clamped.ty - uy) >= 0.5
+              ) {
+                frictionMs = INERTIA_OVERSHOOT_FRICTION_MS
+              }
+            }
+          }
+          const friction = Math.exp(-dt / frictionMs)
           v.vx *= friction
           v.vy *= friction
           if (Math.hypot(v.vx, v.vy) < INERTIA_MIN_VELOCITY) {
             resetPanVelocity()
+            // Coast may have ended in a rubber-band overshoot; ease back
+            // onto the filled square instead of leaving the grid hanging.
+            settlePanIfNeeded()
             return
           }
           const prevTx = stateRef.current.tx
           const prevTy = stateRef.current.ty
-          stateRef.current.tx += v.vx * dt
-          stateRef.current.ty += v.vy * dt
+          ux += v.vx * dt
+          uy += v.vy * dt
+          stateRef.current.tx = ux
+          stateRef.current.ty = uy
           userTransformedRef.current = true
-          applyTransform()
-          // Covering / keep-visible clamp ate the coast; stop rather than
-          // buzzing against the edge.
+          applyTransform({ rubberBand: coarse })
+          // Covering rubber-band still paints a small move. Keep-visible
+          // (and a maxed-out overshoot) freeze the visual; stop and ease
+          // back rather than buzzing or accumulating unconstrained pan.
           if (
             Math.abs(stateRef.current.tx - prevTx) < 0.1 &&
             Math.abs(stateRef.current.ty - prevTy) < 0.1
           ) {
             resetPanVelocity()
+            settlePanIfNeeded()
             return
           }
           inertiaRafRef.current = requestAnimationFrame(tick)
@@ -770,9 +809,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       // Zoomed covering pan rubber-bands past the edge while the finger
-      // is down; on lift, ease back onto the filled square. Skip this
-      // while a 2→1 pinch handoff still has a finger down so the remaining
-      // contact can keep the overshoot instead of fighting the ease.
+      // is down or while flicked inertia is still coasting; on rest, ease
+      // back onto the filled square. Skip this while a 2→1 pinch handoff
+      // still has a finger down so the remaining contact can keep the
+      // overshoot instead of fighting the ease.
       function settlePanIfNeeded() {
         if (!isCoarsePointer()) return false
         const sizes = viewSizes()
@@ -1017,6 +1057,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         }
         // One-finger flick: keep the zoomed grid moving after lift. Fit
         // zoom never sets panRef, so the default 0-10 square stays locked.
+        // Already-overshot pan must settle first: stateRef holds the
+        // compressed rubber-band, and inertia would treat that as
+        // unconstrained and snap back. In-bounds coast rubber-bands when
+        // it later hits the covering edge.
         const wasPinch = Boolean(pinchRef.current)
         const coast =
           Boolean(panRef.current) &&

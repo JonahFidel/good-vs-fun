@@ -89,7 +89,7 @@ export function rubberBandScale(scale: number, min: number, max: number): number
   return scale
 }
 
-/** Resist past a covering/keep-visible pan edge while a finger is down. */
+/** Resist past a covering pan edge while a finger is down or inertia is coasting. */
 export function rubberBandTranslate(
   translate: number,
   min: number,
@@ -270,7 +270,7 @@ function fitsSlot(slot: ViewSize, canvas: ViewSize, scale: number): boolean {
  * holds ticks and markers at screen size, so a settled pinch-out below
  * fit would explode those labels over a shrinking grid.
  *
- * Live pinch/pan can pass rubberBand to paint a resisted overshoot;
+ * Live pinch/pan/inertia can pass rubberBand to paint a resisted overshoot;
  * clamp must not re-floor that scale or covering-pin pan. Zoomed
  * iPhone axes use covering clamp so the square stays filled.
  * Covering follows unscaled fill, not lockFit alone: iPad landscape
