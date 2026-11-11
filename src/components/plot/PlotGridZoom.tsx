@@ -5,6 +5,7 @@ import {
   useLayoutEffect,
   useRef,
 } from 'react'
+import { DRAG_HOLD_MS } from '../../hooks/plot/useHoldToDrag'
 import {
   MOVIE_HIT_RADIUS_PX,
   pointerHitsVisibleMovieLabel,
@@ -43,6 +44,8 @@ type PinchStart = {
 
 type PointerPos = { x: number; y: number }
 
+type GestureStart = PointerPos & { t: number }
+
 /** WebKit-only. Safari fires these for trackpad pinch; they are not in lib.dom. */
 type WebKitGestureEvent = Event & {
   scale: number
@@ -76,7 +79,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const pointersRef = useRef<Map<number, PointerPos>>(new Map())
     const panRef = useRef<PanStart | null>(null)
     const pinchRef = useRef<PinchStart | null>(null)
-    const gestureStartRef = useRef<PointerPos | null>(null)
+    const gestureStartRef = useRef<GestureStart | null>(null)
     const gestureMovedRef = useRef(false)
     const pinchOccurredRef = useRef(false)
     const lastTapRef = useRef<{ t: number; x: number; y: number } | null>(null)
@@ -233,10 +236,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // One-finger pan; two-finger pinch-zoom on touch devices. Double-tap on
     // empty grid toggles fit vs a detail zoom toward the tap (one-handed
     // iPhone zoom, and a way back after pinch). Taps on movies select.
-    // Mouse/pen use Pointer Events and skip pan only when the cursor is on
-    // a .movie-point so hold-to-drag can start. The 44px iPhone hit ring is
-    // not a mouse pan hole: desktop markers are 7px, and after wheel-zoom
-    // into a cluster a 22px radius around every dot would block pan.
+    // Mouse/pen use Pointer Events. A mousedown on a .movie-point defers
+    // pan so hold-to-drag can still start; if the pointer moves before
+    // that hold, pan wins so Figma-scaled titles (and grown markers)
+    // are not dead zones after wheel-zoom into a cluster. The 44px iPhone
+    // hit ring is not a mouse pan hole: desktop markers are 7px.
     // Touch uses Touch Events because iOS Safari does not deliver
     // pointerdown for a second finger, so pointer-only pinch never starts
     // on iPhone. Skipping pointer capture for touch also keeps the first
@@ -382,8 +386,31 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       function noteGestureStart(clientX: number, clientY: number) {
-        gestureStartRef.current = { x: clientX, y: clientY }
+        gestureStartRef.current = {
+          x: clientX,
+          y: clientY,
+          t: performance.now(),
+        }
         gestureMovedRef.current = false
+      }
+
+      // Hold-to-drag owns a still-then-move on a marker or title. Early
+      // movement on that same pointer is a pan, so wheel-zoomed labels
+      // (and canvas-scaled markers) do not become dead zones.
+      function maybeBeginDeferredPan(
+        id: number,
+        clientX: number,
+        clientY: number,
+      ) {
+        if (panRef.current) return
+        const start = gestureStartRef.current
+        if (!start) return
+        if (performance.now() - start.t >= DRAG_HOLD_MS) return
+        if (Math.hypot(clientX - start.x, clientY - start.y) < PAN_SLOP_PX) {
+          return
+        }
+        capturePointer(id)
+        beginPan(id, clientX, clientY)
       }
 
       function noteGestureMove(clientX: number, clientY: number) {
@@ -499,9 +526,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
 
-        // Hold-to-drag starts from the 7px marker (and its title). Do not
-        // also skip the 22px iPhone hit ring or wheel-zoom into a cluster
-        // leaves pan holes around every movie.
+        // Defer pan on the marker and its title so a click still selects
+        // and a still-then-move still drags. Immediate pan would capture
+        // the pointer and fight hold-to-drag; skipping pan forever made
+        // Figma-scaled titles dead zones after wheel-zoom into a cluster.
         if (target?.closest('.movie-point')) return
 
         capturePointer(e.pointerId)
@@ -521,6 +549,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
 
+        maybeBeginDeferredPan(e.pointerId, e.clientX, e.clientY)
         movePan(e.pointerId, e.clientX, e.clientY)
       }
 

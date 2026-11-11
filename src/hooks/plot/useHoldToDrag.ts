@@ -16,10 +16,17 @@ type PendingPointer = {
 }
 
 /** Pointer must stay down this long before movement counts as a drag. */
-const DRAG_HOLD_MS = 120
+export const DRAG_HOLD_MS = 120
 
 /** Movement past this distance, after the hold, starts a drag instead of a click. */
 const DRAG_MOVE_PX = 12
+
+/**
+ * Movement during the hold is a pan, not a click or drag. Must match
+ * PlotGridZoom PAN_SLOP_PX so a drag on a Figma-scaled title pans the
+ * zoomed grid instead of waiting out the hold and then moving the movie.
+ */
+const PAN_CANCEL_PX = 8
 
 export function useHoldToDrag({
   isExampleDeck,
@@ -56,17 +63,31 @@ export function useHoldToDrag({
     }
 
     let dragStarted = false
+    let panCancelled = false
 
     const handlePointerMove = (event: globalThis.PointerEvent) => {
-      if (dragStarted) {
+      if (dragStarted || panCancelled) {
         return
       }
+      const dist = Math.hypot(
+        event.clientX - pendingPointer.x,
+        event.clientY - pendingPointer.y,
+      )
       if (performance.now() - pendingPointer.startedAt < DRAG_HOLD_MS) {
+        // Grid early movement is a pan, not a click or drag. List-to-grid
+        // drag still ignores travel during the hold so a press-and-pull
+        // from the sidebar can start after 120ms. Drop without selecting
+        // even if pointerup arrives before React re-renders this effect.
+        if (
+          pendingPointer.drag.origin === 'grid' &&
+          dist >= PAN_CANCEL_PX
+        ) {
+          panCancelled = true
+          setPendingPointer(null)
+        }
         return
       }
-      const dx = event.clientX - pendingPointer.x
-      const dy = event.clientY - pendingPointer.y
-      if (Math.hypot(dx, dy) < DRAG_MOVE_PX) {
+      if (dist < DRAG_MOVE_PX) {
         return
       }
 
@@ -76,7 +97,7 @@ export function useHoldToDrag({
     }
 
     const handlePointerUp = () => {
-      if (!dragStarted) {
+      if (!dragStarted && !panCancelled) {
         onSelectMovie(pendingPointer.primaryId)
       }
       setPendingPointer(null)
