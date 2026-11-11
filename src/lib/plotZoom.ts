@@ -131,14 +131,23 @@ function clampKeepVisible(
   return Math.min(max, Math.max(min, translate))
 }
 
+function fillsAxisAtFit(slotSize: number, unscaledSize: number): boolean {
+  return unscaledSize >= slotSize - 0.5
+}
+
 function clampAxis(
   translate: number,
   slotSize: number,
   scaledSize: number,
+  unscaledSize: number,
   lockFit: boolean,
 ): number {
   const overflowing = scaledSize >= slotSize - 0.5
-  if (overflowing && lockFit) {
+  // Covering is only safe on an axis that already filled at 1x (iPhone
+  // square). iPad landscape uses the desktop letterbox, so leftover width
+  // is a gutter: covering at overflow pins 2x-toward-Fun=0 from tx≈174
+  // to 0, the same left-align jump as force-centering, just later.
+  if (overflowing && lockFit && fillsAxisAtFit(slotSize, unscaledSize)) {
     return clampCovering(translate, slotSize, scaledSize)
   }
   return clampKeepVisible(translate, slotSize, scaledSize)
@@ -158,10 +167,10 @@ function fitsSlot(slot: ViewSize, canvas: ViewSize, scale: number): boolean {
  * shrinking grid.
  *
  * Zoomed iPhone axes use covering clamp so the square stays filled.
- * Mouse (and leftover iPad letterbox axes) use keep-visible instead:
- * covering rewrote 2x-toward-Fun=0 to left-align, and unbounded leftover
- * pan could throw the grid into the gutter. Gated min-scale stays on the
- * pointer, not on whether the canvas fills the slot.
+ * Covering follows unscaled fill, not lockFit alone: iPad landscape is
+ * coarse (lockFit) but letterboxed, so leftover axes keep-visible even
+ * after they overflow. Mouse always keep-visible. Gated min-scale stays
+ * on the pointer, not on whether the canvas fills the slot.
  */
 export function clampToSlot(
   state: ZoomState,
@@ -180,8 +189,20 @@ export function clampToSlot(
   }
   return {
     scale,
-    tx: clampAxis(state.tx, slot.width, canvas.width * scale, lockFit),
-    ty: clampAxis(state.ty, slot.height, canvas.height * scale, lockFit),
+    tx: clampAxis(
+      state.tx,
+      slot.width,
+      canvas.width * scale,
+      canvas.width,
+      lockFit,
+    ),
+    ty: clampAxis(
+      state.ty,
+      slot.height,
+      canvas.height * scale,
+      canvas.height,
+      lockFit,
+    ),
   }
 }
 

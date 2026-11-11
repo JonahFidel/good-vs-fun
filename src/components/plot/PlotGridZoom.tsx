@@ -103,9 +103,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       if (slot) {
         // lockFit matches the coarse-pointer inverse-scale CSS: iPhone
         // pinch stays at or above the readable 1x grid and covering-clamps
-        // once zoomed. A mouse keeps zoom-toward-cursor (covering would
-        // left-align 2x-toward-Fun=0) and only keeps the canvas visible
-        // so pan cannot throw the grid off-screen.
+        // axes that already filled at 1x. iPad landscape is also coarse
+        // but letterboxed, so leftover axes keep-visible instead of
+        // left-aligning 2x-toward-Fun=0. A mouse always keep-visible.
         stateRef.current = clampToSlot(
           stateRef.current,
           { width: slot.offsetWidth, height: slot.offsetHeight },
