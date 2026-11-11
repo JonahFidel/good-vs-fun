@@ -1324,14 +1324,28 @@
     z-index never paints above a sibling primary (z-index 1). Primary
     and overlay titles also share a side at Good < 5 and Good > 7, so
     a 3.2x overlay name still sat behind the 2.2x primary pill after
-    the opacity restore. Lift the overlay point above unselected
-    primaries once names paint. Selected (4) and highlighted (3) stay
-    on top so the movie you are looking at is not buried; ghosts are
-    pointer-events: none, so paint order does not steal taps.
+    the opacity restore.
+
+    Unselected primaries are z-index 1, so lifting the overlay to 2
+    was enough for those. Selected (4) and highlighted (3) still
+    buried nearby overlay names: compact 3.75rem pills extend ~69px
+    from the marker, and at 3.2x a 0.5-unit neighbor is only ~59px
+    away on the same label side. 3.2x is when overlay names paint;
+    every primary title is already readable from 2.2x, and the blue
+    ring plus Selected bar still mark the movie you are looking at.
+    Lift overlays above selected/highlighted so pinch-to-read those
+    names is not the same cover-the-readout leak as the 1.4x wrap.
+    Dragging stays above that so a hold-to-move movie is not buried
+    by a compare pill. Ghosts are pointer-events: none, so paint
+    order does not steal taps.
   */
   .grid-zoom-slot--ghost-labels .ghost-point {
     opacity: 1;
-    z-index: 2;
+    z-index: 5;
+  }
+
+  .grid-zoom-slot--ghost-labels .movie-point.dragging {
+    z-index: 6;
   }
 
   .grid-zoom-slot--ghost-labels .ghost-point > .movie-label {
