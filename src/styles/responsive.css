@@ -80,11 +80,15 @@
     overflow: hidden;
   }
 
+  /*
+    Brand / Decks / account are redundant with the sidebar back control
+    and steal a row from the leftover movie list. Landscape already hid
+    this so the short-side square could grow; portrait is width-capped
+    so the same hide gives the 11rem SE sidebar those ~2.75rem instead.
+    Account stays on /decks. Layout padding now owns the notch.
+  */
   .app:has(.deck-page-layout) > .header {
-    padding: 0.25rem 0.55rem;
-    padding-top: max(0.25rem, env(safe-area-inset-top));
-    padding-left: max(0.55rem, env(safe-area-inset-left));
-    padding-right: max(0.55rem, env(safe-area-inset-right));
+    display: none;
   }
 
   .app:has(.deck-page-layout) > .layout {
@@ -93,7 +97,8 @@
     overflow: hidden;
     flex: 1;
     min-height: 0;
-    padding: 0.25rem 0.35rem 0;
+    padding: max(0.25rem, env(safe-area-inset-top)) max(0.35rem, env(safe-area-inset-right))
+      0 max(0.35rem, env(safe-area-inset-left));
     gap: 0.25rem;
   }
 
@@ -570,13 +575,14 @@
     on screen. Avoid 100vw estimates, which oversize the canvas and clip.
   */
   .deck-page-layout .grid-zoom-slot {
-    --mobile-header: calc(env(safe-area-inset-top, 0px) + 2.75rem);
+    /* Header is hidden; layout padding now holds the notch. */
+    --mobile-safe-top: max(0.25rem, env(safe-area-inset-top, 0px));
     --mobile-frame: 0.6rem;
     --mobile-sidebar-min: 11rem;
     --max-plot: max(
       12rem,
       calc(
-        var(--deck-viewport-h) - var(--mobile-header) - var(--mobile-frame) -
+        var(--deck-viewport-h) - var(--mobile-safe-top) - var(--mobile-frame) -
           var(--mobile-sidebar-min) -
           var(--plot-chrome-y)
       )
@@ -1188,16 +1194,9 @@
   (pointer: coarse) and (max-width: 1023px) and (orientation: landscape) {
   /*
     Landscape height is the binding constraint for the fitted square.
-    The app header (brand + Decks + account) is redundant with the
-    sidebar back control and stole ~2.35rem from a short-side plot.
-    Hide it so default zoom is a larger 0-10 grid. Account lives on
-    /decks; Back still leaves the page. Layout padding now owns the
-    top safe area the header used to absorb.
+    The phone query already hides the app header; keep tighter padding
+    so the short-side 0-10 grid gets the leftover.
   */
-  .app:has(.deck-page-layout) > .header {
-    display: none;
-  }
-
   .app:has(.deck-page-layout) > .layout {
     padding: max(0.12rem, env(safe-area-inset-top)) max(0.25rem, env(safe-area-inset-right))
       max(0.12rem, env(safe-area-inset-bottom)) max(0.25rem, env(safe-area-inset-left));
@@ -1328,7 +1327,7 @@
     beside a 10rem-floor square. Hide the plot while typing so the form
     can use the visual viewport above the keys. Range sliders are not text
     fields, so dragging Fun/Good brings the grid back. The app header is
-    already hidden in this query, so typing no longer needs a second hide.
+    already hidden on phone deck pages, so typing no longer needs a second hide.
   */
   .deck-page-layout:has(.deck-sidebar-section--add input[type='text']:focus) .grid-panel {
     display: none;
