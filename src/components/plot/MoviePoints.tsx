@@ -63,9 +63,13 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * Good 9.1 beside Room at Fun 0 / Good 10) then take
  * Good stagger opposite the interior so they split
  * horizontally instead of covering in the Fun gutter.
- * Overlay copies of those Fun-gutter neighbors wait
- * for ghost-label zoom. Reuse of label-end would also
- * flip the fit-zoom selected pill.
+ * Isolated Fun-gutter close-Good pairs that are not
+ * next to those interiors (Airplane vs Ghostbusters,
+ * Inglorious Basterds vs Pirates) then take that same
+ * left/right flip. Overlay copies of those Fun-gutter
+ * neighbors and isolated pairs wait for ghost-label
+ * zoom. Reuse of label-end would also flip the
+ * fit-zoom selected pill.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
 /** A 4-clique can occupy the four Fun-plus-Good stagger slots. */
@@ -1043,6 +1047,108 @@ function interiorFunGutterNeighborGoodStagger(
   return stagger
 }
 
+/**
+ * Isolated Fun-gutter close-Good pairs still cover each
+ * other after the interior-neighbor pass: Airplane
+ * (9.9 / 7.5) covers Ghostbusters (9.0 / 7.2) on the
+ * default left, and Inglorious Basterds (9.0 / 9.02)
+ * covers Pirates (9.55 / 9.83) in the namesake Good 10
+ * gutter. Pair movies that have exactly one such
+ * partner among remaining Fun-gutter titles, then flip
+ * the title that sits toward its partner using the
+ * Fun-gutter resolved side (namesake Good 10 is already
+ * right, unlike interior Good >= 5). Skip pairs already
+ * on opposite sides, skip Fun-gutter titles already
+ * claimed by the interior neighbor pass so Manchester
+ * stays opposite Room, and skip a flip that would
+ * restack on a nearby claimed or same-side Fun-gutter
+ * title. Overlay copies wait for ghost-label zoom.
+ */
+function funGutterIsolatedFlipRestacks(
+  flipped: PositionGroup,
+  side: 'good-10' | 'good-0',
+  pairOther: PositionGroup,
+  assignedGood: Map<string, 'good-10' | 'good-0'>,
+  groups: PositionGroup[],
+): boolean {
+  const want: 'left' | 'right' = side === 'good-10' ? 'right' : 'left'
+  for (const other of groups) {
+    if (other.key === flipped.key || other.key === pairOther.key) continue
+    if (other.items.length !== 1) continue
+    const assigned = assignedGood.get(other.key)
+    const otherSide: 'left' | 'right' | null = assigned
+      ? assigned === 'good-10'
+        ? 'right'
+        : 'left'
+      : isFunGutterUnstacked(other)
+        ? funGutterResolvedGoodSide(other)
+        : null
+    if (otherSide !== want) continue
+    const dFun = Math.abs(flipped.fun - other.fun)
+    const dGood = Math.abs(flipped.good - other.good)
+    if (
+      dGood === 0 ||
+      dGood > INTERIOR_CLOSE_GOOD_GAP ||
+      dFun > INTERIOR_SAME_GOOD_FUN_GAP
+    ) {
+      continue
+    }
+    return true
+  }
+  return false
+}
+
+function funGutterIsolatedCloseGoodHorizontalStagger(
+  groups: PositionGroup[],
+  claimedGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isFunGutterUnstacked(group) && !claimedGood.has(group.key),
+  )
+  const partners = closeGoodPartners(candidates)
+  const used = new Set<string>()
+  for (const group of candidates) {
+    if (used.has(group.key)) continue
+    const list = partners.get(group.key) ?? []
+    if (list.length !== 1) continue
+    const other = list[0]
+    if (used.has(other.key)) continue
+    if ((partners.get(other.key) ?? []).length !== 1) continue
+    const groupSide = funGutterResolvedGoodSide(group)
+    const otherSide = funGutterResolvedGoodSide(other)
+    if (groupSide !== otherSide) {
+      used.add(group.key)
+      used.add(other.key)
+      continue
+    }
+    const [higherGood, lowerGood] =
+      group.good >= other.good ? [group, other] : [other, group]
+    const side: 'good-10' | 'good-0' =
+      groupSide === 'left' ? 'good-10' : 'good-0'
+    const flipped = groupSide === 'left' ? higherGood : lowerGood
+    const pairOther = flipped.key === group.key ? other : group
+    if (
+      funGutterIsolatedFlipRestacks(
+        flipped,
+        side,
+        pairOther,
+        claimedGood,
+        groups,
+      )
+    ) {
+      used.add(group.key)
+      used.add(other.key)
+      continue
+    }
+    stagger.set(flipped.key, side)
+    used.add(group.key)
+    used.add(other.key)
+  }
+  return stagger
+}
+
 function computeMoviePointStagger(groups: PositionGroup[]) {
   const verticalStagger = interiorSameGoodVerticalStagger(groups)
   const neighborStagger = interiorCloseGoodHorizontalStagger(
@@ -1145,8 +1251,17 @@ function computeMoviePointStagger(groups: PositionGroup[]) {
     interiorFun,
     interiorGood,
   )
+  const claimedGood = new Map([...interiorGood, ...funGutterNeighborGood])
+  const funGutterIsolatedGood = funGutterIsolatedCloseGoodHorizontalStagger(
+    groups,
+    claimedGood,
+  )
   const funStagger = new Map([...interiorFun, ...gutterNeighborFun])
-  const goodStagger = new Map([...interiorGood, ...funGutterNeighborGood])
+  const goodStagger = new Map([
+    ...interiorGood,
+    ...funGutterNeighborGood,
+    ...funGutterIsolatedGood,
+  ])
   return { funStagger, goodStagger }
 }
 

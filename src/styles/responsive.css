@@ -1903,7 +1903,10 @@
     by the Sea next to Room) reuse Good stagger with
     the label-north / label-south combo below so the
     centered Good-side transform does not undo Fun
-    0-1 / Fun 9-10 edge-gutter growth.
+    0-1 / Fun 9-10 edge-gutter growth. Isolated
+    Fun-gutter close-Good pairs (Airplane vs
+    Ghostbusters, Inglorious Basterds vs Pirates)
+    reuse that same left/right flip.
     Fit-zoom selected wrap is unchanged
     because both classes are labels-visible only.
   */
@@ -1938,10 +1941,14 @@
     Combine so Manchester by the Sea (label-north, Good 0)
     sits left of Room (Fun 0 / Good 10) instead of covering
     it in the Fun 0 gutter, matching the Fun-plus-Good
-    combos above. Include label-end so an equally specific
-    later label-south / label-north + label-end rule does
-    not grow these back onto the interior Good side.
-    Overlay Fun-gutter neighbors wait for ghost-label zoom.
+    combos above. Isolated Fun-gutter pairs reuse these
+    combos so Airplane (label-south, Good 10) sits right
+    of Ghostbusters and Inglorious Basterds (label-south,
+    Good 0) sits left of Pirates. Include label-end so
+    an equally specific later label-south / label-north +
+    label-end rule does not grow these back onto the
+    interior Good side. Overlay Fun-gutter neighbors
+    and isolated pairs wait for ghost-label zoom.
     Fit-zoom selected wrap is unchanged because both
     classes are labels-visible only.
   */
