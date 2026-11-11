@@ -1,3 +1,5 @@
+import { GRID_CANVAS } from './gridCanvas'
+
 export type ZoomState = {
   scale: number
   tx: number
@@ -20,13 +22,15 @@ export const MAX_SCALE = 8
 /**
  * Pinch past this scale before odd ticks and half-unit lines return.
  * The wrapping selected title+score readout also ends here so pinch-to-read
- * is not covered by a half-square pill before other titles appear at 2.2x.
+ * is not covered by a half-square pill before other titles appear.
  */
 export const GRID_DETAIL_SCALE = 1.4
 /**
- * Double-tap zoom-in. Unselected titles wait until this scale: 1.4x on a
- * ~370px square is only ~43px per score unit, so 0.8rem / 7.25rem pills
- * still cover the grid you zoomed in to read.
+ * Floor for double-tap zoom-in and unselected titles. 1.4x on a ~370px
+ * square is only ~43px per score unit, so 0.8rem / 7.25rem pills still
+ * cover the grid you zoomed in to read. Smaller landscape squares need
+ * more than 2.2x so the same 3.75rem pills still fit one cell; see
+ * labelsVisibleScale().
  */
 export const DOUBLE_TAP_SCALE = 2.2
 /** Unselected mobile titles appear at double-tap zoom, not at 1.4x. */
@@ -37,11 +41,43 @@ export const LABELS_VISIBLE_SCALE = DOUBLE_TAP_SCALE
  * the names pinch-to-read is for.
  */
 export const GHOST_LABELS_VISIBLE_SCALE = 3.2
+/**
+ * Screen-px per score unit at which 3.75rem zoomed pills sit in one cell.
+ * 2.2x on a ~370px portrait square is ~68px; a ~280px landscape square
+ * only reaches ~51px at 2.2x, so titles overlap until zoom goes higher.
+ */
+export const TARGET_LABEL_UNIT_PX = 68
+const GHOST_LABELS_AFTER_PRIMARY = 1
 const FIT_SCALE_EPSILON = 0.05
 const FIT_PAN_EPSILON_PX = 8
 
 export function clampScale(scale: number): number {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale))
+}
+
+/**
+ * Zoom at which unselected titles can sit one-per-cell. Never below 2.2x
+ * (portrait ~370px already fits). On a smaller filled square, raise it so
+ * double-tap / pinch-to-read does not dump overlapping 3.75rem pills.
+ */
+export function labelsVisibleScale(canvasWidth: number): number {
+  const unitAtFit = canvasWidth / GRID_CANVAS
+  if (unitAtFit <= 0) return DOUBLE_TAP_SCALE
+  return Math.min(
+    MAX_SCALE,
+    Math.max(DOUBLE_TAP_SCALE, TARGET_LABEL_UNIT_PX / unitAtFit),
+  )
+}
+
+/** Ghost names stay hidden until primary titles have room, then one extra 1x. */
+export function ghostLabelsVisibleScale(canvasWidth: number): number {
+  return Math.min(
+    MAX_SCALE,
+    Math.max(
+      GHOST_LABELS_VISIBLE_SCALE,
+      labelsVisibleScale(canvasWidth) + GHOST_LABELS_AFTER_PRIMARY,
+    ),
+  )
 }
 
 /** Zoom so that `point` (in slot coordinates) stays visually fixed. */

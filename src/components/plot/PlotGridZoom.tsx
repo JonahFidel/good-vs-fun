@@ -11,15 +11,15 @@ import {
 } from '../../lib/closestMoviePoint'
 import { scoringRegionScreenRect } from '../../lib/gridCanvas'
 import {
-  GHOST_LABELS_VISIBLE_SCALE,
   GRID_DETAIL_SCALE,
   INITIAL_SCALE,
-  LABELS_VISIBLE_SCALE,
   canPan,
   centeredTransform,
   clampToSlot,
   doubleTapTransform,
+  ghostLabelsVisibleScale,
   isNearFit,
+  labelsVisibleScale,
   pinchTransform,
   pointerDistance,
   pointerMidpoint,
@@ -116,17 +116,18 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       const { scale, tx, ty } = stateRef.current
       canvas.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${scale})`
       canvas.style.setProperty('--plot-scale', String(scale))
+      const canvasWidth = canvas.offsetWidth
       slot?.classList.toggle(
         'grid-zoom-slot--zoomed',
         scale >= GRID_DETAIL_SCALE,
       )
       slot?.classList.toggle(
         'grid-zoom-slot--labels',
-        scale >= LABELS_VISIBLE_SCALE,
+        scale >= labelsVisibleScale(canvasWidth),
       )
       slot?.classList.toggle(
         'grid-zoom-slot--ghost-labels',
-        scale >= GHOST_LABELS_VISIBLE_SCALE,
+        scale >= ghostLabelsVisibleScale(canvasWidth),
       )
       // Coarse pointers paint unit lines on this unscaled overlay so 1px
       // strokes stay 1px while pinch scales the canvas. A mouse hides the
@@ -230,7 +231,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     }, [])
 
     // One-finger pan; two-finger pinch-zoom on touch devices. Double-tap on
-    // empty grid toggles fit vs a 2.2x zoom toward the tap (one-handed
+    // empty grid toggles fit vs a detail zoom toward the tap (one-handed
     // iPhone zoom, and a way back after pinch). Taps on movies select.
     // Mouse/pen use Pointer Events and skip pan only when the cursor is on
     // a .movie-point so hold-to-drag can start. The 44px iPhone hit ring is
@@ -418,8 +419,17 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       function applyDoubleTap(point: PointerPos) {
         const fit = fitTransform()
-        if (!fit) return
-        const next = doubleTapTransform(stateRef.current, point, fit)
+        const canvas = canvasRef.current
+        if (!fit || !canvas) return
+        // Zoom far enough that 3.75rem pills fit one cell on this square.
+        // A 370px portrait plot stays at 2.2x; a ~280px landscape plot
+        // needs closer to 2.9x or titles overlap 1-unit neighbors.
+        const next = doubleTapTransform(
+          stateRef.current,
+          point,
+          fit,
+          labelsVisibleScale(canvas.offsetWidth),
+        )
         stateRef.current = next
         userTransformedRef.current = !isNearFit(next, fit)
         applyTransform()
