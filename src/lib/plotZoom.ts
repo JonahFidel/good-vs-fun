@@ -50,9 +50,35 @@ export const TARGET_LABEL_UNIT_PX = 68
 const GHOST_LABELS_AFTER_PRIMARY = 1
 const FIT_SCALE_EPSILON = 0.05
 const FIT_PAN_EPSILON_PX = 8
+/**
+ * Pinch-out this close to 1x eases back to the readable square.
+ * Wider than FIT_SCALE_EPSILON so a 1.1x leftover (tiny pan unlock)
+ * still lands on the locked 0-10 view.
+ */
+export const PINCH_SETTLE_SCALE_EPSILON = 0.15
+export const PINCH_SETTLE_PAN_EPSILON_PX = 24
+/** How hard pinch resists past min/max. 0.55 matches iOS rubber-band. */
+const RUBBER_BAND_CONSTANT = 0.55
 
 export function clampScale(scale: number): number {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale))
+}
+
+/**
+ * Resist past min/max so a pinch can overshoot, then settle on release.
+ * Applied before pinch pan math so overshoot stays finger-anchored and
+ * inverse-scaled labels cannot explode on a shrinking grid.
+ */
+export function rubberBandScale(scale: number, min: number, max: number): number {
+  if (scale < min) {
+    const overshoot = min - scale
+    return min - (overshoot * RUBBER_BAND_CONSTANT) / (1 + overshoot)
+  }
+  if (scale > max) {
+    const overshoot = scale - max
+    return max + (overshoot * RUBBER_BAND_CONSTANT) / (1 + overshoot)
+  }
+  return scale
 }
 
 /**
@@ -95,9 +121,17 @@ export function zoomTowardPoint(
   }
 }
 
+export type PinchTransformOpts = {
+  minScale?: number
+  maxScale?: number
+  rubberBand?: boolean
+}
+
 /**
  * Two-finger pinch: scale around the original midpoint, then follow the
  * current midpoint so the gesture can pan and zoom at the same time.
+ * Rubber-band compresses scale before the pan math so overshoot stays
+ * anchored on the fingers instead of using an unclamped ratio.
  */
 export function pinchTransform(
   origin: ZoomState,
@@ -105,10 +139,16 @@ export function pinchTransform(
   originDistance: number,
   currentMidpoint: ZoomPoint,
   currentDistance: number,
+  opts?: PinchTransformOpts,
 ): ZoomState {
   const factor = originDistance === 0 ? 1 : currentDistance / originDistance
-  const newScale = clampScale(origin.scale * factor)
-  const ratio = newScale / origin.scale
+  const minScale = opts?.minScale ?? MIN_SCALE
+  const maxScale = opts?.maxScale ?? MAX_SCALE
+  const rawScale = origin.scale * factor
+  const newScale = opts?.rubberBand
+    ? rubberBandScale(rawScale, minScale, maxScale)
+    : Math.min(maxScale, Math.max(minScale, rawScale))
+  const ratio = origin.scale === 0 ? 1 : newScale / origin.scale
   return {
     scale: newScale,
     tx: currentMidpoint.x - (originMidpoint.x - origin.tx) * ratio,
@@ -197,29 +237,36 @@ function fitsSlot(slot: ViewSize, canvas: ViewSize, scale: number): boolean {
 }
 
 /**
- * Coarse-pointer fit lock: never shrink below 1x, and re-center only while
- * the canvas still fits the slot. Inverse-scale holds ticks and markers at
- * screen size, so pinch-out below fit would explode those labels over a
- * shrinking grid.
+ * Coarse-pointer fit lock: never shrink below 1x after a gesture, and
+ * re-center only while the canvas still fits the slot. Inverse-scale
+ * holds ticks and markers at screen size, so a settled pinch-out below
+ * fit would explode those labels over a shrinking grid.
  *
- * Zoomed iPhone axes use covering clamp so the square stays filled.
- * Covering follows unscaled fill, not lockFit alone: iPad landscape is
- * coarse (lockFit) but letterboxed, so leftover axes keep-visible even
- * after they overflow. Mouse always keep-visible. Gated min-scale stays
- * on the pointer, not on whether the canvas fills the slot.
+ * Live pinch can pass rubberBand to paint a resisted overshoot; clamp
+ * must not re-floor that scale. Zoomed iPhone axes use covering clamp
+ * so the square stays filled. Covering follows unscaled fill, not
+ * lockFit alone: iPad landscape is coarse (lockFit) but letterboxed,
+ * so leftover axes keep-visible even after they overflow. Mouse always
+ * keep-visible. Gated min-scale stays on the pointer, not on whether
+ * the canvas fills the slot.
  */
 export function clampToSlot(
   state: ZoomState,
   slot: ViewSize,
   canvas: ViewSize,
   lockFit = false,
+  rubberBand = false,
 ): ZoomState {
   if (slot.width <= 0 || slot.height <= 0 || canvas.width <= 0 || canvas.height <= 0) {
     return state
   }
-  const scale = lockFit
-    ? Math.min(MAX_SCALE, Math.max(INITIAL_SCALE, state.scale))
-    : clampScale(state.scale)
+  // Rubber-band pinch already compressed scale; do not re-floor it or
+  // the overshoot never paints. Pan still covering/keep-visible clamps.
+  const scale = rubberBand
+    ? state.scale
+    : lockFit
+      ? Math.min(MAX_SCALE, Math.max(INITIAL_SCALE, state.scale))
+      : clampScale(state.scale)
   if (lockFit && fitsSlot(slot, canvas, scale)) {
     return centeredTransform(slot, canvas, scale)
   }

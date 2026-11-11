@@ -14,6 +14,9 @@ import { scoringRegionScreenRect } from '../../lib/gridCanvas'
 import {
   GRID_DETAIL_SCALE,
   INITIAL_SCALE,
+  MAX_SCALE,
+  PINCH_SETTLE_PAN_EPSILON_PX,
+  PINCH_SETTLE_SCALE_EPSILON,
   canPan,
   centeredTransform,
   clampToSlot,
@@ -160,7 +163,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       onEmptyTapRef.current = onEmptyTap
     }, [onEmptyTap])
 
-    function applyTransform(opts?: { skipClamp?: boolean }) {
+    function applyTransform(opts?: { skipClamp?: boolean; rubberBand?: boolean }) {
       const canvas = canvasRef.current
       const slot = slotRef.current
       if (!canvas) return
@@ -170,11 +173,14 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // axes that already filled at 1x. iPad landscape is also coarse
         // but letterboxed, so leftover axes keep-visible instead of
         // left-aligning 2x-toward-Fun=0. A mouse always keep-visible.
+        // rubberBand lets a live pinch overshoot 1x / 8x with resistance;
+        // clamp must not re-floor that scale or the overshoot never paints.
         stateRef.current = clampToSlot(
           stateRef.current,
           { width: slot.offsetWidth, height: slot.offsetHeight },
           { width: canvas.offsetWidth, height: canvas.offsetHeight },
           isCoarsePointer(),
+          opts?.rubberBand,
         )
       }
       const { scale, tx, ty } = stateRef.current
@@ -382,7 +388,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // one-finger pan coasts with friction after lift so the zoomed grid
     // does not stop dead; fit zoom never pans, so the default 0-10 square
     // stays locked. Double-tap eases to 2.2x or back to fit instead of
-    // jumping, matching that coast. Mouse pan, like wheel and Touch Events, sits on the
+    // jumping, matching that coast. Pinch-out past 1x rubber-bands then
+    // eases back to the readable square, so getting home is not a wall.
+    // Mouse pan, like wheel and Touch Events, sits on the
     // plot card so a drag that starts on a Fun/Good axis still pans the
     // zoomed grid. Safari GestureEvents listen on window capture because
     // WebKit often targets document. Undo/Redo overlay clicks must not
@@ -589,15 +597,23 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       function applyPinch(currentA: PointerPos, currentB: PointerPos) {
         const pinch = pinchRef.current
         if (!pinch) return
+        const coarse = isCoarsePointer()
         stateRef.current = pinchTransform(
           pinch.origin,
           pinch.originMidpoint,
           pinch.originDistance,
           pointerMidpoint(currentA, currentB),
           pointerDistance(currentA, currentB),
+          coarse
+            ? {
+                minScale: INITIAL_SCALE,
+                maxScale: MAX_SCALE,
+                rubberBand: true,
+              }
+            : undefined,
         )
         userTransformedRef.current = true
-        applyTransform()
+        applyTransform({ rubberBand: coarse })
       }
 
       function viewSizes() {
@@ -712,6 +728,43 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         animateTo(next, () => {
           userTransformedRef.current = !isNearFit(next, fit)
         })
+      }
+
+      // Pinch-out past 1x rubber-bands during the gesture; on lift, ease
+      // back to the locked 0-10 square. A 1.1x leftover is also settled
+      // so pan does not unlock for a few pixels of overflow.
+      function settlePinchIfNeeded() {
+        if (!isCoarsePointer()) return false
+        const fit = fitTransform()
+        const slot = slotRef.current
+        const canvas = canvasRef.current
+        if (!fit || !slot || !canvas) return false
+        const current = stateRef.current
+        const overshotMin = current.scale < INITIAL_SCALE
+        const overshotMax = current.scale > MAX_SCALE
+        const nearFit = isNearFit(
+          current,
+          fit,
+          PINCH_SETTLE_SCALE_EPSILON,
+          PINCH_SETTLE_PAN_EPSILON_PX,
+        )
+        if (!overshotMin && !overshotMax && !nearFit) return false
+        resetPanVelocity()
+        userTransformedRef.current = true
+        if (overshotMax) {
+          const next = clampToSlot(
+            { ...current, scale: MAX_SCALE },
+            { width: slot.offsetWidth, height: slot.offsetHeight },
+            { width: canvas.offsetWidth, height: canvas.offsetHeight },
+            true,
+          )
+          animateTo(next)
+          return true
+        }
+        animateTo(fit, () => {
+          userTransformedRef.current = false
+        })
+        return true
       }
 
       function maybeDoubleTap(clientX: number, clientY: number) {
@@ -915,8 +968,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           // 2→1 must keep the remaining plot finger as a pan. Count only
           // plot-card contacts: e.touches also includes a sidebar thumb,
           // which would restart pinch against that off-grid finger or skip
-          // this handoff entirely (length stays >= 2).
+          // this handoff entirely (length stays >= 2). Rubber-band or
+          // near-fit pinch-out settles to 1x instead of handing off a
+          // sub-fit pan.
+          const wasPinch = Boolean(pinchRef.current)
           pinchRef.current = null
+          if (wasPinch && settlePinchIfNeeded()) return
           const touch = fingers[0]
           beginPan(touch.identifier, touch.clientX, touch.clientY)
           return
@@ -931,11 +988,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         }
         // One-finger flick: keep the zoomed grid moving after lift. Fit
         // zoom never sets panRef, so the default 0-10 square stays locked.
+        const wasPinch = Boolean(pinchRef.current)
         const coast =
           Boolean(panRef.current) &&
           gestureMovedRef.current &&
           !pinchRef.current
         endTouchGesture()
+        if (wasPinch && settlePinchIfNeeded()) return
         if (coast) startInertia()
         else resetPanVelocity()
       }
@@ -946,6 +1005,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         stopTransientMotion()
         resetPanVelocity()
         endTouchGesture()
+        // Drop rubber-band overshoot immediately; a cancelled gesture
+        // should not leave the square undersized until the next resize.
+        applyTransform()
       }
 
       function webkitGesturePoint(event: WebKitGestureEvent): PointerPos {
