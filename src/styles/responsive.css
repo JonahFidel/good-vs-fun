@@ -1476,19 +1476,27 @@
     flex-end can hide the start instead of shrinking to the
     first lines.
 
-    Last-two-lines only helps when a title overflows the box.
+    Last-N-lines only helps when a title overflows the box.
     In this ~9-character 3.75rem cell, 24-27 character names
-    are three wraps: "Sicario: Day of the Soldado",
-    "28 Years Later Bone Temple", "One Battle After Another".
-    Two lines then hid the identifying start (Sicario /
-    28 Years), and overlays have no Selected bar to recover
-    it. Three line-heights (1.2) fit those. Longer namesake
+    are three wraps and already fit. 28-35 character names
+    are four wraps: "Monty Python and the Holy Grail",
+    "Indiana Jones and the Last Crusade",
+    "Pop Star: Never Stop Never Stopping",
+    "Crouching Tiger, Hidden Dragon". Three lines then hid
+    the identifying start (Monty Python / Indiana Jones /
+    Pop Star), and overlays have no Selected bar to recover
+    it. Four line-heights (1.2) fit those. Longer namesake
     titles still last-clip to the distinctive ending.
+
+    A 4-line overlay is ~52px. Ghost-label zoom keeps at
+    least ~81px per unit even on a 10rem landscape square
+    (labelsVisibleScale plus 1x), so the extra line stays
+    inside one Fun cell and the 1-unit Fun 10 gutter.
 
     Stacked overlays already list every truncated name, the same
     2.2x primary readout. Wrapping each of those lines too turns
     a two-film overlay (Code 3 + Kill Bill V2 in the 2026 example)
-    into a six-line pill over the cluster pinch-to-read just
+    into an eight-line pill over the cluster pinch-to-read just
     uncovered. Keep stacks one-line; wrap only a single overlay.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked) > .movie-label {
@@ -1509,11 +1517,11 @@
     min-width: 0;
     max-width: 100%;
     /*
-      Three line-heights (1.2 on .movie-label) so 3-wrap overlay
+      Four line-heights (1.2 on .movie-label) so 4-wrap overlay
       names fit in this cell. Height stays auto so a one-line
-      name does not sit in an empty three-line box.
+      name does not sit in an empty four-line box.
     */
-    max-height: 3.6em;
+    max-height: 4.8em;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -1533,7 +1541,7 @@
 
   /*
     Stacked overlay names stay one-line so a two-film compare
-    (Code 3 + Kill Bill V2) does not become a four-line pill.
+    (Code 3 + Kill Bill V2) does not become an eight-line pill.
     End ellipsis then hides the sequel: "Back to the Future 2"
     and "Kill Bill V2" read as "Back to t…" / "Kill Bill…", and
     overlays have no Selected bar to recover the ending. Clip
@@ -1581,7 +1589,7 @@
     intersects with the pill so right-side 2.2x labels cannot
     steal tap-A-then-tap-B from this stack's 44px ring.
     Ghost stacks already clip at --ghost-labels; unstacked
-    overlays clip to the last two wrapped lines there.
+    overlays clip to the last four wrapped lines there.
   */
   .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) .movie-label-line {
     min-width: 0;
