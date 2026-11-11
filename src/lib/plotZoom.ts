@@ -89,7 +89,7 @@ export function rubberBandScale(scale: number, min: number, max: number): number
   return scale
 }
 
-/** Resist past a covering pan edge while a finger is down or inertia is coasting. */
+/** Resist past a covering or keep-visible pan edge while a finger is down or inertia is coasting. */
 export function rubberBandTranslate(
   translate: number,
   min: number,
@@ -220,14 +220,20 @@ function clampCovering(
  */
 const MIN_VISIBLE_PX = 48
 
+function keepVisibleBounds(slotSize: number, scaledSize: number) {
+  const visible = Math.min(MIN_VISIBLE_PX, scaledSize, slotSize)
+  return {
+    min: visible - scaledSize,
+    max: slotSize - visible,
+  }
+}
+
 function clampKeepVisible(
   translate: number,
   slotSize: number,
   scaledSize: number,
 ): number {
-  const visible = Math.min(MIN_VISIBLE_PX, scaledSize, slotSize)
-  const min = visible - scaledSize
-  const max = slotSize - visible
+  const { min, max } = keepVisibleBounds(slotSize, scaledSize)
   return Math.min(max, Math.max(min, translate))
 }
 
@@ -254,6 +260,14 @@ function clampAxis(
     }
     return clampCovering(translate, slotSize, scaledSize)
   }
+  // Leftover axes (iPad landscape letterbox, desktop gutters) keep-visible
+  // clamp so 2x-toward-Fun=0 is not left-aligned. Coarse pan/inertia used
+  // to hard-stop there while covering iPhone axes bounced; rubber-band
+  // those bounds too so a flicked leftover edge eases back the same way.
+  if (rubberBand) {
+    const { min, max } = keepVisibleBounds(slotSize, scaledSize)
+    return rubberBandTranslate(translate, min, max, slotSize)
+  }
   return clampKeepVisible(translate, slotSize, scaledSize)
 }
 
@@ -271,12 +285,13 @@ function fitsSlot(slot: ViewSize, canvas: ViewSize, scale: number): boolean {
  * fit would explode those labels over a shrinking grid.
  *
  * Live pinch/pan/inertia can pass rubberBand to paint a resisted overshoot;
- * clamp must not re-floor that scale or covering-pin pan. Zoomed
- * iPhone axes use covering clamp so the square stays filled.
+ * clamp must not re-floor that scale or covering/keep-visible-pin pan.
+ * Zoomed iPhone axes use covering clamp so the square stays filled.
  * Covering follows unscaled fill, not lockFit alone: iPad landscape
  * is coarse (lockFit) but letterboxed, so leftover axes keep-visible
- * even after they overflow. Mouse always keep-visible. Gated
- * min-scale stays on the pointer, not on whether the canvas fills
+ * even after they overflow, and rubber-band those 48px bounds instead
+ * of hard-stopping. Mouse always keep-visible without rubber-band.
+ * Gated min-scale stays on the pointer, not on whether the canvas fills
  * the slot.
  */
 export function clampToSlot(
@@ -291,7 +306,7 @@ export function clampToSlot(
   }
   // Rubber-band pinch already compressed scale; do not re-floor it or
   // the overshoot never paints. Rubber-band pan also has to skip the
-  // covering pin or pull-past-the-edge never paints.
+  // covering and keep-visible pins or pull-past-the-edge never paints.
   const scale = rubberBand
     ? state.scale
     : lockFit

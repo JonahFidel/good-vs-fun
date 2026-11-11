@@ -179,8 +179,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // but letterboxed, so leftover axes keep-visible instead of
         // left-aligning 2x-toward-Fun=0. A mouse always keep-visible.
         // rubberBand lets a live pinch overshoot 1x / 8x and a zoomed pan
-        // or flicked coast pull past the covering edge; clamp must not
-        // re-floor scale or covering-pin pan or the overshoot never paints.
+        // or flicked coast pull past the covering or keep-visible edge;
+        // clamp must not re-floor scale or pin pan or the overshoot never paints.
         stateRef.current = clampToSlot(
           stateRef.current,
           { width: slot.offsetWidth, height: slot.offsetHeight },
@@ -393,11 +393,12 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // areas would otherwise eat most of a zoomed one-finger pan. A flicked
     // one-finger pan coasts with friction after lift so the zoomed grid
     // does not stop dead; that coast rubber-bands past the covering edge
-    // and eases back, matching a finger-down pull. Fit zoom never pans, so
-    // the default 0-10 square stays locked. Double-tap eases to 2.2x or
+    // (and leftover keep-visible gutters) and eases back, matching a
+    // finger-down pull. Fit zoom never pans, so the default 0-10 square
+    // stays locked. Double-tap eases to 2.2x or
     // back to fit instead of jumping, matching that coast. Pinch-out past
-    // 1x and zoomed pan past the covering edge rubber-band, then ease back
-    // on lift, so getting home or hitting an edge is not a wall.
+    // 1x and zoomed pan past a covering or keep-visible edge rubber-band,
+    // then ease back on lift, so getting home or hitting an edge is not a wall.
     // Mouse pan, like wheel and Touch Events, sits on the
     // plot card so a drag that starts on a Fun/Good axis still pans the
     // zoomed grid. Safari GestureEvents listen on window capture because
@@ -539,9 +540,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           stateRef.current.ty = uy
           userTransformedRef.current = true
           applyTransform({ rubberBand: coarse })
-          // Covering rubber-band still paints a small move. Keep-visible
-          // (and a maxed-out overshoot) freeze the visual; stop and ease
-          // back rather than buzzing or accumulating unconstrained pan.
+          // Covering and keep-visible rubber-band still paint a small
+          // move. A maxed-out overshoot freezes the visual; stop and
+          // ease back rather than buzzing or accumulating unconstrained pan.
           if (
             Math.abs(stateRef.current.tx - prevTx) < 0.1 &&
             Math.abs(stateRef.current.ty - prevTy) < 0.1
@@ -808,9 +809,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         return true
       }
 
-      // Zoomed covering pan rubber-bands past the edge while the finger
-      // is down or while flicked inertia is still coasting; on rest, ease
-      // back onto the filled square. Skip this while a 2→1 pinch handoff
+      // Zoomed covering (and leftover keep-visible) pan rubber-bands past
+      // the edge while the finger is down or while flicked inertia is still
+      // coasting; on rest, ease back onto the filled square or the 48px
+      // visible slice. Skip this while a 2→1 pinch handoff
       // still has a finger down so the remaining contact can keep the
       // overshoot instead of fighting the ease.
       function settlePanIfNeeded() {
