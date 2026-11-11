@@ -131,9 +131,7 @@
     height: 100%;
     min-height: 0;
     max-height: none;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
     overscroll-behavior: contain;
     touch-action: pan-y;
     gap: 0.45rem;
@@ -216,6 +214,37 @@
   */
   .deck-page-layout .grid-toolbar {
     display: none;
+  }
+
+  /*
+    Collapsed Add and Compare were each a 44px section, so an 11rem SE
+    sidebar had ~20px left for movies. Sit them in one row while closed,
+    and let the list (not the whole sidebar) scroll the leftover height.
+  */
+  .deck-sidebar-tools-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    flex-shrink: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .deck-sidebar-tools-row:not(:has([open])) > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .deck-sidebar-tools-row:has([open]) > * {
+    flex: 1 1 100%;
+  }
+
+  .deck-sidebar-tools-row > .deck-sidebar-section--add {
+    order: 1;
+  }
+
+  .deck-sidebar-tools-row > .deck-sidebar-section--tools {
+    order: 2;
   }
 
   /*
@@ -317,18 +346,21 @@
   }
 
   .deck-sidebar-section--list.movie-list {
-    flex: 0 0 auto;
+    flex: 1 1 0;
+    min-height: 0;
     display: grid;
     grid-template-columns: 1fr auto;
-    align-items: center;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
     column-gap: 0.5rem;
     row-gap: 0.3rem;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .deck-sidebar-section--list .deck-sidebar-section__title--inline,
   .deck-sidebar-section--list .movie-list-header {
     margin: 0;
+    align-self: center;
   }
 
   .movie-list-header label {
@@ -353,13 +385,22 @@
 
   .deck-sidebar-section--list.movie-list ul {
     grid-column: 1 / -1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    mask-image: linear-gradient(
+      to bottom,
+      black 0,
+      black calc(100% - 8px),
+      transparent 100%
+    );
   }
 
   .deck-sidebar .movie-list ul {
     flex: none;
     max-height: none;
-    overflow-y: visible;
-    mask-image: none;
   }
 
   .deck-sidebar .ghost-compare-hint {
@@ -367,10 +408,25 @@
   }
 
   .movie-list li {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
     min-height: 2.75rem;
-    padding: 0.5rem 0.6rem;
-    /* pan-y so a finger on a row still scrolls the sidebar. */
+    padding: 0.35rem 0.45rem 0.35rem 0.6rem;
+    /* pan-y so a finger on a row still scrolls the list. */
     touch-action: pan-y;
+  }
+
+  .movie-list-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .movie-list-scores {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    color: #4b5563;
   }
 
   .movie-list .movie-delete {

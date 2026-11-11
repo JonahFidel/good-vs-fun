@@ -85,6 +85,18 @@
   width: 100%;
 }
 
+/*
+  Phone layout turns this into one Add | Compare row. display: contents
+  keeps Add and Compare as stacked sidebar sections on desktop.
+*/
+.deck-sidebar-tools-row {
+  display: contents;
+}
+
+.deck-sidebar-tools-row:empty {
+  display: none;
+}
+
 .deck-sidebar .ghost-compare-section {
   margin-top: 0;
   padding-top: 0;

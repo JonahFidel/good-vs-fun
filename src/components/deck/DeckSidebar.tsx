@@ -129,22 +129,23 @@ export function DeckSidebar({
         </div>
       </div>
 
-      {children}
-
       {error && <p className="error-banner">{error}</p>}
       {loading && <p className="status-line">Syncing changes…</p>}
 
-      {!isExampleDeck && (
-        <AddMovieForm
-          title={title}
-          fun={fun}
-          good={good}
-          onTitleChange={setTitle}
-          onFunChange={setFun}
-          onGoodChange={setGood}
-          onSubmit={(event) => void handleSubmit(event)}
-        />
-      )}
+      <div className="deck-sidebar-tools-row">
+        {!isExampleDeck && (
+          <AddMovieForm
+            title={title}
+            fun={fun}
+            good={good}
+            onTitleChange={setTitle}
+            onFunChange={setFun}
+            onGoodChange={setGood}
+            onSubmit={(event) => void handleSubmit(event)}
+          />
+        )}
+        {children}
+      </div>
 
       {selectedMovie && (
         <MovieSelectionPanel
