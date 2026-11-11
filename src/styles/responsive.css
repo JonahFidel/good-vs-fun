@@ -2060,9 +2060,13 @@
   /*
     Landscape leftover is tall but only ~12-15.5rem wide. The portrait
     row (title | F/G) is still tight; stacking F/G under the title lets
-    the name use the full rail (~20-24 characters per line, enough for
-    Pirates of the Caribbean: Curse of the Black Pearl on two lines).
-    Portrait keeps title beside F/G because leftover height is scarce.
+    the name use the full rail (~20-24 characters per line). Two lines
+    is ~40-48 characters, so Pirates (~50) and Alexander and the
+    Terrible, Horrible, No Good, Very Bad Day (~64) still wrap three
+    times; last-two-lines then hid the namesake start (Alexander /
+    Pirates). Three line-heights (1.25) fit those on this rail.
+    Portrait keeps two lines beside F/G because leftover height is
+    scarce and that column is already ~33-41 characters.
   */
   .movie-list li {
     flex-direction: column;
@@ -2077,6 +2081,20 @@
     flex: none;
     width: 100%;
     min-height: 2.75rem;
+  }
+
+  .movie-list-title strong,
+  .movie-selection-panel > .deck-sidebar-collapse-summary > .deck-sidebar-collapse-title {
+    max-height: 3.75em;
+  }
+
+  /*
+    Collapsed Selected is title + F/G. Three title lines at 0.8rem /
+    1.25 plus the score row is ~4.54rem; keep the same ~0.7rem gap
+    under the bar that 4.25rem gave the two-line overlay.
+  */
+  .deck-sidebar:has(.movie-selection-panel) .deck-sidebar-section--list.movie-list ul {
+    padding-bottom: 5.25rem;
   }
 
   .movie-list-scores {
