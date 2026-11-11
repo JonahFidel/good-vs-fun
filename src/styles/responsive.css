@@ -1467,6 +1467,41 @@
     display: none;
   }
 
+  /*
+    Landscape leftover is tall but only ~12-15.5rem wide. The portrait
+    row (title | F/G | 44px delete) leaves about 5-8 characters per line,
+    so iteration 98's 2-line wrap still reads as "Pirates of t…". Stack
+    F/G under the title so the name uses the rail minus delete (~13-15
+    characters per line, enough for Pirates of the Caribbean). Portrait
+    keeps the 44px row because leftover height is scarce there.
+  */
+  .movie-list li {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0.1rem;
+    min-height: 0;
+    padding: 0.3rem 0.4rem 0.3rem 0.55rem;
+  }
+
+  .movie-list-title {
+    flex: none;
+    width: 100%;
+    min-height: 2.75rem;
+  }
+
+  .movie-list .movie-delete {
+    /* Keep the 44px hit on the title row; do not overlap F/G below. */
+    margin: -0.3rem -0.3rem 0 0;
+  }
+
+  .movie-list-scores {
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+
   /* Landscape sidebar is ~12-15rem; two 44px sliders would have ~90px tracks. */
   .score-sliders--add,
   .score-sliders--selected {
