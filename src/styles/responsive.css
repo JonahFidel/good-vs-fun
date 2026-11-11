@@ -2193,6 +2193,11 @@
     (Stand by Me next to Mickey 17) reuse Fun stagger
     with the gutter-good combo above so the centered
     Good 10 transform does not re-center them.
+    Fun-gutter neighbors of those slots (Manchester
+    by the Sea next to Room) reuse Good stagger with
+    the gutter-fun combo below so the centered
+    Good-side transform does not undo Fun 0-1 /
+    Fun 9-10 edge-gutter growth.
     Coincident north/south keep their slot because
     both classes skip hasVerticalSlot.
   */
@@ -2219,6 +2224,50 @@
 
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-0.ghost-point--stagger-good-0 > .movie-label,
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-0.ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    Good-side overlay stagger transform is vertically centered
+    and would undo Fun 0-1 / Fun 9-10 edge-gutter growth on a
+    Fun-gutter neighbor of an interior Fun-plus-Good slot.
+    Combine so Manchester by the Sea (gutter-fun-0, Good 0)
+    sits left of Room (Fun 0 / Good 10) instead of covering
+    it in the Fun 0 gutter, matching the Fun-plus-Good
+    combos above. Include label-start so an equally specific
+    gutter-fun + label-start or stagger-good + label-start
+    rule does not grow these back onto the interior Good
+    side or re-center them. Overlay Fun-gutter neighbors
+    at Good >= 9 / <= 1 already occupy north/south when
+    coincident because the opposite side clips, so
+    hasVerticalSlot skips this on same-position compare;
+    the split helps non-coincident overlay clusters.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-10.ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-fun-0.ghost-point--stagger-good-0.ghost-point--label-start > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), 0);

@@ -62,8 +62,11 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * Good 10 vs Stand by Me), so those gutter neighbors
  * then take Fun stagger: higher Fun grows toward Fun 10,
  * lower toward Fun 0. Fun 0-1 / Fun 9-10 gutter titles
- * (Manchester by the Sea) stay put until a later edge
- * pass. Skip coincident north/south so those names do
+ * next to those same slots (Manchester by the Sea at
+ * Fun 1 / Good 9.1 beside Room at Fun 0 / Good 10)
+ * then take Good stagger opposite the interior so they
+ * split horizontally instead of covering in the Fun
+ * gutter. Skip coincident north/south so those names do
  * not restack on the primary. Reuse of label-start
  * would also move every left-side overlay.
  */
@@ -96,6 +99,19 @@ function isGoodGutterUnstacked(group: PositionGroup): boolean {
     (group.good >= LABEL_GUTTER_GOOD_HIGH ||
       group.good <= LABEL_GUTTER_GOOD_LOW)
   )
+}
+
+function isFunGutterUnstacked(group: PositionGroup): boolean {
+  return (
+    group.items.length === 1 &&
+    (group.fun >= LABEL_SOUTH_FUN || group.fun <= LABEL_NORTH_FUN)
+  )
+}
+
+function funGutterResolvedGoodSide(group: PositionGroup): 'left' | 'right' {
+  if (group.good >= LABEL_GUTTER_GOOD_HIGH) return 'right'
+  if (group.good <= LABEL_GUTTER_GOOD_LOW) return 'left'
+  return group.good > LABEL_FLIP_GOOD ? 'left' : 'right'
 }
 
 function interiorSameGoodVerticalStagger(
@@ -881,8 +897,9 @@ function interiorCloseGoodLeftoverMeshUnique4Stagger(
  * so Kill Bill V1 stays in the namesake Good 10 gutter.
  * Overlay leftover unique-4 titles (Challengers Fun 0 /
  * Good 10) do not steal those pairs: Challengers is more
- * than one Good from Stand by Me. Coincident north/south
- * stay put at class apply.
+ * than one Good from Stand by Me. Fun 0-1 / Fun 9-10
+ * titles get a Good-side split next. Coincident
+ * north/south stay put at class apply.
  */
 function interiorGutterNeighborFunStagger(
   groups: PositionGroup[],
@@ -934,6 +951,87 @@ function interiorGutterNeighborFunStagger(
     }
     const side: 'fun-10' | 'fun-0' =
       pair.gutter.fun >= pair.interior.fun ? 'fun-10' : 'fun-0'
+    stagger.set(pair.gutter.key, side)
+    usedGutter.add(pair.gutter.key)
+    usedInterior.add(pair.interior.key)
+  }
+  return stagger
+}
+
+/**
+ * Matches MoviePoints: interior Fun-plus-Good slots that grow
+ * into the Fun 10 / Fun 0 gutter still cover a 1-unit Fun-gutter
+ * title already parked there: Room (1.8 / 8.9, Fun 0 / Good 10)
+ * covers Manchester by the Sea (1.0 / 9.1). Pair each Fun-gutter
+ * title with the nearest interior that already occupies that
+ * Fun slot and has a Good class, then grow the gutter title
+ * to the opposite Good side so both seven-line pills fit.
+ * Skip pairs already on opposite Good sides, and skip
+ * interiors that only have a Fun class so same-Good
+ * vertical stagger does not pull a Fun-gutter title onto
+ * Grizzly Man. Overlay leftover unique-4 titles (John Wick
+ * Fun 10 / Good 0) can win Furiosa over Clerks because
+ * John Wick is closer; Furiosa still flips to Good 10
+ * because both interiors occupy Good 0. Coincident
+ * north/south stay put at class apply.
+ */
+function interiorFunGutterNeighborGoodStagger(
+  groups: PositionGroup[],
+  interiorFun: Map<string, 'fun-10' | 'fun-0'>,
+  interiorGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
+  const gutters = groups.filter(isFunGutterUnstacked)
+  const interiors = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      interiorFun.has(group.key) &&
+      interiorGood.has(group.key),
+  )
+  const pairs: {
+    gutter: PositionGroup
+    interior: PositionGroup
+    dist: number
+  }[] = []
+  for (const gutter of gutters) {
+    const wantFun: 'fun-10' | 'fun-0' =
+      gutter.fun >= LABEL_SOUTH_FUN ? 'fun-10' : 'fun-0'
+    for (const interior of interiors) {
+      if (interiorFun.get(interior.key) !== wantFun) continue
+      const dFun = Math.abs(gutter.fun - interior.fun)
+      const dGood = Math.abs(gutter.good - interior.good)
+      if (
+        dFun > INTERIOR_SAME_GOOD_FUN_GAP ||
+        dGood > INTERIOR_CLOSE_GOOD_GAP
+      ) {
+        continue
+      }
+      pairs.push({
+        gutter,
+        interior,
+        dist: Math.hypot(dFun, dGood),
+      })
+    }
+  }
+  pairs.sort((a, b) => a.dist - b.dist)
+  const usedGutter = new Set<string>()
+  const usedInterior = new Set<string>()
+  for (const pair of pairs) {
+    if (
+      usedGutter.has(pair.gutter.key) ||
+      usedInterior.has(pair.interior.key)
+    ) {
+      continue
+    }
+    const interiorSide = interiorGood.get(pair.interior.key)
+    if (!interiorSide) continue
+    const interiorResolved: 'left' | 'right' =
+      interiorSide === 'good-10' ? 'right' : 'left'
+    if (funGutterResolvedGoodSide(pair.gutter) !== interiorResolved) {
+      continue
+    }
+    const side: 'good-10' | 'good-0' =
+      interiorResolved === 'right' ? 'good-0' : 'good-10'
     stagger.set(pair.gutter.key, side)
     usedGutter.add(pair.gutter.key)
     usedInterior.add(pair.interior.key)
@@ -1117,8 +1215,13 @@ export function GhostPoints({
     interiorFun,
     interiorGood,
   )
+  const funGutterNeighborGood = interiorFunGutterNeighborGoodStagger(
+    groups,
+    interiorFun,
+    interiorGood,
+  )
   const funStagger = new Map([...interiorFun, ...gutterNeighborFun])
-  const goodStagger = interiorGood
+  const goodStagger = new Map([...interiorGood, ...funGutterNeighborGood])
   return (
     <>
       {groups.map((group) => {
@@ -1146,16 +1249,6 @@ export function GhostPoints({
         // cover 1-unit neighbors, so only those grow into the gutter.
         const hasVerticalSlot =
           labelBelow || labelAbove || labelFarBelow || labelFarAbove
-        const gutterIntoFun10 =
-          !hasVerticalSlot && group.fun >= LABEL_SOUTH_FUN
-        const gutterIntoFun0 =
-          !hasVerticalSlot && !gutterIntoFun10 && group.fun <= LABEL_NORTH_FUN
-        const gutterIntoGood10 =
-          !hasVerticalSlot && group.good >= LABEL_GUTTER_GOOD_HIGH
-        const gutterIntoGood0 =
-          !hasVerticalSlot &&
-          !gutterIntoGood10 &&
-          group.good <= LABEL_GUTTER_GOOD_LOW
         // Interior same-Good stagger reuses the Fun 10 / Fun 0 growth
         // at ghost-label zoom. Close-Good neighbors of that pair,
         // isolated close-Good pairs with no same-Good neighbor, and
@@ -1175,12 +1268,15 @@ export function GhostPoints({
         // of those slots as a triangle, leftover size-5 of
         // that peel (John Wick / Some Like It Hot / Challengers
         // / Logan Lucky after peeling Inside the Mind of a Dog)
-        // reuse a leftover unique-quadrant 4, and Good-gutter
+        // reuse a leftover unique-quadrant 4, Good-gutter
         // neighbors of those slots (Stand by Me next to Mickey
         // 17) reuse Fun stagger so they do not cover the
-        // interior. Skip coincident north/south so those names
-        // do not restack on the primary that already occupies
-        // a slot next to the marker.
+        // interior, and Fun-gutter neighbors of those slots
+        // (Manchester by the Sea next to Room) reuse Good
+        // stagger opposite the interior so they do not cover
+        // in the Fun gutter. Skip coincident north/south so
+        // those names do not restack on the primary that
+        // already occupies a slot next to the marker.
         const staggerTowardFun10 =
           !hasVerticalSlot && funStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 =
@@ -1189,6 +1285,19 @@ export function GhostPoints({
           !hasVerticalSlot && goodStagger.get(group.key) === 'good-10'
         const staggerTowardGood0 =
           !hasVerticalSlot && goodStagger.get(group.key) === 'good-0'
+        const gutterIntoFun10 =
+          !hasVerticalSlot && group.fun >= LABEL_SOUTH_FUN
+        const gutterIntoFun0 =
+          !hasVerticalSlot && !gutterIntoFun10 && group.fun <= LABEL_NORTH_FUN
+        const gutterIntoGood10 =
+          !hasVerticalSlot &&
+          group.good >= LABEL_GUTTER_GOOD_HIGH &&
+          !staggerTowardGood0
+        const gutterIntoGood0 =
+          !hasVerticalSlot &&
+          !gutterIntoGood10 &&
+          group.good <= LABEL_GUTTER_GOOD_LOW &&
+          !staggerTowardGood10
 
         return (
           <div
