@@ -580,6 +580,23 @@
     min-width: 0;
   }
 
+  /*
+    Fit-zoom hides unselected on-canvas names, so this list is how you
+    read titles before a tap. One nowrap 0.82rem line next to 44px
+    delete and F/G is ~12-16 characters on landscape, so Pirates of
+    the Caribbean still reads as "Pirates of the C…". Two lines in
+    that leftover width match the Selected bar wrap without growing
+    the 44px row enough to lose the 5.5rem list reservation.
+  */
+  .movie-list-title strong {
+    white-space: normal;
+    overflow-wrap: break-word;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
   .movie-list-scores {
     flex-shrink: 0;
     font-size: 0.7rem;
