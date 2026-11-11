@@ -514,17 +514,20 @@
   }
 
   /*
-    Fun 10 is the only two-digit left-gutter label. On a 10rem-floor
-    landscape square that gutter is ~13px and bold "10" is wider, so the
-    slot clips it and the fitted Fun scale reads 0/2/4/5/6/8. Sit it in
-    the top gutter to the right of Fun=0 (right: auto, or left+right on a
-    0-size anchor would collapse the box). Portrait 12rem-floor plots
-    have the same width problem.
+    Fun 10 must stay on the left axis so the fitted scale reads 0-10 as
+    one column. Parking it in the top gutter made typical iPhone plots
+    look like Fun ended at 8, with a stray 10 at Good=10. 0.85rem "10"
+    plus the 4px outset needs ~23px (~17.5rem square). Real phones are
+    ~320px and already fit; only the 12rem floor is too narrow, so the
+    top-gutter fallback is a container query, not the default.
+    right: auto, or left+right on a 0-size anchor would collapse the box.
   */
-  .grid-tick-y:not(.grid-tick-y-right)[data-tick='10'] > .grid-tick-label {
-    right: auto;
-    left: 0;
-    transform: translate(0, -100%);
+  @container (max-width: 17.5rem) {
+    .grid-tick-y:not(.grid-tick-y-right)[data-tick='10'] > .grid-tick-label {
+      right: auto;
+      left: 0;
+      transform: translate(0, -100%);
+    }
   }
 
   /*
@@ -1071,6 +1074,26 @@
     font-size: 0.7rem;
     /* 2px plus 0.7rem "10" fits the ~13px SE-floor landscape margin. */
     --grid-tick-outset-major: 2px;
+  }
+
+  /*
+    Landscape 0.7rem "10" fits the left gutter down to ~14rem. Undo the
+    portrait 17.5rem top-gutter fallback so a typical ~280px landscape
+    square keeps Fun 10 on the Fun axis. Only the 10rem floor is too
+    narrow for that two-digit label.
+  */
+  .grid-tick-y:not(.grid-tick-y-right)[data-tick='10'] > .grid-tick-label {
+    right: var(--grid-tick-outset-major);
+    left: auto;
+    transform: translate(0, -50%);
+  }
+
+  @container (max-width: 14rem) {
+    .grid-tick-y:not(.grid-tick-y-right)[data-tick='10'] > .grid-tick-label {
+      right: auto;
+      left: 0;
+      transform: translate(0, -100%);
+    }
   }
 
   .deck-rail {
