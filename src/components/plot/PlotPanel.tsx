@@ -55,6 +55,11 @@ export function PlotPanel({
   onClearHover: () => void
 }) {
   const handleBackgroundPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    // iOS fires pointerdown for the first finger. Clearing here would
+    // hide the selected fit-zoom title as soon as a pinch, pan, or
+    // double-tap starts. Touch deselect waits for a confirmed empty tap
+    // in PlotGridZoom.
+    if (event.pointerType === 'touch') return
     const target = event.target as Element
     if (target.closest('.movie-point') || target.closest('.grid-toolbar')) {
       return
@@ -108,7 +113,7 @@ export function PlotPanel({
         )}
         <div className="grid-axis grid-axis-y">Fun</div>
         <div className="grid-axis grid-axis-x">Good</div>
-        <PlotGridZoom ref={gridRef}>
+        <PlotGridZoom ref={gridRef} onEmptyTap={onClearSelection}>
           <GridAxes />
           {ghostDeckId && <GhostPoints groups={ghostGroups} variant={1} />}
           {ghost2DeckId && <GhostPoints groups={ghost2Groups} variant={2} />}

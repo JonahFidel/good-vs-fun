@@ -59,10 +59,14 @@ function isCoarsePointer() {
   return window.matchMedia(COARSE_POINTER_QUERY).matches
 }
 
-type Props = { children: React.ReactNode }
+type Props = {
+  children: React.ReactNode
+  /** Fires after a confirmed empty-grid tap, not on the first finger of pinch/pan/double-tap. */
+  onEmptyTap?: () => void
+}
 
 export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
-  function PlotGridZoom({ children }, forwardedRef) {
+  function PlotGridZoom({ children, onEmptyTap }, forwardedRef) {
     const slotRef = useRef<HTMLDivElement | null>(null)
     const canvasRef = useRef<HTMLDivElement | null>(null)
     const overlayRef = useRef<HTMLDivElement | null>(null)
@@ -76,6 +80,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const gestureMovedRef = useRef(false)
     const pinchOccurredRef = useRef(false)
     const lastTapRef = useRef<{ t: number; x: number; y: number } | null>(null)
+    const emptyTapTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(
+      null,
+    )
+    const onEmptyTapRef = useRef(onEmptyTap)
     const webkitGestureOriginRef = useRef<{
       origin: ZoomState
       originPoint: PointerPos
@@ -83,6 +91,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const webkitGestureActiveRef = useRef(false)
 
     useImperativeHandle(forwardedRef, () => gridRef.current as HTMLDivElement)
+
+    useEffect(() => {
+      onEmptyTapRef.current = onEmptyTap
+    }, [onEmptyTap])
 
     function applyTransform() {
       const canvas = canvasRef.current
@@ -229,6 +241,24 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         return { x: clientX - rect.left, y: clientY - rect.top }
       }
 
+      function cancelEmptyTap() {
+        if (emptyTapTimerRef.current != null) {
+          window.clearTimeout(emptyTapTimerRef.current)
+          emptyTapTimerRef.current = null
+        }
+      }
+
+      function scheduleEmptyTap(startedAt: number) {
+        cancelEmptyTap()
+        emptyTapTimerRef.current = window.setTimeout(() => {
+          emptyTapTimerRef.current = null
+          const last = lastTapRef.current
+          if (!last || last.t !== startedAt) return
+          lastTapRef.current = null
+          onEmptyTapRef.current?.()
+        }, DOUBLE_TAP_MS)
+      }
+
       function isNearMoviePoint(clientX: number, clientY: number) {
         for (const pt of capturedSlot.querySelectorAll(
           '.movie-point:not(.ghost-point)',
@@ -260,6 +290,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         capturedSlot.style.cursor = ''
         pinchOccurredRef.current = true
         gestureMovedRef.current = true
+        cancelEmptyTap()
+        lastTapRef.current = null
         pinchRef.current = {
           origin: { ...stateRef.current },
           originMidpoint: pointerMidpoint(a, b),
@@ -327,6 +359,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (!start || gestureMovedRef.current) return
         if (Math.hypot(clientX - start.x, clientY - start.y) >= PAN_SLOP_PX) {
           gestureMovedRef.current = true
+          cancelEmptyTap()
+          lastTapRef.current = null
         }
       }
 
@@ -362,6 +396,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       function maybeDoubleTap(clientX: number, clientY: number) {
         if (gestureMovedRef.current || pinchOccurredRef.current) {
+          cancelEmptyTap()
           lastTapRef.current = null
           return false
         }
@@ -370,6 +405,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // other, so tap-A-then-tap-B would jump to 2.2x instead of
         // switching the title. Empty-space double-tap still zooms.
         if (isNearMoviePoint(clientX, clientY)) {
+          cancelEmptyTap()
           lastTapRef.current = null
           return false
         }
@@ -377,6 +413,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // selected readout or a zoomed title hits the grid. Counting that
         // as double-tap would zoom while the user is trying to read it.
         if (pointerHitsVisibleMovieLabel(capturedSlot, clientX, clientY)) {
+          cancelEmptyTap()
           lastTapRef.current = null
           return false
         }
@@ -387,11 +424,17 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           now - last.t <= DOUBLE_TAP_MS &&
           Math.hypot(clientX - last.x, clientY - last.y) <= DOUBLE_TAP_PX
         ) {
+          cancelEmptyTap()
           lastTapRef.current = null
           applyDoubleTap(slotPoint(clientX, clientY))
           return true
         }
         lastTapRef.current = { t: now, x: clientX, y: clientY }
+        // Wrapper pointerdown would deselect on the first finger of a
+        // pinch, pan, or double-tap, hiding the only fit-zoom title.
+        // Wait out the double-tap window so a confirmed empty tap is
+        // the only touch path that clears the selection.
+        scheduleEmptyTap(now)
         return false
       }
 
@@ -467,6 +510,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (e.touches.length !== 1) return
         const touch = e.touches[0]
         pinchOccurredRef.current = false
+        // A follow-up finger may be the second half of a double-tap or a
+        // pan. Cancel the pending empty-tap deselect without clearing
+        // lastTap, or pinch/pan after a tap would hide the selected title.
+        cancelEmptyTap()
         noteGestureStart(touch.clientX, touch.clientY)
         // beginPan is a no-op at fit zoom on coarse pointers; when zoomed it
         // must start even if the finger landed on a movie, or the 44px
@@ -524,6 +571,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       function onTouchCancel() {
+        cancelEmptyTap()
         lastTapRef.current = null
         endTouchGesture()
       }
@@ -597,6 +645,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       gestureRoot.addEventListener('gestureend', onWebkitGestureEnd, gestureOpts)
 
       return () => {
+        cancelEmptyTap()
         capturedSlot.removeEventListener('pointerdown', onPointerDown, { capture: true })
         capturedSlot.removeEventListener('pointermove', onPointerMove)
         capturedSlot.removeEventListener('pointerup', onPointerUp)
