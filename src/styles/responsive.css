@@ -2038,6 +2038,37 @@
   }
 
   /*
+    Good-gutter overlay transform is vertically centered and would
+    undo Fun 10 / Fun 0 growth on a gutter neighbor of an interior
+    Fun-plus-Good slot. Combine so Stand by Me (Good 10, Fun 0)
+    sits below Mickey 17 (Good 10, Fun 0) instead of covering
+    it, matching primary labels-visible. Include label-start so
+    an equally specific later stagger-fun + label-start rule
+    does not grow these back onto the interior Good side.
+    Fun 0-1 / Fun 9-10 gutter titles stay out of this pass
+    so it does not fight edge-gutter CSS.
+  */
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--stagger-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--stagger-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--stagger-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10.ghost-point--stagger-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(100% + 9px), 0);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--stagger-fun-10 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--stagger-fun-10.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--stagger-fun-0 > .movie-label,
+  .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0.ghost-point--stagger-fun-0.ghost-point--label-start > .movie-label {
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
     Same-Good Fun stagger still leaves a 3.75rem overlay covering a
     close-Good neighbor on the default overlay side: Grizzly Man
     (7.59 / 8.32, toward Fun 10) covers The Death of Stalin
@@ -2111,8 +2142,12 @@
     Good 0), Some Like It Hot (Fun 10 / Good 10),
     Challengers (Fun 0 / Good 10), and Logan Lucky
     (Fun 0 / Good 0) sit in opposite corners instead of
-    covering. Coincident north/south keep their slot
-    because both classes skip hasVerticalSlot.
+    covering. Good-gutter neighbors of those slots
+    (Stand by Me next to Mickey 17) reuse Fun stagger
+    with the gutter-good combo above so the centered
+    Good 10 transform does not re-center them.
+    Coincident north/south keep their slot because
+    both classes skip hasVerticalSlot.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--stagger-good-10 > .movie-label,
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
