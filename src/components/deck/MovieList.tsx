@@ -113,7 +113,9 @@ export function MovieList({
             }}
           >
             <div className="movie-list-title">
-              <strong title={movie.title}>{movie.title}</strong>
+              <strong title={movie.title}>
+                <span className="movie-list-title-text">{movie.title}</span>
+              </strong>
               {!isExampleDeck && (
                 <button
                   type="button"

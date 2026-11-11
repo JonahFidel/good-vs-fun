@@ -789,14 +789,35 @@
     bar wrap without growing the 44px row enough to lose the 5.5rem
     list reservation. Per-row × still stole ~44px (and fat-fingered
     deletes while scrolling); Selected already has a 44px Delete.
+
+    Line-clamp paints the first two wrapped lines, so the namesake-
+    corner title that justified this wrap still never reached Black
+    Pearl beside Fun/Good on portrait or on the ~12-15.5rem landscape
+    rail (~20-24 characters per line is three wraps). Same column
+    flex-end plus overflow as the Selected bar and 32cqw canvas pill.
+    Two line-heights (1.25); height stays auto so Heat does not sit
+    in an empty two-line box. The inner text must keep its content
+    height so flex-end can hide the start.
   */
   .movie-list-title strong {
     white-space: normal;
     overflow-wrap: break-word;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    max-height: 2.5em;
+    overflow: hidden;
+  }
+
+  .movie-list-title-text {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: unset;
+    flex: none;
   }
 
   .movie-list-scores {
