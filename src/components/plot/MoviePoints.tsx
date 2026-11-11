@@ -804,8 +804,8 @@ function interiorCloseGoodLeftoverMeshTriangleStagger(
  * the default label side instead so both seven-line pills
  * fit. Skip a leftover pair whose Good flip would not
  * restack; those were packed with the hub. Overlay copies
- * of this pair stay in a leftover size-5 until a later
- * ghost-label increment.
+ * of this pair sit in a leftover size-5 that peels the
+ * vertex whose removal leaves a unique-quadrant 4.
  */
 function interiorCloseGoodLeftoverPairVerticalStagger(
   groups: PositionGroup[],

@@ -53,9 +53,12 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * Inside the Mind of a Dog in the cluster, so the leftover
  * is size-8 rather than the primary's size-5, but peeling
  * Knives Out 3 still frees The Vvitch / The Killer.
- * Skip coincident north/south so those names do not restack
- * on the primary. Reuse of label-start would also move every
- * left-side overlay.
+ * Remaining size-5 of that peel then peels the vertex
+ * whose removal leaves a unique-quadrant 4, so John Wick,
+ * Some Like It Hot, Challengers, and Logan Lucky occupy
+ * opposite corners. Skip coincident north/south so those
+ * names do not restack on the primary. Reuse of
+ * label-start would also move every left-side overlay.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
 /** A 4-clique can occupy the four Fun-plus-Good stagger slots. */
@@ -702,9 +705,9 @@ function isolatedCloseGoodFlipRestacks(
  * pack it with the size-2 whose isolated Good flip would not
  * restack (The Vvitch / The Killer) so those three occupy
  * triangle slots. The remaining size-5 Challengers cluster
- * stays put. Allow leftover meshes larger than 5 so this is
- * not a no-op on overlay. Coincident north/south stay put at
- * class apply.
+ * peels a unique-quadrant-4 vertex next. Allow leftover
+ * meshes larger than 5 so this is not a no-op on overlay.
+ * Coincident north/south stay put at class apply.
  */
 function interiorCloseGoodLeftoverMeshTriangleStagger(
   groups: PositionGroup[],
@@ -766,6 +769,82 @@ function interiorCloseGoodLeftoverMeshTriangleStagger(
         good.set(entry.key, entry.good)
       }
       packed = true
+    }
+  }
+  return { fun, good }
+}
+
+/**
+ * Matches MoviePoints leftover pair Fun stagger, but a
+ * naive size===2 port is a no-op: overlay chain stagger
+ * leaves Some Like It Hot / John Wick / Inside the Mind
+ * of a Dog in the cluster, so leftover after the Knives
+ * Out 3 triangle peel is size-5. Peeling both degree-1
+ * ends and triangle-packing the left trio would flip
+ * Some Like It Hot onto John Wick's default right.
+ * Reuse the mesh hub peel on this leftover: drop the
+ * vertex whose removal leaves a unique-quadrant 4
+ * (Inside the Mind of a Dog) so John Wick grows toward
+ * Fun 10 / Good 0, Some Like It Hot toward Fun 10 /
+ * Good 10, Challengers toward Fun 0 / Good 10, and
+ * Logan Lucky toward Fun 0 / Good 0. Coincident
+ * north/south stay put at class apply.
+ */
+function interiorCloseGoodLeftoverMeshUnique4Stagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+  sameSideVertical: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueFun: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueGood: Map<string, 'good-10' | 'good-0'>,
+  triangleFun: Map<string, 'fun-10' | 'fun-0'>,
+  triangleGood: Map<string, 'good-10' | 'good-0'>,
+  meshFun: Map<string, 'fun-10' | 'fun-0'>,
+  meshGood: Map<string, 'good-10' | 'good-0'>,
+  leftoverMeshFun: Map<string, 'fun-10' | 'fun-0'>,
+  leftoverMeshGood: Map<string, 'good-10' | 'good-0'>,
+): {
+  fun: Map<string, 'fun-10' | 'fun-0'>
+  good: Map<string, 'good-10' | 'good-0'>
+} {
+  const fun = new Map<string, 'fun-10' | 'fun-0'>()
+  const good = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !horizontalStagger.has(group.key) &&
+      !sameSideVertical.has(group.key) &&
+      !cliqueFun.has(group.key) &&
+      !cliqueGood.has(group.key) &&
+      !triangleFun.has(group.key) &&
+      !triangleGood.has(group.key) &&
+      !meshFun.has(group.key) &&
+      !meshGood.has(group.key) &&
+      !leftoverMeshFun.has(group.key) &&
+      !leftoverMeshGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    if (component.length < INTERIOR_LEFTOVER_MESH_SIZE) continue
+    const partners = closeGoodPartners(component)
+    const hubs = [...component].sort(
+      (a, b) =>
+        (partners.get(b.key)?.length ?? 0) -
+        (partners.get(a.key)?.length ?? 0),
+    )
+    let packed = false
+    for (const hub of hubs) {
+      if (packed) break
+      const remaining = component.filter((group) => group.key !== hub.key)
+      for (const piece of closeGoodConnectedComponents(remaining)) {
+        const assigned = uniqueQuadrantAssignment(piece)
+        if (!assigned) continue
+        for (const entry of assigned) {
+          fun.set(entry.key, entry.fun)
+          good.set(entry.key, entry.good)
+        }
+        packed = true
+      }
     }
   }
   return { fun, good }
@@ -911,6 +990,20 @@ export function GhostPoints({
     meshStagger.fun,
     meshStagger.good,
   )
+  const leftoverUnique4Stagger = interiorCloseGoodLeftoverMeshUnique4Stagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+    sameSideVertical,
+    cliqueStagger.fun,
+    cliqueStagger.good,
+    triangleStagger.fun,
+    triangleStagger.good,
+    meshStagger.fun,
+    meshStagger.good,
+    leftoverMeshStagger.fun,
+    leftoverMeshStagger.good,
+  )
   const funStagger = new Map([
     ...verticalStagger,
     ...sameSideVertical,
@@ -918,6 +1011,7 @@ export function GhostPoints({
     ...triangleStagger.fun,
     ...meshStagger.fun,
     ...leftoverMeshStagger.fun,
+    ...leftoverUnique4Stagger.fun,
   ])
   const goodStagger = new Map([
     ...horizontalStagger,
@@ -925,6 +1019,7 @@ export function GhostPoints({
     ...triangleStagger.good,
     ...meshStagger.good,
     ...leftoverMeshStagger.good,
+    ...leftoverUnique4Stagger.good,
   ])
   return (
     <>
@@ -977,11 +1072,15 @@ export function GhostPoints({
         // Days) reuse three of those slots as a 2-vs-1 split,
         // size-5+ mesh hub peels (Sinners / Clerks / One Battle
         // After Another / Mickey 17 around Knives Out 3) reuse a
-        // leftover unique-quadrant 4, and leftover mesh of that
-        // peel (Knives Out 3 / The Vvitch / The Killer) reuse
-        // three of those slots as a triangle. Skip coincident
+        // leftover unique-quadrant 4, leftover mesh of that peel
+        // (Knives Out 3 / The Vvitch / The Killer) reuse three
+        // of those slots as a triangle, and leftover size-5 of
+        // that peel (John Wick / Some Like It Hot / Challengers
+        // / Logan Lucky after peeling Inside the Mind of a Dog)
+        // reuse a leftover unique-quadrant 4. Skip coincident
         // north/south so those names do not restack on the
-        // primary that already occupies a slot next to the marker.
+        // primary that already occupies a slot next to the
+        // marker.
         const staggerTowardFun10 =
           !hasVerticalSlot && funStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 =

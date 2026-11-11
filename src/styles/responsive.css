@@ -2031,13 +2031,16 @@
     three of those slots as a 2-vs-1 split, size-5+
     mesh hub peels (Sinners / Clerks / One Battle After
     Another / Mickey 17 around Knives Out 3) reuse a
-    leftover unique-quadrant 4, and leftover mesh of
-    that peel (Knives Out 3 / The Vvitch / The Killer)
-    reuse three of those slots as a triangle. The combo
-    rules below keep both offsets so Good-side transform
-    does not re-center them. Coincident north/south keep
-    their current Good side so they do not restack on
-    the primary.
+    leftover unique-quadrant 4, leftover mesh of that
+    peel (Knives Out 3 / The Vvitch / The Killer) reuse
+    three of those slots as a triangle, and leftover
+    size-5 of that peel (John Wick / Some Like It Hot /
+    Challengers / Logan Lucky after peeling Inside the
+    Mind of a Dog) reuse a leftover unique-quadrant 4.
+    The combo rules below keep both offsets so Good-side
+    transform does not re-center them. Coincident
+    north/south keep their current Good side so they do
+    not restack on the primary.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-10 > .movie-label,
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {
@@ -2073,7 +2076,12 @@
     peel reuses three of those slots so Knives Out 3
     (Fun 10 / Good 0), The Vvitch (Fun 10 / Good 10),
     and The Killer (Fun 0 / Good 10) sit apart instead
-    of covering. Coincident north/south keep their slot
+    of covering. Leftover size-5 of that peel reuses a
+    leftover unique-quadrant 4 so John Wick (Fun 10 /
+    Good 0), Some Like It Hot (Fun 10 / Good 10),
+    Challengers (Fun 0 / Good 10), and Logan Lucky
+    (Fun 0 / Good 0) sit in opposite corners instead of
+    covering. Coincident north/south keep their slot
     because both classes skip hasVerticalSlot.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--stagger-good-10 > .movie-label,
