@@ -57,18 +57,34 @@ const PAN_SLOP_PX = 8
 const DOUBLE_TAP_MS = 350
 const DOUBLE_TAP_PX = 28
 const COARSE_POINTER_QUERY = '(pointer: coarse)'
+/** Trailing Safari pinch ctrl+wheel ticks can arrive after gestureend. */
+const WEBKIT_GESTURE_SHADOW_MS = 120
 
 function isCoarsePointer() {
   return window.matchMedia(COARSE_POINTER_QUERY).matches
 }
 
+function wheelZoomFactor(event: WheelEvent) {
+  const delta =
+    event.deltaMode === 1
+      ? event.deltaY * 30
+      : event.deltaMode === 2
+        ? event.deltaY * 300
+        : event.deltaY
+  return Math.exp(-delta / 800)
+}
+
 /**
  * Safari Mac trackpad pinch fires GestureEvents and a synthetic ctrl+wheel
- * for the same gesture. Applying both double-scales (the wheel ticks can
- * also arrive before gesturestart or after gestureend, so a "gesture is
- * active" guard is not enough). Chrome/Firefox have no GestureEvents;
- * their trackpad pinch is ctrl+wheel only, so those still zoom from wheel.
- * iPhone pinch is Touch Events on a coarse pointer; this does not apply.
+ * for the same gesture. Applying both double-scales. Chrome/Firefox have no
+ * GestureEvents; their trackpad pinch is ctrl+wheel only, so those still
+ * zoom from wheel immediately.
+ *
+ * These ticks can arrive before gesturestart or after gestureend, so a
+ * "gesture is active" skip is not enough. They are deferred one frame and
+ * dropped if a GestureEvent claimed the pinch; otherwise they still zoom
+ * (real Ctrl+scroll, or a pinch whose GestureEvents were missed).
+ * iPhone pinch is Touch Events; coarse pointers ignore wheel entirely.
  */
 function isWebKitGestureShadowWheel(event: WheelEvent) {
   return (
@@ -108,6 +124,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       originPoint: PointerPos
     } | null>(null)
     const webkitGestureActiveRef = useRef(false)
+    const lastWebkitGestureAtRef = useRef(0)
+    const pendingShadowWheelRef = useRef<{
+      clientX: number
+      clientY: number
+      factor: number
+    } | null>(null)
+    const shadowWheelRafRef = useRef<number | null>(null)
 
     useImperativeHandle(forwardedRef, () => gridRef.current as HTMLDivElement)
 
@@ -169,6 +192,14 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
     }
 
+    function cancelPendingShadowWheel() {
+      pendingShadowWheelRef.current = null
+      if (shadowWheelRafRef.current != null) {
+        cancelAnimationFrame(shadowWheelRafRef.current)
+        shadowWheelRafRef.current = null
+      }
+    }
+
     function centerIfPristine() {
       const slot = slotRef.current
       const canvas = canvasRef.current
@@ -216,42 +247,82 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       const wrapper = capturedSlot.closest('.grid-wrapper')
       const wheelRoot = wrapper instanceof HTMLElement ? wrapper : capturedSlot
 
-      function onWheel(e: WheelEvent) {
-        // Always zoom when the cursor is on the plot card.
-        // - Chrome/Firefox trackpad pinch is ctrl+wheel
-        // - Safari Mac trackpad pinch is GestureEvents; its ctrl+wheel is a
-        //   shadow of that gesture and must not also scale
-        // - Cmd/Ctrl + scroll (metaKey) and plain two-finger scroll still zoom
-        //   so the grid behaves like a Figma canvas: scroll = zoom, drag = pan.
-        e.preventDefault()
-        e.stopPropagation()
-        // Safari also fires GestureEvents for the same pinch. Those drive
-        // zoom on fine pointers. Ignore the synthetic ctrl+wheel too:
-        // ticks before gesturestart or after gestureend still double-scale
-        // if we only skip while webkitGestureActiveRef is set.
-        if (webkitGestureActiveRef.current) return
-        if (isWebKitGestureShadowWheel(e)) return
-
+      function applyWheelZoom(clientX: number, clientY: number, factor: number) {
         const rect = capturedSlot.getBoundingClientRect()
-        const cursorX = e.clientX - rect.left
-        const cursorY = e.clientY - rect.top
-        const delta =
-          e.deltaMode === 1 ? e.deltaY * 30 : e.deltaMode === 2 ? e.deltaY * 300 : e.deltaY
-        const factor = Math.exp(-delta / 800)
-
         stateRef.current = zoomTowardPoint(
           stateRef.current,
-          { x: cursorX, y: cursorY },
+          { x: clientX - rect.left, y: clientY - rect.top },
           factor,
         )
         userTransformedRef.current = true
         applyTransform()
       }
 
+      function flushPendingShadowWheel() {
+        shadowWheelRafRef.current = null
+        const pending = pendingShadowWheelRef.current
+        pendingShadowWheelRef.current = null
+        if (!pending) return
+        if (webkitGestureActiveRef.current) return
+        if (
+          performance.now() - lastWebkitGestureAtRef.current <
+          WEBKIT_GESTURE_SHADOW_MS
+        ) {
+          return
+        }
+        applyWheelZoom(pending.clientX, pending.clientY, pending.factor)
+      }
+
+      function onWheel(e: WheelEvent) {
+        // Always consume wheel on the plot card so the page cannot scroll
+        // or pinch-zoom underneath.
+        // - Chrome/Firefox trackpad pinch is ctrl+wheel and zooms immediately
+        // - Safari Mac trackpad pinch is GestureEvents; its ctrl+wheel is a
+        //   shadow and is deferred so real Ctrl+scroll still zooms
+        // - Cmd+scroll (metaKey) and plain two-finger scroll still zoom
+        //   so the grid behaves like a Figma canvas: scroll = zoom, drag = pan
+        // - iPhone/iPad pinch and pan are Touch Events. A synthesized wheel
+        //   during that gesture would stack on pinchTransform.
+        e.preventDefault()
+        e.stopPropagation()
+        if (isCoarsePointer()) return
+        if (webkitGestureActiveRef.current) return
+        if (
+          performance.now() - lastWebkitGestureAtRef.current <
+          WEBKIT_GESTURE_SHADOW_MS
+        ) {
+          return
+        }
+
+        const factor = wheelZoomFactor(e)
+        if (isWebKitGestureShadowWheel(e)) {
+          // Ticks can land before gesturestart. Queue until the next frame:
+          // a GestureEvent will cancel this, otherwise Ctrl+scroll (or a
+          // pinch whose GestureEvents were missed) still zooms the grid.
+          const pending = pendingShadowWheelRef.current
+          pendingShadowWheelRef.current = {
+            clientX: e.clientX,
+            clientY: e.clientY,
+            factor: pending ? pending.factor * factor : factor,
+          }
+          if (shadowWheelRafRef.current == null) {
+            shadowWheelRafRef.current = requestAnimationFrame(
+              flushPendingShadowWheel,
+            )
+          }
+          return
+        }
+
+        applyWheelZoom(e.clientX, e.clientY, factor)
+      }
+
       // { passive: false } is required so we can call preventDefault() and
       // suppress both native page-scroll and OS-level pinch-zoom.
       wheelRoot.addEventListener('wheel', onWheel, { passive: false })
-      return () => wheelRoot.removeEventListener('wheel', onWheel)
+      return () => {
+        cancelPendingShadowWheel()
+        wheelRoot.removeEventListener('wheel', onWheel)
+      }
     }, [])
 
     // One-finger pan; two-finger pinch-zoom on touch devices. Double-tap on
@@ -712,15 +783,17 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // On Safari Mac, trackpad pinch is GestureEvents, not Touch Events, so
       // swallowing them without applying scale left Figma-style pinch dead.
       // Listen on window capture: WebKit often targets document, so a plot-card
-      // listener never sees the gesture. Ctrl+wheel is already ignored as a
-      // GestureEvent shadow on Safari Mac, so missing these events would leave
-      // trackpad pinch zooming neither the grid nor the page.
+      // listener never sees the gesture. Safari's matching ctrl+wheel is
+      // deferred one frame and cancelled here so it cannot double-scale; if
+      // these events never arrive, that deferred wheel is the pinch fallback.
       function onWebkitGestureStart(event: Event) {
         event.preventDefault()
         if (pinchRef.current || isCoarsePointer()) return
         if (!webkitGestureOnPlot(event)) return
         const gesture = event as WebKitGestureEvent
+        cancelPendingShadowWheel()
         webkitGestureActiveRef.current = true
+        lastWebkitGestureAtRef.current = performance.now()
         webkitGestureOriginRef.current = {
           origin: { ...stateRef.current },
           originPoint: webkitGesturePoint(gesture),
@@ -752,6 +825,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         event.preventDefault()
         webkitGestureOriginRef.current = null
         webkitGestureActiveRef.current = false
+        lastWebkitGestureAtRef.current = performance.now()
+        cancelPendingShadowWheel()
       }
 
       const touchOpts: AddEventListenerOptions = { passive: false, capture: true }
@@ -773,6 +848,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       return () => {
         cancelEmptyTap()
+        cancelPendingShadowWheel()
         gestureRoot.removeEventListener('pointerdown', onPointerDown, { capture: true })
         gestureRoot.removeEventListener('pointermove', onPointerMove)
         gestureRoot.removeEventListener('pointerup', onPointerUp)
