@@ -105,7 +105,7 @@ function idFromLabelAtPoint(
  * line past the pill. That outside-pill miss still belongs to this
  * stored point: listedMovieIdAtPoint reads it without requiring the
  * pointer to stay in the box. Jitter onto a neighboring movie's title
- * still has to ease home.
+ * or its 44px ring still has to ease home.
  */
 export function moviePointAtVisibleLabel(
   root: ParentNode,
@@ -162,7 +162,13 @@ export function movieIdAtVisibleLabel(
  * stored point instead. Callers must still require the double-tap
  * window: this has no max distance, so a later empty-space tap in the
  * half-plane closer to the other listed name would otherwise steal
- * selection. Fit-zoom stacks hide inactive lines, so this is the
+ * selection. A follow-up in a neighboring movie's 44px ring is the
+ * same steal inside that window: at 2.2x a cell is ~68px, so 28px
+ * from a stacked title toward the next film lands in that ring, and
+ * the closer listed name would switch selection instead of easing
+ * home the way a neighboring title already does. Skip that other
+ * marker; only a second listed line of this stored point is select.
+ * Fit-zoom stacks hide inactive lines, so this is the
  * selected title and same-title zoom-in still fires.
  */
 export function listedMovieIdAtPoint(
@@ -278,6 +284,36 @@ export function nextMovieIdInGroup(
     return ids[(idx + 1) % ids.length]
   }
   return ids[0]
+}
+
+/**
+ * Nearest non-ghost movie-point whose 44px hit ring contains the pointer.
+ * Stacked tap-A-then-tap-B must not treat a neighboring film's ring as
+ * the other listed name: listedMovieIdAtPoint has no max distance, and
+ * 28px from a 2.2x stacked title toward the next cell lands in that ring.
+ */
+export function moviePointAtHit(
+  root: ParentNode,
+  clientX: number,
+  clientY: number,
+  maxDistance = MOVIE_HIT_RADIUS_PX,
+): HTMLElement | null {
+  let best: { point: HTMLElement; dist: number } | null = null
+
+  for (const point of root.querySelectorAll('.movie-point:not(.ghost-point)')) {
+    if (!(point instanceof HTMLElement)) continue
+    const dist = distanceToRectCenter(
+      point.getBoundingClientRect(),
+      clientX,
+      clientY,
+    )
+    if (dist > maxDistance) continue
+    if (!best || dist < best.dist) {
+      best = { point, dist }
+    }
+  }
+
+  return best?.point ?? null
 }
 
 /**
