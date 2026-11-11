@@ -1,4 +1,8 @@
 import type { RefObject } from 'react'
+import {
+  VISIBLE_MOVIE_LABEL_SELECTOR,
+  pointerHitsSelector,
+} from '../../lib/closestMoviePoint'
 import type { PositionGroup } from '../../lib/groupByPosition'
 import type { MovieHover } from '../../lib/types'
 import { GhostPoints } from '../ghost/GhostPoints'
@@ -56,6 +60,20 @@ export function PlotPanel({
   const handleBackgroundPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     const target = event.target as Element
     if (target.closest('.movie-point') || target.closest('.grid-toolbar')) {
+      return
+    }
+    // iPhone selected pills are pointer-events: none so nearby 44px markers
+    // stay tappable. A tap on the title then hits empty grid and would
+    // dismiss the only default-zoom readout. Keep nearby-movie selection;
+    // just do not treat the visible pill as empty space.
+    if (
+      pointerHitsSelector(
+        event.currentTarget,
+        VISIBLE_MOVIE_LABEL_SELECTOR,
+        event.clientX,
+        event.clientY,
+      )
+    ) {
       return
     }
     onClearSelection()

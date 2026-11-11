@@ -5,7 +5,11 @@ import {
   useLayoutEffect,
   useRef,
 } from 'react'
-import { MOVIE_HIT_RADIUS_PX } from '../../lib/closestMoviePoint'
+import {
+  MOVIE_HIT_RADIUS_PX,
+  VISIBLE_MOVIE_LABEL_SELECTOR,
+  pointerHitsSelector,
+} from '../../lib/closestMoviePoint'
 import { scoringRegionScreenRect } from '../../lib/gridCanvas'
 import {
   INITIAL_SCALE,
@@ -370,6 +374,20 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // Stacked markers cycle titles on tap. Counting those toward
         // double-tap would zoom on the second title instead of advancing.
         if (isStackedMovieTouch(target)) {
+          lastTapRef.current = null
+          return false
+        }
+        // Visible title pills are pointer-events: none, so a tap on the
+        // selected readout hits the grid. Counting that as double-tap
+        // would zoom while the user is trying to read the title.
+        if (
+          pointerHitsSelector(
+            capturedSlot,
+            VISIBLE_MOVIE_LABEL_SELECTOR,
+            clientX,
+            clientY,
+          )
+        ) {
           lastTapRef.current = null
           return false
         }

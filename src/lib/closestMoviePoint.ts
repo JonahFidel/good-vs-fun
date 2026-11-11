@@ -4,6 +4,36 @@
  */
 export const MOVIE_HIT_RADIUS_PX = 22
 
+/**
+ * On-canvas title pills that are visible on iPhone. Those labels use
+ * pointer-events: none so nearby markers stay tappable, which also lets a
+ * tap fall through to empty grid and deselect or double-tap zoom.
+ */
+export const VISIBLE_MOVIE_LABEL_SELECTOR =
+  '.movie-point--selected > .movie-label, .movie-point.dragging > .movie-label, .movie-point--highlighted > .movie-label'
+
+/** True when a screen-space point lands inside an element matching `selector`. */
+export function pointerHitsSelector(
+  root: ParentNode,
+  selector: string,
+  clientX: number,
+  clientY: number,
+): boolean {
+  for (const node of root.querySelectorAll(selector)) {
+    if (!(node instanceof HTMLElement)) continue
+    const rect = node.getBoundingClientRect()
+    if (
+      clientX >= rect.left &&
+      clientX <= rect.right &&
+      clientY >= rect.top &&
+      clientY <= rect.bottom
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
 function movieIdsInPoint(point: Element): string[] {
   const ids: string[] = []
   for (const node of point.querySelectorAll('[data-movie-id]')) {
