@@ -80,7 +80,7 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * toward Fun 10 so it sits above Schindler and
  * Requiem. Good flips restack on Manchester, so
  * this is Fun-only. Overlay copies of that
- * triangle wait for ghost-label zoom. Reuse of
+ * triangle match at ghost-label zoom. Reuse of
  * label-end would also flip the fit-zoom
  * selected pill.
  */
@@ -1187,7 +1187,8 @@ function funGutterAssignedGoodSide(
  * Manchester stays opposite Room. Drama's Fun 0-1 mesh
  * has no degree-1 end, so leftover Fun-gutter
  * triangles take Fun stagger next. Overlay copies
- * of those 3-chains match at ghost-label zoom.
+ * of those 3-chains and leftover triangles match
+ * at ghost-label zoom.
  */
 function funGutterCloseGoodChainHorizontalStagger(
   groups: PositionGroup[],
@@ -1274,7 +1275,7 @@ function funGutterCloseGoodChainHorizontalStagger(
  * of covering them. Fun 9-10 leftover triangles
  * grow the lowest title toward Fun 0. Schindler vs
  * Requiem still cover on that north/Good-10 slot.
- * Overlay copies wait for ghost-label zoom.
+ * Overlay copies match at ghost-label zoom.
  */
 function funGutterLeftoverTriangleFunStagger(
   groups: PositionGroup[],

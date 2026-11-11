@@ -77,12 +77,14 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * on the right of Die Hard, so the leftover peel
  * only needs Top Gun on Good 10. Drama's leftover
  * Fun 0-1 triangle (12 Years / Schindler /
- * Requiem after Tree of Life sits opposite) takes
- * Fun stagger on the primary; overlay copies wait
- * for ghost-label zoom. Skip coincident
- * north/south so those names do not restack on
- * the primary. Reuse of label-start would also
- * move every left-side overlay.
+ * Requiem after Tree of Life sits opposite) then
+ * Fun-staggers the highest same-side title: 12
+ * Years grows toward Fun 10 so it sits above
+ * Schindler and Requiem. Overlay flip 7 still
+ * leaves Tree of Life left at Good 8.5. Skip
+ * coincident north/south so those names do not
+ * restack on the primary. Reuse of label-start
+ * would also move every left-side overlay.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
 /** A 4-clique can occupy the four Fun-plus-Good stagger slots. */
@@ -1179,9 +1181,8 @@ function funGutterAssignedGoodSide(
  * interior-neighbor passes so Airplane stays opposite
  * Ghostbusters and Furiosa stays opposite John Wick.
  * Drama's Fun 0-1 mesh has no degree-1 end, so leftover
- * Fun-gutter triangles take Fun stagger on the primary
- * first. Coincident north/south stay put at class
- * apply.
+ * Fun-gutter triangles take Fun stagger next.
+ * Coincident north/south stay put at class apply.
  */
 function funGutterCloseGoodChainHorizontalStagger(
   groups: PositionGroup[],
@@ -1250,6 +1251,78 @@ function funGutterCloseGoodChainHorizontalStagger(
     stagger.set(flipped.key, side)
     used.add(group.key)
     used.add(other.key)
+  }
+  return stagger
+}
+
+/**
+ * Leftover Fun-gutter meshes have no degree-1, so chain
+ * peels skip them: Drama's 12 Years / Schindler /
+ * Requiem / Tree of Life. Overlay flip 7 still leaves
+ * Tree of Life left at Good 8.5 while the other three
+ * occupy namesake Good 10, and a Good flip of any of
+ * those three restacks on Manchester (already Good 0
+ * opposite Room). Peel the already-opposite vertex
+ * and Fun-stagger the remaining same-side triangle:
+ * the highest Fun 0-1 title grows toward Fun 10 so
+ * 12 Years sits above Schindler and Requiem instead
+ * of covering them. Fun 9-10 leftover triangles
+ * grow the lowest title toward Fun 0. Schindler vs
+ * Requiem still cover on that north/Good-10 slot.
+ * Coincident namesake Good 10 already occupy
+ * north/south, so hasVerticalSlot skips this on
+ * same-position compare; the split helps
+ * non-coincident overlay clusters.
+ */
+function funGutterLeftoverTriangleFunStagger(
+  groups: PositionGroup[],
+  claimedGood: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'fun-10' | 'fun-0'> {
+  const stagger = new Map<string, 'fun-10' | 'fun-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isFunGutterUnstacked(group) && !claimedGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    const partners = closeGoodPartners(component)
+    if (
+      component.some(
+        (group) => (partners.get(group.key) ?? []).length === 1,
+      )
+    ) {
+      continue
+    }
+    const bySide = new Map<'left' | 'right', PositionGroup[]>()
+    for (const group of component) {
+      const side = funGutterResolvedGoodSide(group)
+      const list = bySide.get(side)
+      if (list) list.push(group)
+      else bySide.set(side, [group])
+    }
+    for (const list of bySide.values()) {
+      if (list.length !== INTERIOR_TRIANGLE_SIZE) continue
+      const sidePartners = closeGoodPartners(list)
+      if (
+        list.some(
+          (group) => (sidePartners.get(group.key) ?? []).length !== 2,
+        )
+      ) {
+        continue
+      }
+      const inNorth = list.every((group) => group.fun <= LABEL_NORTH_FUN)
+      const inSouth = list.every((group) => group.fun >= LABEL_SOUTH_FUN)
+      if (inNorth) {
+        const highest = list.reduce((best, group) =>
+          group.fun >= best.fun ? group : best,
+        )
+        stagger.set(highest.key, 'fun-10')
+      } else if (inSouth) {
+        const lowest = list.reduce((best, group) =>
+          group.fun <= best.fun ? group : best,
+        )
+        stagger.set(lowest.key, 'fun-0')
+      }
+    }
   }
   return stagger
 }
@@ -1444,7 +1517,19 @@ export function GhostPoints({
     groups,
     new Map([...claimedGood, ...funGutterIsolatedGood]),
   )
-  const funStagger = new Map([...interiorFun, ...gutterNeighborFun])
+  const funGutterLeftoverFun = funGutterLeftoverTriangleFunStagger(
+    groups,
+    new Map([
+      ...claimedGood,
+      ...funGutterIsolatedGood,
+      ...funGutterChainGood,
+    ]),
+  )
+  const funStagger = new Map([
+    ...interiorFun,
+    ...gutterNeighborFun,
+    ...funGutterLeftoverFun,
+  ])
   const goodStagger = new Map([
     ...interiorGood,
     ...funGutterNeighborGood,
@@ -1512,11 +1597,11 @@ export function GhostPoints({
         // Hard) reuse it too. Overlay flip 7 already puts
         // Kill Bill on the right of Die Hard, so the
         // leftover peel only needs Top Gun on Good 10.
-        // Drama's leftover Fun 0-1 triangle takes Fun
-        // stagger on the primary first. Skip coincident
-        // north/south so those names do not restack on
-        // the primary that already occupies a slot next
-        // to the marker.
+        // Drama's leftover Fun 0-1 triangle reuses Fun
+        // stagger so 12 Years sits above Schindler and
+        // Requiem. Skip coincident north/south so those
+        // names do not restack on the primary that
+        // already occupies a slot next to the marker.
         const staggerTowardFun10 =
           !hasVerticalSlot && funStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 =
