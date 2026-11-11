@@ -1983,14 +1983,17 @@
     peel. Leftover Fun-gutter triangles reuse the
     gutter-good + stagger-fun combos above so 12
     Years (label-north, Good 10, Fun 10) sits above
-    Schindler and Requiem. Include label-end so an
+    Schindler and Requiem. Leftover pairs on that
+    slot reuse the Fun-plus-Good combos below so
+    Schindler (Fun 10 / Good 0) sits left of 12
+    Years and above Requiem. Include label-end so an
     equally specific later label-south / label-north
     + label-end rule does not grow these back onto
     the interior Good side. Overlay Fun-gutter
-    3-chains and leftover triangles match at
-    ghost-label zoom. Fit-zoom selected wrap is
-    unchanged because both classes are labels-visible
-    only.
+    3-chains, leftover triangles, and leftover
+    pairs match at ghost-label zoom. Fit-zoom
+    selected wrap is unchanged because both
+    classes are labels-visible only.
   */
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-10 > .movie-label,
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
@@ -2018,6 +2021,51 @@
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), 0);
+  }
+
+  /*
+    label-north + stagger-good is equally specific to
+    stagger-fun + stagger-good and would keep Schindler
+    hanging in the Fun 0 gutter after the leftover pair
+    takes Fun 10 / Good 0. Combine so leftover Fun-gutter
+    pairs keep both offsets: Schindler (label-north, Fun
+    10, Good 0) sits left of 12 Years and above Requiem
+    instead of covering Requiem on the north/Good-10 slot.
+    Fun 9-10 leftover pairs reuse the south / Fun 0
+    combos. Include label-end so an equally specific
+    later label-north + stagger-good + label-end rule
+    does not grow these back onto the namesake Good
+    side or undo Fun 10. Overlay copies match at
+    ghost-label zoom. Fit-zoom selected wrap is
+    unchanged because both classes are labels-visible
+    only.
+  */
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), -100%);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+    left: 0;
+    right: auto;
+    transform: translate(calc(-100% - 9px), 0);
+  }
+
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+    left: auto;
+    right: 0;
+    transform: translate(calc(100% + 9px), 0);
   }
 
   .ghost-point--label-start > .movie-label {
