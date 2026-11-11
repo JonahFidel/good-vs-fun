@@ -1065,7 +1065,9 @@
     opacity: 1;
   }
 
-  .deck-page-layout .grid-wrapper--example .movie-point::after {
+  /* Ghosts are .movie-point too. Restoring them here would paint compare
+     overlays as primary red/dark pills and hide purple vs teal. */
+  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point)::after {
     background: #dc2626;
     box-shadow:
       0 0 0 2px rgba(220, 38, 38, 0.5),
@@ -1073,7 +1075,7 @@
   }
 
   /* Same specificity as the unselected restore above; keep tap feedback. */
-  .deck-page-layout .grid-wrapper--example .movie-point.movie-point--highlighted::after {
+  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point).movie-point--highlighted::after {
     background: #16a34a;
     box-shadow:
       0 0 0 2px rgba(34, 197, 94, 0.95),
@@ -1081,7 +1083,7 @@
       0 0 22px 8px rgba(34, 197, 94, 0.4);
   }
 
-  .deck-page-layout .grid-wrapper--example .movie-point.movie-point--selected::after {
+  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point).movie-point--selected::after {
     background: #2563eb;
     box-shadow:
       0 0 0 2px rgba(59, 130, 246, 0.95),
@@ -1089,7 +1091,7 @@
       0 0 24px 10px rgba(59, 130, 246, 0.4);
   }
 
-  .deck-page-layout .grid-wrapper--example .movie-point > .movie-label {
+  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point) > .movie-label {
     background: #0f172a;
     border-color: #334155;
     color: #f8fafc;
@@ -1268,12 +1270,12 @@
     active stacked name still reads without the bloom.
   */
   .grid-zoom-slot--zoomed .movie-point.movie-point--highlighted::after,
-  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point.movie-point--highlighted::after {
+  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point:not(.ghost-point).movie-point--highlighted::after {
     box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.95);
   }
 
   .grid-zoom-slot--zoomed .movie-point.movie-point--selected::after,
-  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point.movie-point--selected::after {
+  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point:not(.ghost-point).movie-point--selected::after {
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.95);
   }
 
@@ -1296,8 +1298,8 @@
     the dark pill still separates from the grid. Beat the example-
     deck label restore, which reapplied the 14px shadow.
   */
-  .grid-zoom-slot--zoomed .movie-point > .movie-label,
-  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point > .movie-label {
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) > .movie-label,
+  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) > .movie-label {
     box-shadow:
       0 1px 0 rgba(255, 255, 255, 0.06) inset,
       0 1px 2px rgba(15, 23, 42, 0.35);
