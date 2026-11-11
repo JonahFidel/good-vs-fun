@@ -62,6 +62,22 @@ function isCoarsePointer() {
   return window.matchMedia(COARSE_POINTER_QUERY).matches
 }
 
+/**
+ * Safari Mac trackpad pinch fires GestureEvents and a synthetic ctrl+wheel
+ * for the same gesture. Applying both double-scales (the wheel ticks can
+ * also arrive before gesturestart or after gestureend, so a "gesture is
+ * active" guard is not enough). Chrome/Firefox have no GestureEvents;
+ * their trackpad pinch is ctrl+wheel only, so those still zoom from wheel.
+ * iPhone pinch is Touch Events on a coarse pointer; this does not apply.
+ */
+function isWebKitGestureShadowWheel(event: WheelEvent) {
+  return (
+    event.ctrlKey &&
+    'ongesturestart' in window &&
+    !isCoarsePointer()
+  )
+}
+
 type Props = {
   children: React.ReactNode
   /** Fires after a confirmed empty-grid tap, not on the first finger of pinch/pan/double-tap. */
@@ -201,15 +217,19 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
       function onWheel(e: WheelEvent) {
         // Always zoom when the cursor is on the plot card.
-        // - Trackpad pinch fires wheel with synthetic ctrlKey=true
-        // - Cmd/Ctrl + scroll fires wheel with metaKey/ctrlKey=true
-        // - Plain two-finger scroll (no modifier) is also captured here so that
-        //   the grid behaves like a Figma canvas: scroll = zoom, drag = pan.
+        // - Chrome/Firefox trackpad pinch is ctrl+wheel
+        // - Safari Mac trackpad pinch is GestureEvents; its ctrl+wheel is a
+        //   shadow of that gesture and must not also scale
+        // - Cmd/Ctrl + scroll (metaKey) and plain two-finger scroll still zoom
+        //   so the grid behaves like a Figma canvas: scroll = zoom, drag = pan.
         e.preventDefault()
         e.stopPropagation()
         // Safari also fires GestureEvents for the same pinch. Those drive
-        // zoom on fine pointers; ignoring wheel here avoids double-scale.
+        // zoom on fine pointers. Ignore the synthetic ctrl+wheel too:
+        // ticks before gesturestart or after gestureend still double-scale
+        // if we only skip while webkitGestureActiveRef is set.
         if (webkitGestureActiveRef.current) return
+        if (isWebKitGestureShadowWheel(e)) return
 
         const rect = capturedSlot.getBoundingClientRect()
         const cursorX = e.clientX - rect.left
