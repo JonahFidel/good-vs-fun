@@ -29,7 +29,25 @@ function overlayLabelPlacement({
   let labelAbove = false
   let labelFarBelow = false
   let labelFarAbove = false
+  const towardSouth = fun >= OFFSET_SOUTH_FUN
+  const staggerSecond = sharedSlot && variant === 2
+
   if (!coincident) {
+    // Two overlays at this score with no primary still share the
+    // default overlay side. Put the second on the other side, or
+    // north/south of the first when that other side is off-canvas.
+    if (staggerSecond) {
+      const defaultOnRight = !labelOnLeft
+      const oppositeWouldClip = defaultOnRight
+        ? good <= EDGE_GOOD_LOW
+        : good >= EDGE_GOOD_HIGH
+      if (oppositeWouldClip) {
+        labelBelow = towardSouth
+        labelAbove = !towardSouth
+      } else {
+        labelOnLeft = defaultOnRight
+      }
+    }
     return { labelOnLeft, labelBelow, labelAbove, labelFarBelow, labelFarAbove }
   }
 
@@ -37,10 +55,6 @@ function overlayLabelPlacement({
   const oppositeWouldClip = primaryOnRight
     ? good <= EDGE_GOOD_LOW
     : good >= EDGE_GOOD_HIGH
-  const towardSouth = fun >= OFFSET_SOUTH_FUN
-  // Two overlays at this score share one slot unless the second
-  // takes the next open vertical opening toward the interior.
-  const staggerSecond = sharedSlot && variant === 2
 
   if (oppositeWouldClip) {
     labelOnLeft = !primaryOnRight

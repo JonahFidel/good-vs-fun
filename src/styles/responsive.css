@@ -1353,6 +1353,9 @@
     second (teal) takes the next vertical opening toward the
     interior: south/north of the opposite-side purple at interior
     Good, or one pill farther at the edge.
+    With no primary they still share the default overlay side, so
+    the second takes the other side, or north/south of the
+    centered purple at Good 0 / Good 10.
   */
   .grid-zoom-slot--ghost-labels .ghost-point {
     opacity: 1;

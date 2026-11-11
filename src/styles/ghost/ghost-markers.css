@@ -82,6 +82,10 @@
 
   A second overlay at that same score takes the next opening in the
   same direction so purple and teal do not share one pill.
+
+  With no primary, both overlays still share the default overlay
+  side. The second takes the other side, or north/south of the
+  centered first title at Good 0 / Good 10.
 */
 .ghost-point.ghost-point--label-south > .movie-label {
   transform: translate(calc(100% + 7px), calc(50% + 4px));
