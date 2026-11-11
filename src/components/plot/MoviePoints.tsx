@@ -29,8 +29,10 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * Isolated close-Good pairs that are not next to a same-Good pair
  * (Frankenstein vs Back to the Future 3, Ad Astra vs Sicario) get
  * the same left/right flip: one title, the side away from its
- * partner. Clusters of three or more stay put. Reuse of label-end
- * would also flip the fit-zoom selected pill.
+ * partner. Remaining degree-1 ends of longer close-Good chains
+ * (28 Years Later / Alexander / Bone Temple / Pizza) get that
+ * flip next, so the two-partner interiors do not block the ends.
+ * Reuse of label-end would also flip the fit-zoom selected pill.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
 /** Slide the stack-count chip left so Fun/Good ≈10 does not clip it in the 1-unit margin. */
@@ -119,26 +121,26 @@ function interiorCloseGoodHorizontalStagger(
   return stagger
 }
 
-/**
- * Close-Good pairs with no same-Good neighbor still cover each other
- * on the default label side. Pair movies that have exactly one such
- * partner among remaining interior titles, then flip the title that
- * sits toward its partner. Skip pairs already on opposite Good sides,
- * and skip anyone already in same-Good or neighbor stagger so this
- * does not restack Stalin or swallow the 28 Years Later chain.
- */
-function interiorIsolatedCloseGoodHorizontalStagger(
-  groups: PositionGroup[],
-  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
-  neighborStagger: Map<string, 'good-10' | 'good-0'>,
-): Map<string, 'good-10' | 'good-0'> {
-  const stagger = new Map<string, 'good-10' | 'good-0'>()
-  const candidates = groups.filter(
-    (group) =>
-      isInteriorUnstacked(group) &&
-      !verticalStagger.has(group.key) &&
-      !neighborStagger.has(group.key),
-  )
+function closeGoodAwayFromPartner(
+  a: PositionGroup,
+  b: PositionGroup,
+): { key: string; side: 'good-10' | 'good-0' } | null {
+  const [higherGood, lowerGood] =
+    a.good >= b.good ? [a, b] : [b, a]
+  const higherOnRight = higherGood.good < LABEL_FLIP_GOOD
+  const lowerOnRight = lowerGood.good < LABEL_FLIP_GOOD
+  // Already on opposite default sides, so a flip would grow them
+  // toward each other across the Good 5 boundary.
+  if (higherOnRight !== lowerOnRight) return null
+  if (higherOnRight) {
+    return { key: lowerGood.key, side: 'good-0' }
+  }
+  return { key: higherGood.key, side: 'good-10' }
+}
+
+function closeGoodPartners(
+  candidates: PositionGroup[],
+): Map<string, PositionGroup[]> {
   const partners = new Map<string, PositionGroup[]>()
   for (const group of candidates) {
     partners.set(group.key, [])
@@ -160,7 +162,15 @@ function interiorIsolatedCloseGoodHorizontalStagger(
       partners.get(b.key)!.push(a)
     }
   }
+  return partners
+}
 
+function applyCloseGoodEndFlips(
+  candidates: PositionGroup[],
+  partners: Map<string, PositionGroup[]>,
+  requireBothDegreeOne: boolean,
+): Map<string, 'good-10' | 'good-0'> {
+  const stagger = new Map<string, 'good-10' | 'good-0'>()
   const used = new Set<string>()
   for (const group of candidates) {
     if (used.has(group.key)) continue
@@ -168,29 +178,70 @@ function interiorIsolatedCloseGoodHorizontalStagger(
     if (list.length !== 1) continue
     const other = list[0]
     if (used.has(other.key)) continue
-    if ((partners.get(other.key) ?? []).length !== 1) continue
-
-    const [higherGood, lowerGood] =
-      group.good >= other.good ? [group, other] : [other, group]
-    const higherOnRight = higherGood.good < LABEL_FLIP_GOOD
-    const lowerOnRight = lowerGood.good < LABEL_FLIP_GOOD
-    // Already on opposite default sides, so a flip would grow them
-    // toward each other across the Good 5 boundary.
-    if (higherOnRight !== lowerOnRight) {
-      used.add(group.key)
-      used.add(other.key)
+    if (
+      requireBothDegreeOne &&
+      (partners.get(other.key) ?? []).length !== 1
+    ) {
       continue
     }
-    if (higherOnRight) {
-      stagger.set(lowerGood.key, 'good-0')
-    } else {
-      stagger.set(higherGood.key, 'good-10')
-    }
+
+    const flip = closeGoodAwayFromPartner(group, other)
+    if (flip) stagger.set(flip.key, flip.side)
     used.add(group.key)
     used.add(other.key)
   }
-
   return stagger
+}
+
+/**
+ * Close-Good pairs with no same-Good neighbor still cover each other
+ * on the default label side. Pair movies that have exactly one such
+ * partner among remaining interior titles, then flip the title that
+ * sits toward its partner. Skip pairs already on opposite Good sides,
+ * and skip anyone already in same-Good or neighbor stagger so this
+ * does not restack Stalin or swallow the 28 Years Later chain.
+ */
+function interiorIsolatedCloseGoodHorizontalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  neighborStagger: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !neighborStagger.has(group.key),
+  )
+  return applyCloseGoodEndFlips(
+    candidates,
+    closeGoodPartners(candidates),
+    true,
+  )
+}
+
+/**
+ * Isolated pairs leave longer close-Good chains unstaggered because
+ * interiors have two partners. Peel remaining degree-1 ends with the
+ * same away-from-partner flip so Alexander (toward 28 Years Later)
+ * and Pizza Movie (toward Bone Temple) sit on the opposite Good side
+ * instead of covering the chain. Odd-length leftovers stay put.
+ */
+function interiorCloseGoodChainHorizontalStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  claimedHorizontal: Map<string, 'good-10' | 'good-0'>,
+): Map<string, 'good-10' | 'good-0'> {
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !claimedHorizontal.has(group.key),
+  )
+  return applyCloseGoodEndFlips(
+    candidates,
+    closeGoodPartners(candidates),
+    false,
+  )
 }
 
 export function MoviePoints({
@@ -228,7 +279,16 @@ export function MoviePoints({
     verticalStagger,
     neighborStagger,
   )
-  const horizontalStagger = new Map([...neighborStagger, ...isolatedStagger])
+  const chainStagger = interiorCloseGoodChainHorizontalStagger(
+    groups,
+    verticalStagger,
+    new Map([...neighborStagger, ...isolatedStagger]),
+  )
+  const horizontalStagger = new Map([
+    ...neighborStagger,
+    ...isolatedStagger,
+    ...chainStagger,
+  ])
 
   return (
     <>
