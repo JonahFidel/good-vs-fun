@@ -2023,10 +2023,13 @@
     (Brokeback / Marriage Story / Room / Nomadland) assign
     both Fun and Good slots at once, and size-3 triangles
     (Naked Gun / Naked Gun old / One of Them Days) reuse
-    three of those slots as a 2-vs-1 split. The combo
-    rules below keep both offsets so Good-side transform
-    does not re-center them. Coincident north/south keep
-    their current Good side so they do not restack on the
+    three of those slots as a 2-vs-1 split, and size-5+
+    mesh hub peels (Sinners / Clerks / One Battle After
+    Another / Mickey 17 around Knives Out 3) reuse a
+    leftover unique-quadrant 4. The combo rules below
+    keep both offsets so Good-side transform does not
+    re-center them. Coincident north/south keep their
+    current Good side so they do not restack on the
     primary.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-good-10 > .movie-label,
@@ -2055,8 +2058,12 @@
     reuse three of those slots as a 2-vs-1 split so Naked
     Gun old (Fun 10 / Good 10) sits above Naked Gun (Fun 0 /
     Good 10) while One of Them Days occupies Fun 0 / Good 0.
-    Coincident north/south keep their slot because both
-    classes skip hasVerticalSlot.
+    Size-5+ mesh hub peels reuse a leftover unique-quadrant
+    4 so Sinners (Fun 10 / Good 10), Clerks (Fun 10 /
+    Good 0), One Battle After Another (Fun 0 / Good 0),
+    and Mickey 17 (Fun 0 / Good 10) sit in opposite
+    corners instead of covering. Coincident north/south
+    keep their slot because both classes skip hasVerticalSlot.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--stagger-good-10 > .movie-label,
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--stagger-fun-10.ghost-point--stagger-good-10.ghost-point--label-start > .movie-label {

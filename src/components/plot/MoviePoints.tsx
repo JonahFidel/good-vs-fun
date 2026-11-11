@@ -593,7 +593,8 @@ function interiorCloseGoodTriangleStagger(
  * subcluster. Size-2 leftovers of that peel (Challengers /
  * Logan Lucky, The Vvitch / The Killer) stay put so this
  * does not restack Challengers on Some Like It Hot's
- * chain Good-10. Overlay copies wait for ghost-label zoom.
+ * chain Good-10. Overlay copies get the same peel at
+ * ghost-label zoom.
  */
 function interiorCloseGoodMeshHubStagger(
   groups: PositionGroup[],

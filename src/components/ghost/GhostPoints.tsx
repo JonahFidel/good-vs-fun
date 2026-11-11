@@ -45,9 +45,12 @@ const INTERIOR_SAME_GOOD_FUN_GAP = 1
  * so those interiors do not keep covering. Size-3 triangles
  * that fail that unique-quadrant pack (Naked Gun / Naked Gun
  * old / One of Them Days) then take a 2-vs-1 split of those
- * same slots. Skip coincident north/south so those names do
- * not restack on the primary. Reuse of label-start would also
- * move every left-side overlay.
+ * same slots. Size-5+ meshes that fail both guards (Jonah's
+ * 2025 9-mesh around Knives Out 3) then peel the hub so a
+ * leftover unique-quadrant 4 can occupy those slots. Skip
+ * coincident north/south so those names do not restack on
+ * the primary. Reuse of label-start would also move every
+ * left-side overlay.
  */
 const INTERIOR_CLOSE_GOOD_GAP = 1
 /** A 4-clique can occupy the four Fun-plus-Good stagger slots. */
@@ -352,10 +355,40 @@ function closeGoodConnectedComponents(
  * the cluster centroid, and skip the cluster if that split
  * is not unique so a line-shaped 4 does not stack two titles
  * in one slot. Size-3 triangles get a 2-vs-1 split next;
- * Jonah's 2025 9-mesh stays put because four slots cannot
- * unique-pack nine titles. Coincident north/south stay put
- * at class apply.
+ * size-5+ meshes peel a hub after that so a leftover
+ * unique-quadrant 4 can still pack. Coincident north/south
+ * stay put at class apply.
  */
+function uniqueQuadrantAssignment(
+  component: PositionGroup[],
+): {
+  key: string
+  fun: 'fun-10' | 'fun-0'
+  good: 'good-10' | 'good-0'
+}[] | null {
+  if (component.length !== INTERIOR_CLIQUE_SIZE) return null
+  const centroidFun =
+    component.reduce((sum, group) => sum + group.fun, 0) / component.length
+  const centroidGood =
+    component.reduce((sum, group) => sum + group.good, 0) / component.length
+  const assigned: {
+    key: string
+    fun: 'fun-10' | 'fun-0'
+    good: 'good-10' | 'good-0'
+  }[] = []
+  const quadrants = new Set<string>()
+  for (const group of component) {
+    const funSide: 'fun-10' | 'fun-0' =
+      group.fun >= centroidFun ? 'fun-10' : 'fun-0'
+    const goodSide: 'good-10' | 'good-0' =
+      group.good >= centroidGood ? 'good-10' : 'good-0'
+    assigned.push({ key: group.key, fun: funSide, good: goodSide })
+    quadrants.add(`${funSide}:${goodSide}`)
+  }
+  if (quadrants.size !== INTERIOR_CLIQUE_SIZE) return null
+  return assigned
+}
+
 function interiorCloseGoodCliqueQuadrantStagger(
   groups: PositionGroup[],
   verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
@@ -375,24 +408,8 @@ function interiorCloseGoodCliqueQuadrantStagger(
       !sameSideVertical.has(group.key),
   )
   for (const component of closeGoodConnectedComponents(candidates)) {
-    if (component.length !== INTERIOR_CLIQUE_SIZE) continue
-    const centroidFun =
-      component.reduce((sum, group) => sum + group.fun, 0) / component.length
-    const centroidGood =
-      component.reduce((sum, group) => sum + group.good, 0) / component.length
-    const assigned: {
-      key: string
-      fun: 'fun-10' | 'fun-0'
-      good: 'good-10' | 'good-0'
-    }[] = []
-    const quadrants = new Set<string>()
-    for (const group of component) {
-      const funSide = group.fun >= centroidFun ? 'fun-10' : 'fun-0'
-      const goodSide = group.good >= centroidGood ? 'good-10' : 'good-0'
-      assigned.push({ key: group.key, fun: funSide, good: goodSide })
-      quadrants.add(`${funSide}:${goodSide}`)
-    }
-    if (quadrants.size !== INTERIOR_CLIQUE_SIZE) continue
+    const assigned = uniqueQuadrantAssignment(component)
+    if (!assigned) continue
     for (const entry of assigned) {
       fun.set(entry.key, entry.fun)
       good.set(entry.key, entry.good)
@@ -430,7 +447,7 @@ function pickTowardShared<T>(
  * toward the shared slot, and move the other into the unused
  * adjacent quadrant along the pair's larger separation (Fun
  * for those two Naked Guns). Coincident north/south stay put
- * at class apply. Jonah's 2025 9-mesh stays put.
+ * at class apply. Jonah's 2025 9-mesh peels next.
  */
 function interiorCloseGoodTriangleStagger(
   groups: PositionGroup[],
@@ -536,6 +553,71 @@ function interiorCloseGoodTriangleStagger(
     good.set(keep.group.key, sharedGood)
     fun.set(move.group.key, moveSlot.fun)
     good.set(move.group.key, moveSlot.good)
+  }
+  return { fun, good }
+}
+
+/**
+ * Matches MoviePoints: size-5+ leftover meshes fail clique
+ * and triangle guards. Jonah's 2025 9-mesh around Knives
+ * Out 3 puts four titles in one centroid quadrant. Peel
+ * the highest-degree hub whose removal leaves a unique-
+ * quadrant 4 (Knives Out 3) so Sinners, Clerks, One
+ * Battle After Another, and Mickey 17 occupy opposite
+ * Fun-plus-Good corners of that subcluster. Size-2
+ * leftovers of that peel (Challengers / Logan Lucky,
+ * The Vvitch / The Killer) stay put so this does not
+ * restack Challengers on a leftover isolated-pair flip.
+ * Coincident north/south stay put at class apply.
+ */
+function interiorCloseGoodMeshHubStagger(
+  groups: PositionGroup[],
+  verticalStagger: Map<string, 'fun-10' | 'fun-0'>,
+  horizontalStagger: Map<string, 'good-10' | 'good-0'>,
+  sameSideVertical: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueFun: Map<string, 'fun-10' | 'fun-0'>,
+  cliqueGood: Map<string, 'good-10' | 'good-0'>,
+  triangleFun: Map<string, 'fun-10' | 'fun-0'>,
+  triangleGood: Map<string, 'good-10' | 'good-0'>,
+): {
+  fun: Map<string, 'fun-10' | 'fun-0'>
+  good: Map<string, 'good-10' | 'good-0'>
+} {
+  const fun = new Map<string, 'fun-10' | 'fun-0'>()
+  const good = new Map<string, 'good-10' | 'good-0'>()
+  const candidates = groups.filter(
+    (group) =>
+      isInteriorUnstacked(group) &&
+      !verticalStagger.has(group.key) &&
+      !horizontalStagger.has(group.key) &&
+      !sameSideVertical.has(group.key) &&
+      !cliqueFun.has(group.key) &&
+      !cliqueGood.has(group.key) &&
+      !triangleFun.has(group.key) &&
+      !triangleGood.has(group.key),
+  )
+  for (const component of closeGoodConnectedComponents(candidates)) {
+    if (component.length <= INTERIOR_CLIQUE_SIZE) continue
+    const partners = closeGoodPartners(component)
+    const hubs = [...component].sort(
+      (a, b) =>
+        (partners.get(b.key)?.length ?? 0) -
+        (partners.get(a.key)?.length ?? 0),
+    )
+    let packed = false
+    for (const hub of hubs) {
+      if (packed) break
+      const remaining = component.filter((group) => group.key !== hub.key)
+      for (const piece of closeGoodConnectedComponents(remaining)) {
+        const assigned = uniqueQuadrantAssignment(piece)
+        if (!assigned) continue
+        for (const entry of assigned) {
+          fun.set(entry.key, entry.fun)
+          good.set(entry.key, entry.good)
+        }
+        packed = true
+      }
+    }
   }
   return { fun, good }
 }
@@ -658,16 +740,28 @@ export function GhostPoints({
     cliqueStagger.fun,
     cliqueStagger.good,
   )
+  const meshStagger = interiorCloseGoodMeshHubStagger(
+    groups,
+    verticalStagger,
+    horizontalStagger,
+    sameSideVertical,
+    cliqueStagger.fun,
+    cliqueStagger.good,
+    triangleStagger.fun,
+    triangleStagger.good,
+  )
   const funStagger = new Map([
     ...verticalStagger,
     ...sameSideVertical,
     ...cliqueStagger.fun,
     ...triangleStagger.fun,
+    ...meshStagger.fun,
   ])
   const goodStagger = new Map([
     ...horizontalStagger,
     ...cliqueStagger.good,
     ...triangleStagger.good,
+    ...meshStagger.good,
   ])
   return (
     <>
@@ -715,12 +809,14 @@ export function GhostPoints({
         // those flips (Lebowski vs Palm Springs, Moana vs On the
         // Basis of Sex) add Fun stagger on top of that Good class.
         // Remaining 4-cliques (Brokeback / Marriage Story / Room /
-        // Nomadland) assign both Fun and Good slots at once, and
+        // Nomadland) assign both Fun and Good slots at once,
         // size-3 triangles (Naked Gun / Naked Gun old / One of Them
-        // Days) reuse three of those slots as a 2-vs-1 split.
-        // Skip coincident north/south so those names do not restack
-        // on the primary that already occupies a slot next to the
-        // marker.
+        // Days) reuse three of those slots as a 2-vs-1 split, and
+        // size-5+ mesh hub peels (Sinners / Clerks / One Battle
+        // After Another / Mickey 17 around Knives Out 3) reuse a
+        // leftover unique-quadrant 4. Skip coincident north/south
+        // so those names do not restack on the primary that
+        // already occupies a slot next to the marker.
         const staggerTowardFun10 =
           !hasVerticalSlot && funStagger.get(group.key) === 'fun-10'
         const staggerTowardFun0 =
