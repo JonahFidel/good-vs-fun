@@ -929,17 +929,31 @@
   */
   .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     white-space: normal;
+    /*
+      The pill is abspos on a 7px marker. Shrink-to-fit plus -webkit-box
+      reports the unwrapped title as its width, so max-width only clips
+      to one ellipsized line and line-clamp never sees a narrower box.
+      Cap the used width so 2-line wrap actually runs; max-content keeps
+      short names like Heat from sitting in an empty 32cqw pill.
+    */
+    width: min(max-content, 7.25rem);
+    width: min(max-content, 7.25rem, 32cqw);
+    min-width: 0;
   }
 
   .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) :is(.movie-label-line, .movie-label-title) {
     white-space: normal;
     overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
   }
 
   .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-south:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
