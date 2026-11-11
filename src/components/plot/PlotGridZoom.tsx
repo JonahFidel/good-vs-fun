@@ -59,6 +59,12 @@ const DOUBLE_TAP_PX = 28
 const COARSE_POINTER_QUERY = '(pointer: coarse)'
 /** Trailing Safari pinch ctrl+wheel ticks can arrive after gestureend. */
 const WEBKIT_GESTURE_SHADOW_MS = 120
+/** Ignore a pan sample across a skipped frame so a pause does not fling. */
+const INERTIA_SAMPLE_MAX_DT_MS = 64
+/** Stop coasting below ~3px/frame. */
+const INERTIA_MIN_VELOCITY = 0.05
+/** Exponential friction time constant; ~260ms feels like Maps, not ice. */
+const INERTIA_FRICTION_MS = 260
 
 function isCoarsePointer() {
   return window.matchMedia(COARSE_POINTER_QUERY).matches
@@ -131,6 +137,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       factor: number
     } | null>(null)
     const shadowWheelRafRef = useRef<number | null>(null)
+    const lastPanSampleRef = useRef<{ x: number; y: number; t: number } | null>(
+      null,
+    )
+    const panVelocityRef = useRef({ vx: 0, vy: 0 })
+    const inertiaRafRef = useRef<number | null>(null)
 
     useImperativeHandle(forwardedRef, () => gridRef.current as HTMLDivElement)
 
@@ -200,6 +211,13 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
     }
 
+    function stopInertia() {
+      if (inertiaRafRef.current != null) {
+        cancelAnimationFrame(inertiaRafRef.current)
+        inertiaRafRef.current = null
+      }
+    }
+
     function centerIfPristine() {
       const slot = slotRef.current
       const canvas = canvasRef.current
@@ -248,6 +266,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       const wheelRoot = wrapper instanceof HTMLElement ? wrapper : capturedSlot
 
       function applyWheelZoom(clientX: number, clientY: number, factor: number) {
+        stopInertia()
         const rect = capturedSlot.getBoundingClientRect()
         stateRef.current = zoomTowardPoint(
           stateRef.current,
@@ -321,6 +340,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       wheelRoot.addEventListener('wheel', onWheel, { passive: false })
       return () => {
         cancelPendingShadowWheel()
+        stopInertia()
         wheelRoot.removeEventListener('wheel', onWheel)
       }
     }, [])
@@ -338,12 +358,14 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // on iPhone. Skipping pointer capture for touch also keeps the first
     // finger from eating the rest of the gesture. Touch pan is allowed to
     // start on a movie: moving points is mouse-only, and the ~44px hit
-    // areas would otherwise eat most of a zoomed one-finger pan. Mouse pan,
-    // like wheel and Touch Events, sits on the plot card so a drag that
-    // starts on a Fun/Good axis still pans the zoomed grid. Safari
-    // GestureEvents listen on window capture because WebKit often targets
-    // document. Undo/Redo overlay clicks must not capture, or the button
-    // press never fires.
+    // areas would otherwise eat most of a zoomed one-finger pan. A flicked
+    // one-finger pan coasts with friction after lift so the zoomed grid
+    // does not stop dead; fit zoom never pans, so the default 0-10 square
+    // stays locked. Mouse pan, like wheel and Touch Events, sits on the
+    // plot card so a drag that starts on a Fun/Good axis still pans the
+    // zoomed grid. Safari GestureEvents listen on window capture because
+    // WebKit often targets document. Undo/Redo overlay clicks must not
+    // capture, or the button press never fires.
     useEffect(() => {
       const slot = slotRef.current
       if (!slot) return
@@ -354,6 +376,71 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       function slotPoint(clientX: number, clientY: number): PointerPos {
         const rect = capturedSlot.getBoundingClientRect()
         return { x: clientX - rect.left, y: clientY - rect.top }
+      }
+
+      function resetPanVelocity() {
+        lastPanSampleRef.current = null
+        panVelocityRef.current = { vx: 0, vy: 0 }
+      }
+
+      function samplePanVelocity(clientX: number, clientY: number) {
+        const now = performance.now()
+        const last = lastPanSampleRef.current
+        if (last) {
+          const dt = now - last.t
+          if (dt > 0 && dt < INERTIA_SAMPLE_MAX_DT_MS) {
+            panVelocityRef.current = {
+              vx: (clientX - last.x) / dt,
+              vy: (clientY - last.y) / dt,
+            }
+          } else {
+            panVelocityRef.current = { vx: 0, vy: 0 }
+          }
+        }
+        lastPanSampleRef.current = { x: clientX, y: clientY, t: now }
+      }
+
+      function startInertia() {
+        const speed = Math.hypot(
+          panVelocityRef.current.vx,
+          panVelocityRef.current.vy,
+        )
+        if (speed < INERTIA_MIN_VELOCITY) {
+          resetPanVelocity()
+          return
+        }
+        stopInertia()
+        let last = performance.now()
+        const tick = (now: number) => {
+          inertiaRafRef.current = null
+          const dt = Math.min(32, now - last)
+          last = now
+          const v = panVelocityRef.current
+          const friction = Math.exp(-dt / INERTIA_FRICTION_MS)
+          v.vx *= friction
+          v.vy *= friction
+          if (Math.hypot(v.vx, v.vy) < INERTIA_MIN_VELOCITY) {
+            resetPanVelocity()
+            return
+          }
+          const prevTx = stateRef.current.tx
+          const prevTy = stateRef.current.ty
+          stateRef.current.tx += v.vx * dt
+          stateRef.current.ty += v.vy * dt
+          userTransformedRef.current = true
+          applyTransform()
+          // Covering / keep-visible clamp ate the coast; stop rather than
+          // buzzing against the edge.
+          if (
+            Math.abs(stateRef.current.tx - prevTx) < 0.1 &&
+            Math.abs(stateRef.current.ty - prevTy) < 0.1
+          ) {
+            resetPanVelocity()
+            return
+          }
+          inertiaRafRef.current = requestAnimationFrame(tick)
+        }
+        inertiaRafRef.current = requestAnimationFrame(tick)
       }
 
       function cancelEmptyTap() {
@@ -415,6 +502,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       function beginPinchFromPoints(a: PointerPos, b: PointerPos) {
+        stopInertia()
+        resetPanVelocity()
         panRef.current = null
         setPanCursor(false)
         pinchOccurredRef.current = true
@@ -468,6 +557,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         ) {
           return
         }
+        stopInertia()
+        resetPanVelocity()
         panRef.current = {
           pointerId: id,
           x: clientX,
@@ -520,6 +611,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (!panRef.current || panRef.current.pointerId !== id) return
         noteGestureMove(clientX, clientY)
         if (!gestureMovedRef.current) return
+        samplePanVelocity(clientX, clientY)
         stateRef.current.tx = panRef.current.tx + (clientX - panRef.current.x)
         stateRef.current.ty = panRef.current.ty + (clientY - panRef.current.y)
         userTransformedRef.current = true
@@ -602,6 +694,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       function onPointerDown(e: PointerEvent) {
         if (e.pointerType === 'touch') return
         if (e.pointerType === 'mouse' && e.button !== 0) return
+        stopInertia()
         const target = e.target as Element | null
         // Plot-card pan would steal Undo/Redo (and any other control on the
         // wrapper). Fun/Good axis labels are not controls; they should pan.
@@ -702,6 +795,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
         if (fingers.length !== 1) return
         const touch = fingers[0]
+        stopInertia()
         pinchOccurredRef.current = false
         // A follow-up finger may be the second half of a double-tap or a
         // pan. Cancel the pending empty-tap deselect without clearing
@@ -768,12 +862,22 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         } else {
           lastTapRef.current = null
         }
+        // One-finger flick: keep the zoomed grid moving after lift. Fit
+        // zoom never sets panRef, so the default 0-10 square stays locked.
+        const coast =
+          Boolean(panRef.current) &&
+          gestureMovedRef.current &&
+          !pinchRef.current
         endTouchGesture()
+        if (coast) startInertia()
+        else resetPanVelocity()
       }
 
       function onTouchCancel() {
         cancelEmptyTap()
         lastTapRef.current = null
+        stopInertia()
+        resetPanVelocity()
         endTouchGesture()
       }
 
@@ -819,6 +923,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         event.preventDefault()
         if (pinchRef.current || isCoarsePointer()) return
         if (!webkitGestureOnPlot(event)) return
+        stopInertia()
         const gesture = event as WebKitGestureEvent
         cancelPendingShadowWheel()
         webkitGestureActiveRef.current = true
@@ -878,6 +983,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       return () => {
         cancelEmptyTap()
         cancelPendingShadowWheel()
+        stopInertia()
         gestureRoot.removeEventListener('pointerdown', onPointerDown, { capture: true })
         gestureRoot.removeEventListener('pointermove', onPointerMove)
         gestureRoot.removeEventListener('pointerup', onPointerUp)
