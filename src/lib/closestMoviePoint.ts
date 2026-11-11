@@ -97,7 +97,9 @@ function idFromLabelAtPoint(
  * often misses the pill, so the follow-up must still zoom this marker to
  * 2.2x instead of 3.2x toward the ghost or toward the tap on the wrap.
  * Jitter toward the marker lands in the 44px ring; that follow-up still
- * zooms this point instead of cancelling as select/cycle.
+ * zooms this point instead of cancelling as select/cycle, and its
+ * pointerdown must not select/cycle either or a stack advances / the
+ * Selected bar switches while the ease runs.
  */
 export function moviePointAtVisibleLabel(
   root: ParentNode,
@@ -180,8 +182,9 @@ export function pointerHitsVisibleMovieLabel(
  * primary 44px ring still loses to marker-first select/cycle on a
  * first tap. Completing an overlay double-tap must keep this point
  * even when the follow-up lands in that nearby ring, or 28px jitter
- * selects the primary instead of finishing 3.2x. A ghost under the
- * second tap of an empty-space pair must not start overlay zoom-in:
+ * selects the primary instead of finishing 3.2x. That follow-up
+ * pointerdown must not onTouchSelect the primary either. A ghost under
+ * the second tap of an empty-space pair must not start overlay zoom-in:
  * that follow-up is 28px jitter, and at 2.2x it would steal 3.2x
  * instead of zooming back to the locked 0-10 square.
  *

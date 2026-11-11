@@ -164,13 +164,15 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       // starts overlay zoom-in: a ghost under the follow-up must not
       // retarget an empty-space pair to 3.2x. That miss also lands in
       // a nearby primary 44px ring; marker-first must not cancel this.
+      // That follow-up pointerdown must also not select/cycle.
       ghost: HTMLElement | null
       // Selected fit-zoom title from the first tap. The 32cqw wrap is
       // pointer-events none and can cover an overlay dot, so a jittered
       // miss must still zoom that movie to 2.2x instead of 3.2x toward
       // the ghost or toward the tap on the wrap. Jitter toward the
       // marker is the same: the wrap's inner edge sits on the 44px
-      // ring, so select/cycle must not cancel this zoom-in either.
+      // ring, so select/cycle must not cancel this zoom-in either,
+      // and that pointerdown must not cycle a stack.
       title: HTMLElement | null
     } | null>(null)
     const emptyTapTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(
@@ -465,7 +467,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // in a 44px primary ring: jitter from a wrap toward its own dot,
     // or from an isolated overlay onto the primary next to it, is
     // select/cycle on a first tap but must not cancel a zoom-in those
-    // first contacts already committed. The inverse miss is empty-space
+    // first contacts already committed, and must not select/cycle on
+    // that follow-up pointerdown either: onTouchSelect would still
+    // switch the Selected bar or advance a stack while the ease runs.
+    // The inverse miss is empty-space
     // zoom-out at 2.2x/3.2x: titles and overlay names are painted, so
     // 28px jitter onto a pill or an 11px overlay would read-not-zoom-out
     // or steal 3.2x unless the first tap stays empty-space. Overlay
@@ -1007,6 +1012,26 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         return true
       }
 
+      // Completing a stored title or overlay-marker zoom-in. Must match
+      // maybeDoubleTap's storedGhost/storedTitle completing branch: the
+      // follow-up is allowed 28px into a 44px ring so zoom-in still
+      // fires, but that same pointerdown would select/cycle unless
+      // capture-phase stopPropagation runs first.
+      function isCompletingStoredZoomIn(clientX: number, clientY: number) {
+        if (gestureMovedRef.current || pinchOccurredRef.current) return false
+        const last = lastTapRef.current
+        if (!last) return false
+        const storedGhost =
+          last.ghost != null && last.ghost.isConnected ? last.ghost : null
+        const storedTitle =
+          last.title != null && last.title.isConnected ? last.title : null
+        if (!storedGhost && !storedTitle) return false
+        return (
+          performance.now() - last.t <= DOUBLE_TAP_MS &&
+          Math.hypot(clientX - last.x, clientY - last.y) <= DOUBLE_TAP_PX
+        )
+      }
+
       function maybeDoubleTap(clientX: number, clientY: number) {
         if (gestureMovedRef.current || pinchOccurredRef.current) {
           cancelEmptyTap()
@@ -1172,7 +1197,18 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       function onPointerDown(e: PointerEvent) {
-        if (e.pointerType === 'touch') return
+        if (e.pointerType === 'touch') {
+          // onTouchSelect (and the movie-point React handler) run on this
+          // pointerdown. Completing stored zoom-in already skips the 44px
+          // ring at touchend so the ease still fires; stop this event so
+          // jitter into that ring cannot also select a nearby primary or
+          // cycle a stack. Empty-space completing is unchanged: no stored
+          // contact, so tap-near-then-on-a-dot still selects.
+          if (isCompletingStoredZoomIn(e.clientX, e.clientY)) {
+            e.stopPropagation()
+          }
+          return
+        }
         if (e.pointerType === 'mouse' && e.button !== 0) return
         stopTransientMotion()
         const target = e.target as Element | null
