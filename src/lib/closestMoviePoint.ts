@@ -165,7 +165,7 @@ export function pointerHitsVisibleMovieLabel(
  * True when a screen-space point lands on a compare overlay marker.
  * Ghosts are pointer-events: none, so a tap on that colored dot would
  * otherwise count as empty grid (fit-zoom deselect, or zoom-out once
- * overlay names are on). Use the painted 11px/7px box, not the 44px
+ * titles are on at 2.2x). Use the painted 11px/7px box, not the 44px
  * primary ring: expanding every overlay movie to 22px would eat the
  * empty space one-handed double-tap zoom needs on a 40-film compare.
  *

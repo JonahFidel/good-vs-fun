@@ -991,9 +991,11 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // Compare overlay names wait until 3.2x and have no movie id, so
         // the primary-only hit test cannot see them; a painted ghost
         // pill is still a name you pinched to read, not empty grid.
-        // The overlay marker is the same at every zoom: ghosts are
-        // pointer-events none, so a tap on that colored dot would
-        // otherwise deselect the fit-zoom readout or zoom out of 3.2x.
+        // Overlay markers are the same once titles are on: ghosts are
+        // pointer-events none and excluded from the 44px select ring,
+        // so an isolated purple/teal dot at 2.2x would otherwise
+        // toggle back to the locked 0-10 square. Fit-zoom and leftover
+        // 1.2-2.1x still zoom in toward that overlay movie.
         const labelMovie = moviePointAtVisibleLabel(
           capturedSlot,
           clientX,
@@ -1008,13 +1010,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const labelsOn =
           canvas != null &&
           stateRef.current.scale >= labelsVisibleScale(canvas.offsetWidth)
-        const ghostLabelsOn =
-          canvas != null &&
-          stateRef.current.scale >= ghostLabelsVisibleScale(canvas.offsetWidth)
         if (
-          (labelsOn &&
-            pointerHitsVisibleMovieLabel(capturedSlot, clientX, clientY)) ||
-          (ghostLabelsOn && hitGhostMarker)
+          labelsOn &&
+          (pointerHitsVisibleMovieLabel(capturedSlot, clientX, clientY) ||
+            hitGhostMarker)
         ) {
           cancelEmptyTap()
           lastTapRef.current = null
@@ -1044,9 +1043,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // the only touch path that clears the selection. A tap that
         // caught inertia or a zoom ease still records lastTap so a
         // follow-up can double-tap, but must not deselect. A tap on
-        // the selected fit-zoom pill, a compare title at 3.2x, or an
-        // overlay marker is also not empty space. Fit-zoom still
-        // records lastTap so double-tap can zoom in toward that ghost.
+        // the selected fit-zoom pill, a compare title, or an overlay
+        // marker is also not empty space. Fit-zoom and leftover
+        // 1.2-2.1x still record lastTap so double-tap can zoom in
+        // toward that ghost; at 2.2x the marker is read-not-zoom-out.
         if (!caughtMotionRef.current && !labelMovie && !hitGhostMarker) {
           scheduleEmptyTap(now)
         }
