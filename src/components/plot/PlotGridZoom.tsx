@@ -9,6 +9,7 @@ import { DRAG_HOLD_MS } from '../../hooks/plot/useHoldToDrag'
 import {
   MOVIE_HIT_RADIUS_PX,
   moviePointAtVisibleLabel,
+  pointerHitsVisibleMovieLabel,
 } from '../../lib/closestMoviePoint'
 import { scoringRegionScreenRect } from '../../lib/gridCanvas'
 import {
@@ -427,7 +428,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // at the marker, not the tap on the pill: a 32cqw wrap sits up to
     // ~3.8 units off the dot (and flips south/north at Fun 9-10 / 0-1),
     // so zoom-toward-tap can throw the movie off a filled iPhone square.
-    // Marker rings still select/cycle instead of zooming. Overflowed
+    // Marker rings still select/cycle instead of zooming. Compare overlay
+    // names at 3.2x are the same read-not-zoom-out gesture; they have no
+    // movie id so the primary-only hit test cannot see them. Overflowed
     // scales unlock pan, so touch pan slop is 20px (not the 8px mouse
     // value) or iPhone tap jitter cancels that double-tap the same way
     // empty-space jitter did at fit before movement tracking was skipped
@@ -984,6 +987,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // wrap can sit ~3.8 units off the dot, so aiming at the tap
         // would keep the name and throw the movie off-screen. After
         // titles appear, a tap on a name is select/read, not zoom-out.
+        // Compare overlay names wait until 3.2x and have no movie id, so
+        // the primary-only hit test cannot see them; a painted ghost
+        // pill is still a name you pinched to read, not empty grid.
         const labelMovie = moviePointAtVisibleLabel(
           capturedSlot,
           clientX,
@@ -993,7 +999,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         const labelsOn =
           canvas != null &&
           stateRef.current.scale >= labelsVisibleScale(canvas.offsetWidth)
-        if (labelMovie && labelsOn) {
+        if (
+          labelsOn &&
+          pointerHitsVisibleMovieLabel(capturedSlot, clientX, clientY)
+        ) {
           cancelEmptyTap()
           lastTapRef.current = null
           return false
@@ -1022,7 +1031,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         // the only touch path that clears the selection. A tap that
         // caught inertia or a zoom ease still records lastTap so a
         // follow-up can double-tap, but must not deselect. A tap on
-        // the selected fit-zoom pill is also not empty space.
+        // the selected fit-zoom pill, or a compare title at 3.2x, is
+        // also not empty space.
         if (!caughtMotionRef.current && !labelMovie) {
           scheduleEmptyTap(now)
         }

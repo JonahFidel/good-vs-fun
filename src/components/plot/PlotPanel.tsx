@@ -67,8 +67,10 @@ export function PlotPanel({
     // iPhone pills are pointer-events: none so nearby 44px markers stay
     // tappable. A tap on a painted title then hits empty grid and would
     // dismiss the readout (fit) or miss the movie you just pinched to
-    // read (zoom). Keep nearby-movie selection; do not treat the pill as
-    // empty space.
+    // read (zoom). Compare overlay names are the same: ghosts are
+    // pointer-events: none on the whole marker, so a click would
+    // otherwise fall through as empty-grid deselect. Keep nearby-movie
+    // selection; do not treat a painted pill as empty space.
     if (
       pointerHitsVisibleMovieLabel(
         event.currentTarget,

@@ -135,13 +135,29 @@ export function movieIdAtVisibleLabel(
   return idFromLabelAtPoint(label, clientX, clientY)?.id ?? null
 }
 
-/** True when a screen-space point lands on a painted movie title pill. */
+/**
+ * True when a screen-space point lands on a painted title pill, including
+ * compare overlay names. Those pills are pointer-events: none, so a tap
+ * would otherwise count as empty grid (deselect / double-tap zoom-out).
+ *
+ * Ghost titles have no data-movie-id, so moviePointAtVisibleLabel cannot
+ * see them; this only needs a painted box. Opacity-0 pills (fit-zoom
+ * unselected names, ghosts before 3.2x) stay skipped.
+ */
 export function pointerHitsVisibleMovieLabel(
   root: ParentNode,
   clientX: number,
   clientY: number,
 ): boolean {
-  return moviePointAtVisibleLabel(root, clientX, clientY) !== null
+  for (const point of root.querySelectorAll('.movie-point')) {
+    if (!(point instanceof HTMLElement)) continue
+    const label = point.querySelector(':scope > .movie-label')
+    if (!(label instanceof HTMLElement) || !isPainted(label)) continue
+    if (pointInRect(label.getBoundingClientRect(), clientX, clientY)) {
+      return true
+    }
+  }
+  return false
 }
 
 function movieIdsInPoint(point: Element): string[] {
