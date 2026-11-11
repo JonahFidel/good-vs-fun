@@ -106,8 +106,18 @@ export function MovieList({
               }
               onSelect(movie.id)
             }}
-            onMouseEnter={() => onHighlight(movie.id)}
-            onMouseLeave={onClearHover}
+            onPointerEnter={(event) => {
+              // iOS keeps a tap as :hover / mouseenter with no mouseleave.
+              // That stuck a title+score pill on the fitted 0-10 grid after
+              // the list tap's selection was cleared. List tap already
+              // selects; hover-link stays a mouse gesture.
+              if (event.pointerType === 'touch') return
+              onHighlight(movie.id)
+            }}
+            onPointerLeave={(event) => {
+              if (event.pointerType === 'touch') return
+              onClearHover()
+            }}
           >
             <div className="movie-list-title">
               <strong title={movie.title}>{movie.title}</strong>

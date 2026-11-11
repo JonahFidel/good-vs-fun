@@ -68,8 +68,25 @@ export function MoviePoints({
               .join(' ')}
             style={{ left: `${left}%`, top: `${top}%` }}
             onPointerDown={onGroupPointerDown(group.key, ids, group.items[0].id)}
-            onMouseEnter={onlyItem ? () => onHighlight(onlyItem.id) : undefined}
-            onMouseLeave={onlyItem ? onClearHover : undefined}
+            onPointerEnter={
+              onlyItem
+                ? (event) => {
+                    // iOS synthesizes mouseenter after a tap and never
+                    // mouseleave, which would leave a title+score pill on
+                    // the fitted grid after deselect. Hover-link is mouse.
+                    if (event.pointerType === 'touch') return
+                    onHighlight(onlyItem.id)
+                  }
+                : undefined
+            }
+            onPointerLeave={
+              onlyItem
+                ? (event) => {
+                    if (event.pointerType === 'touch') return
+                    onClearHover()
+                  }
+                : undefined
+            }
             data-group-key={group.key}
           >
             <span
@@ -95,8 +112,14 @@ export function MoviePoints({
                     className="movie-label-title"
                     data-movie-id={item.id}
                     onPointerDownCapture={onLabelPointerDown(item.id)}
-                    onMouseEnter={() => onHighlight(item.id)}
-                    onMouseLeave={onClearHover}
+                    onPointerEnter={(event) => {
+                      if (event.pointerType === 'touch') return
+                      onHighlight(item.id)
+                    }}
+                    onPointerLeave={(event) => {
+                      if (event.pointerType === 'touch') return
+                      onClearHover()
+                    }}
                   >
                     {item.title}
                   </span>

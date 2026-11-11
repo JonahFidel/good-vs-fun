@@ -23,6 +23,10 @@ export function useDeckSelection() {
 
   const clearSelection = useCallback(() => {
     setSelectedMovieId(null)
+    // iOS can leave a tap stuck as hover with no mouseleave. Empty-grid
+    // deselect must drop that too, or a list tap's title+score pill stays
+    // on the fitted 0-10 square after the selection is gone.
+    setHoverLink(null)
   }, [])
 
   const handleSidebarBackgroundPointerDown = useCallback(
