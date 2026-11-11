@@ -1021,6 +1021,17 @@
     padding: 0.55rem 0.7rem;
   }
 
+  /*
+    Compact add-movie title is 0.35rem padding + 16px font, which is only
+    ~27-37px. Summary, Fun/Good, and submit in that sheet are already 44px.
+    Same padding-box recipe as Sort/Compare; keep 16px so Safari does not
+    page-zoom on focus.
+  */
+  .movie-form--compact .field input {
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
+  }
+
   .deck-form {
     flex-wrap: wrap;
   }
