@@ -1367,7 +1367,7 @@
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.95);
   }
 
-  .grid-zoom-slot--zoomed .movie-label-line--linked .movie-label-title {
+  .grid-zoom-slot--zoomed .movie-label-line--linked:not(.movie-label-line--selected) .movie-label-title {
     background: #166534;
     box-shadow: none;
   }

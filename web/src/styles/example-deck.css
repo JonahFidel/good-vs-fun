@@ -101,7 +101,7 @@
     0 0 24px 10px rgba(59, 130, 246, 0.35);
 }
 
-.grid-wrapper--example .movie-label-line--linked .movie-label-title {
+.grid-wrapper--example .movie-label-line--linked:not(.movie-label-line--selected) .movie-label-title {
   background: #166534;
   border-color: #22c55e;
   color: #ecfdf5;
