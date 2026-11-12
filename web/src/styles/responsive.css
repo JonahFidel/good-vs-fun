@@ -1306,11 +1306,6 @@
     justify-content: flex-end;
   }
 
-  .movie-label-line--selected .movie-label-title {
-    padding: 0;
-    border: 0;
-  }
-
   .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title {
     display: block;
     white-space: normal;
