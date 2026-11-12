@@ -1217,13 +1217,6 @@
     pointer-events: none;
   }
 
-  /* Keep compact unselected names readable without letting them run outside their pill. */
-  .movie-label-line:not(.movie-label-line--selected) .movie-label-title {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   /*
     Portrait wrapping dumped a half-square title plus Good/Fun over the
     fitted 0-10 grid you tapped to read. Match tick size (0.85rem) so the
@@ -1252,16 +1245,16 @@
     Wrap in that same box so the default-zoom readout can be identified
     without bringing back 50cqw cover. Grow down at Fun 9-10 and up at
     Fun 0-1 so the taller pill stays in the scoring region instead of
-    clipping the 1-unit gutter. Selected titles use this wrap at fit
-    zoom and stay fully wrapped inside a one-cell pill while zoomed.
+    clipping the 1-unit gutter. Zoomed selected titles wrap in a
+    one-cell pill instead (after the --labels rules below).
 
-    Long selected titles keep their full height inside the bounded
-    pill, including on short landscape plots. Fit-zoom stacks already
-    hide inactive lines, so this wrap is still one title.
+    Long selected titles keep their full height, with no line cap,
+    so the whole pill and the identifying start stay visible even on
+    a short landscape plot. Fit-zoom stacks already hide inactive
+    lines, so this wrap is still one title.
 
-    A 5-line selected pill is ~81px. Unselected names are hidden, and
-    Fun 9-10 already grows down / Fun 0-1 up, so the extra line stays
-    in the scoring region even on a 10rem landscape square. Overlay
+    Unselected names are hidden, and Fun 9-10 already grows down /
+    Fun 0-1 up, so the taller pill stays in the scoring region. Overlay
     3.2x wrap is seven lines (~88px). Ghost-label zoom reaches a
     TARGET_LABEL_UNIT_PX 88 unit from about an 11rem square up.
     Below that MAX_SCALE 6 caps the unit (~80px on a 10rem
@@ -1337,22 +1330,6 @@
     width: max-content;
     max-width: 3.75rem;
     white-space: nowrap;
-  }
-
-  /* Selected mobile titles wrap fully at every pinch level inside a one-cell pill. */
-  .grid-zoom-slot--zoomed .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
-    white-space: normal;
-    width: min(max-content, 3.75rem);
-    max-width: 3.75rem;
-    overflow: visible;
-  }
-
-  .grid-zoom-slot--zoomed .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-line,
-  .grid-zoom-slot--zoomed .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title {
-    white-space: normal;
-    overflow-wrap: break-word;
-    max-width: 100%;
-    overflow: visible;
   }
 
   /*
@@ -1687,6 +1664,49 @@
   }
 
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked) .movie-label-title {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: unset;
+    flex: none;
+    direction: ltr;
+    unicode-bidi: normal;
+  }
+
+  /*
+    The selected pill (2px border plus padding) is taller than any
+    clipped line box, so a start-clip or last-seven-lines cap cuts
+    its top edge and first words into a U-shaped half pill. Selected
+    titles have no line cap at any pinch level: wrap the whole name
+    in the one-cell box so the full pill shows. Stacked lines other
+    than the selected one keep their one-line start-clip.
+  */
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point):is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    white-space: normal;
+    width: min(max-content, 3.75rem);
+    min-width: 0;
+  }
+
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point):not(.movie-point--stacked):is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-line,
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point):is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-line--selected {
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    max-height: none;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    direction: ltr;
+    text-overflow: unset;
+  }
+
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point):not(.movie-point--stacked):is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title,
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point):is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-line--selected .movie-label-title {
     display: block;
     white-space: normal;
     overflow-wrap: break-word;
