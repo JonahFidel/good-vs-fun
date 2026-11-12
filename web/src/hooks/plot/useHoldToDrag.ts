@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type PointerEvent } from 'react'
+import { crossedMovieDragThreshold } from '../../lib/plotDragGesture'
 
 export type PlotDrag = {
   type: 'group' | 'single'
@@ -12,21 +13,7 @@ type PendingPointer = {
   drag: PlotDrag
   x: number
   y: number
-  startedAt: number
 }
-
-/** Pointer must stay down this long before movement counts as a drag. */
-export const DRAG_HOLD_MS = 120
-
-/** Movement past this distance, after the hold, starts a drag instead of a click. */
-const DRAG_MOVE_PX = 12
-
-/**
- * Movement during the hold is a pan, not a click or drag. Must match
- * PlotGridZoom PAN_SLOP_PX so a drag on a Figma-scaled title pans the
- * zoomed grid instead of waiting out the hold and then moving the movie.
- */
-const PAN_CANCEL_PX = 8
 
 export function useHoldToDrag({
   isExampleDeck,
@@ -51,7 +38,6 @@ export function useHoldToDrag({
         drag,
         x: event.clientX,
         y: event.clientY,
-        startedAt: performance.now(),
       })
     },
     [isExampleDeck, onSelectMovie],
@@ -63,31 +49,18 @@ export function useHoldToDrag({
     }
 
     let dragStarted = false
-    let panCancelled = false
-
     const handlePointerMove = (event: globalThis.PointerEvent) => {
-      if (dragStarted || panCancelled) {
+      if (dragStarted) {
         return
       }
-      const dist = Math.hypot(
-        event.clientX - pendingPointer.x,
-        event.clientY - pendingPointer.y,
-      )
-      if (performance.now() - pendingPointer.startedAt < DRAG_HOLD_MS) {
-        // Grid early movement is a pan, not a click or drag. List-to-grid
-        // drag still ignores travel during the hold so a press-and-pull
-        // from the sidebar can start after 120ms. Drop without selecting
-        // even if pointerup arrives before React re-renders this effect.
-        if (
-          pendingPointer.drag.origin === 'grid' &&
-          dist >= PAN_CANCEL_PX
-        ) {
-          panCancelled = true
-          setPendingPointer(null)
-        }
-        return
-      }
-      if (dist < DRAG_MOVE_PX) {
+      if (
+        !crossedMovieDragThreshold(
+          pendingPointer.x,
+          pendingPointer.y,
+          event.clientX,
+          event.clientY,
+        )
+      ) {
         return
       }
 
@@ -97,7 +70,7 @@ export function useHoldToDrag({
     }
 
     const handlePointerUp = () => {
-      if (!dragStarted && !panCancelled) {
+      if (!dragStarted) {
         onSelectMovie(pendingPointer.primaryId)
       }
       setPendingPointer(null)

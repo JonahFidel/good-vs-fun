@@ -5,7 +5,7 @@ import {
   useLayoutEffect,
   useRef,
 } from 'react'
-import { DRAG_HOLD_MS } from '../../hooks/plot/useHoldToDrag'
+import { DEFERRED_PAN_HOLD_MS } from '../../lib/plotDragGesture'
 import {
   MOVIE_HIT_RADIUS_PX,
   ghostPointAtMarker,
@@ -766,7 +766,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (panRef.current) return
         const start = gestureStartRef.current
         if (!start) return
-        if (performance.now() - start.t >= DRAG_HOLD_MS) return
+        if (performance.now() - start.t >= DEFERRED_PAN_HOLD_MS) return
         if (Math.hypot(clientX - start.x, clientY - start.y) < PAN_SLOP_PX) {
           return
         }
