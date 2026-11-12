@@ -1695,6 +1695,8 @@
     a few lines. The pill flips side at Good 5, so it always has at
     least half the zoomed canvas (70cqw at 1.4x) to grow into; cap
     it there so a short landscape square does not clip its far edge.
+    The --labels Good-gutter and Good-stagger flips below skip the
+    selected pill so it keeps that interior-facing side.
     Stacked lines other than the selected one keep their one-line
     start-clip.
   */
@@ -1793,27 +1795,27 @@
     gutter at ghost-label zoom. Stacked stay one-line and do not
     need this.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10 > .movie-label {
     transform: translate(calc(100% + 9px), -50%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-south > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--label-south > .movie-label {
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-north > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--label-north > .movie-label {
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0 > .movie-label {
     transform: translate(calc(-100% - 9px), -50%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-south > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--label-south > .movie-label {
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-north > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--label-north > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 
@@ -1832,19 +1834,19 @@
     ghost-label zoom. Fit-zoom selected wrap is unchanged
     because both classes are labels-visible only.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--stagger-fun-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--stagger-fun-10 > .movie-label {
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--stagger-fun-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--stagger-fun-0 > .movie-label {
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--stagger-fun-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--stagger-fun-10 > .movie-label {
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--stagger-fun-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--stagger-fun-0 > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 
@@ -1859,19 +1861,19 @@
     unchanged because both classes are labels-visible
     only.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-north.movie-point--stagger-fun-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--label-north.movie-point--stagger-fun-10 > .movie-label {
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-north.movie-point--stagger-fun-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--label-north.movie-point--stagger-fun-10 > .movie-label {
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-south.movie-point--stagger-fun-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--label-south.movie-point--stagger-fun-0 > .movie-label {
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-south.movie-point--stagger-fun-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--label-south.movie-point--stagger-fun-0 > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 
@@ -1911,13 +1913,13 @@
     The combo rules below keep both offsets so
     Good-side transform does not re-center them.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-good-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-good-10 > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), -50%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-good-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-good-0 > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), -50%);
@@ -1962,25 +1964,25 @@
     Fit-zoom selected wrap is unchanged
     because both classes are labels-visible only.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), 0);
@@ -2018,29 +2020,29 @@
     selected wrap is unchanged because both
     classes are labels-visible only.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-10 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-10 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-0 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-0 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), 0);
@@ -2063,29 +2065,29 @@
     unchanged because both classes are labels-visible
     only.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), 0);
