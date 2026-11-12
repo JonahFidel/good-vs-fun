@@ -94,8 +94,9 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 100%;
+  max-width: 28rem;
   min-height: 50vh;
+  margin-inline: auto;
 }
 
 .eyebrow {
