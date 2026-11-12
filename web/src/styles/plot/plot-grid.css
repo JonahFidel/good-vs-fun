@@ -53,7 +53,8 @@
 }
 
 /* The square chart: the largest square that fits the slot. At rest it is
-   centered (see centeredTransform); only a coarse pointer can zoom or pan it. */
+   centered (see centeredTransform); touch zoom grows its CSS dimensions so
+   text and grid strokes are painted at their actual size. */
 .grid-zoom-canvas {
   position: absolute;
   top: 0;
@@ -61,10 +62,7 @@
   width: min(100cqw, 100cqh);
   height: min(100cqw, 100cqh);
   transform-origin: 0 0;
-  will-change: transform;
   z-index: 1;
-  /* Used by coarse-pointer tick and Fun/Good axis-border inverse-scale. */
-  --plot-inverse-scale: calc(1 / var(--plot-scale, 1));
 }
 
 /*
@@ -98,8 +96,7 @@
 /*
   Coarse-pointer unit lines. Hidden for a mouse, which paints the same 1px
   strokes on .grid::before (a fine pointer never zooms). Touch re-enables
-  this overlay so pinch keeps 1px screen thickness (canvas-local 1px lines
-  round away on WebKit past ~1.4x, and 1px local becomes 8px at max zoom).
+  this overlay so the grid stays legible while the canvas grows in CSS pixels.
 */
 .grid-line-overlay {
   display: none;
@@ -145,8 +142,8 @@
   width: calc(100% * var(--grid-score-max) / var(--grid-canvas) - var(--grid-axis-stroke));
   height: calc(100% * var(--grid-score-max) / var(--grid-canvas) - var(--grid-axis-stroke));
   /*
-    A fine pointer never zooms, so these borders stay as drawn. Coarse
-    pointers re-apply inverse-scale so pinch does not bury origin movies.
+    Coarse-pointer zoom grows the canvas in CSS pixels, so these borders
+    keep their drawn width at any zoom and do not bury origin movies.
     Keep content-box: the width and height above subtract the axis stroke
     so the right and top strokes land outside the score-10 edges
     (universal * does not match ::before).

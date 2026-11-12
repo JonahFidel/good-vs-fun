@@ -5,10 +5,7 @@
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  /* A fine pointer never zooms, so titles keep their drawn size.
-     Coarse pointers re-apply inverse-scale so pinch spreads points without
-     exploding pills. Gated on pointer: coarse, not 900px, because only a
-     coarse pointer can zoom. */
+  /* Points keep their CSS size while the touch-zoom canvas grows around them. */
   transform: translate(-50%, -50%);
   transform-origin: center;
   cursor: grab;
