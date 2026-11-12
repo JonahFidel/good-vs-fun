@@ -1245,8 +1245,9 @@
     Wrap in that same box so the default-zoom readout can be identified
     without bringing back 50cqw cover. Grow down at Fun 9-10 and up at
     Fun 0-1 so the taller pill stays in the scoring region instead of
-    clipping the 1-unit gutter. Zoomed selected titles wrap in a
-    one-cell pill instead (after the --labels rules below).
+    clipping the 1-unit gutter. Light pinch keeps that growth because
+    its ~43px gutter still cannot hold a wrapped pill. Zoomed selected
+    titles wrap in a wider box instead (after the --labels rules below).
 
     Long selected titles keep their full height, with no line cap,
     so the whole pill and the identifying start stay visible even on
@@ -1254,13 +1255,20 @@
     lines, so this wrap is still one title.
 
     Unselected names are hidden, and Fun 9-10 already grows down /
-    Fun 0-1 up, so the taller pill stays in the scoring region. Overlay
+    Fun 0-1 up, so the taller pill stays in the scoring region.
+    Wrapped pills use a 0.75rem radius: 999px on a tall block curves
+    the fill inside the first and last lines. A one-line pill is
+    shorter than two radii, so it still renders fully rounded. Overlay
     3.2x wrap is seven lines (~88px). Ghost-label zoom reaches a
     TARGET_LABEL_UNIT_PX 88 unit from about an 11rem square up.
     Below that MAX_SCALE 6 caps the unit (~80px on a 10rem
     landscape square), so a seven-line overlay can overflow its
     Fun cell there.
   */
+  .movie-point .movie-label-line--selected .movie-label-title {
+    border-radius: 0.75rem;
+  }
+
   .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     white-space: normal;
     /*
@@ -1301,19 +1309,19 @@
     flex: none;
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-south:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-south.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-north:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-north.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(100% + 9px), -100%);
   }
 
@@ -1680,13 +1688,21 @@
     The selected pill (2px border plus padding) is taller than any
     clipped line box, so a start-clip or last-seven-lines cap cuts
     its top edge and first words into a U-shaped half pill. Selected
-    titles have no line cap at any pinch level: wrap the whole name
-    in the one-cell box so the full pill shows. Stacked lines other
-    than the selected one keep their one-line start-clip.
+    titles have no line cap at any pinch level, so the full pill
+    shows. A one-cell box left ~5 characters per line and split
+    words mid-way into a 12-line pill over three cells. Widen the
+    selected box to 10rem so long names wrap at word boundaries into
+    a few lines. The pill flips side at Good 5, so it always has at
+    least half the zoomed canvas (70cqw at 1.4x) to grow into; cap
+    it there so a short landscape square does not clip its far edge.
+    Stacked lines other than the selected one keep their one-line
+    start-clip.
   */
   .grid-zoom-slot--zoomed .movie-point:not(.ghost-point):is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     white-space: normal;
-    width: min(max-content, 3.75rem);
+    width: max-content;
+    max-width: 10rem;
+    max-width: min(10rem, calc(70cqw - 16px));
     min-width: 0;
   }
 
