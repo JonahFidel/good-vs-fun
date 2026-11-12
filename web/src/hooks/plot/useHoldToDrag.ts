@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type PointerEvent } from 'react'
-import { crossedMovieDragThreshold } from '../../lib/plotDragGesture'
+import { trackPendingMoviePointer } from '../../lib/plotDragGesture'
 
 export type PlotDrag = {
   type: 'group' | 'single'
@@ -48,59 +48,17 @@ export function useHoldToDrag({
       return
     }
 
-    let dragStarted = false
-    const handlePointerMove = (event: globalThis.PointerEvent) => {
-      if (dragStarted) {
-        return
-      }
-      if (
-        !crossedMovieDragThreshold(
-          pendingPointer.x,
-          pendingPointer.y,
-          event.clientX,
-          event.clientY,
-        )
-      ) {
-        return
-      }
-
-      dragStarted = true
-      onDragStart(pendingPointer.drag, { x: event.clientX, y: event.clientY })
-      setPendingPointer(null)
-    }
-
-    const handlePointerUp = () => {
-      if (!dragStarted) {
-        onSelectMovie(pendingPointer.primaryId)
-      }
-      setPendingPointer(null)
-    }
-
-    const handleSecondPointer = () => {
-      // A second finger means pinch-zoom, not a movie drag.
-      setPendingPointer(null)
-    }
-
-    const handleSecondTouch = (event: TouchEvent) => {
-      // iOS Safari does not fire pointerdown for the second finger.
-      if (event.touches.length >= 2) {
+    return trackPendingMoviePointer(window, pendingPointer, {
+      onDragStart: (point) => {
+        onDragStart(pendingPointer.drag, point)
         setPendingPointer(null)
-      }
-    }
-
-    window.addEventListener('pointermove', handlePointerMove)
-    window.addEventListener('pointerdown', handleSecondPointer)
-    window.addEventListener('touchstart', handleSecondTouch, { passive: true })
-    window.addEventListener('pointerup', handlePointerUp, { once: true })
-    window.addEventListener('pointercancel', handlePointerUp, { once: true })
-
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('pointerdown', handleSecondPointer)
-      window.removeEventListener('touchstart', handleSecondTouch)
-      window.removeEventListener('pointerup', handlePointerUp)
-      window.removeEventListener('pointercancel', handlePointerUp)
-    }
+      },
+      onClick: () => {
+        onSelectMovie(pendingPointer.primaryId)
+        setPendingPointer(null)
+      },
+      onCancel: () => setPendingPointer(null),
+    })
   }, [onDragStart, onSelectMovie, pendingPointer])
 
   return { beginPendingPointer }

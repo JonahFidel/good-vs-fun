@@ -347,9 +347,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // iPhone zoom, and a way back after pinch). Taps on movies select.
     // All of this is coarse-pointer only; a fine pointer never zooms or
     // pans. A mouse or pen on a coarse-pointer device (iPad) uses Pointer
-    // Events. A mousedown on a .movie-point defers pan so hold-to-drag can
-    // still start; if the pointer moves before that hold, pan wins so
-    // zoomed titles (and grown markers) are not dead zones in a cluster.
+    // Events. A mousedown on a .movie-point never pans: press-and-move
+    // drags that movie. A pen on a .movie-point selects, then pans if it
+    // moves soon after, so zoomed titles (and grown markers) are not dead
+    // zones in a cluster.
     // Touch uses Touch Events because iOS Safari does not deliver
     // pointerdown for a second finger, so pointer-only pinch never starts
     // on iPhone. Skipping pointer capture for touch also keeps the first
@@ -755,8 +756,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         gestureMovedRef.current = false
       }
 
-      // Hold-to-drag owns a still-then-move on a marker or title. Early
-      // movement on that same pointer is a pan, so zoomed labels
+      // A pen on a marker or title selects instead of dragging. Early
+      // movement on that same pen is a pan, so zoomed labels
       // (and canvas-scaled markers) do not become dead zones.
       function maybeBeginDeferredPan(
         id: number,
@@ -1281,10 +1282,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
 
-        // Defer pan on the marker and its title so a click still selects
-        // and a still-then-move still drags. Immediate pan would capture
-        // the pointer and fight hold-to-drag; skipping pan forever made
-        // zoomed titles dead zones in a cluster.
+        // Defer pan on the marker and its title so a click still selects.
+        // A mouse press there belongs to the movie drag; a pen press may
+        // still pan once it moves (see maybeBeginDeferredPan).
         if (target?.closest('.movie-point')) return
 
         capturePointer(e.pointerId)
@@ -1304,7 +1304,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
 
-        maybeBeginDeferredPan(e.pointerId, e.clientX, e.clientY)
+        if (e.pointerType === 'pen') {
+          maybeBeginDeferredPan(e.pointerId, e.clientX, e.clientY)
+        }
         movePan(e.pointerId, e.clientX, e.clientY)
       }
 
@@ -1502,7 +1504,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       // Pointer and Touch Events only drive zoom and pan on a coarse
-      // pointer. A mouse leaves them alone so clicks and hold-to-drag on
+      // pointer. A mouse leaves them alone so clicks and drags on
       // movies behave exactly as on the fitted, non-zooming desktop chart.
       function coarseOnly<E extends Event>(handler: (event: E) => void) {
         return (event: E) => {

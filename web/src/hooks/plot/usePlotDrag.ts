@@ -211,9 +211,9 @@ export function usePlotDrag({
       if (event.target !== event.currentTarget) {
         return
       }
-      // Hold-to-drag on the grid is a mouse gesture. On touch it preventDefaults
-      // and, after 120ms, steals one-finger pan once the plot is zoomed. Tap
-      // to select; Fun/Good still edit from the Selected sliders.
+      // Dragging on the grid is a mouse gesture. On touch it preventDefaults
+      // and steals one-finger pan once the plot is zoomed. Tap to select;
+      // Fun/Good still edit from the Selected sliders.
       if (event.pointerType !== 'mouse') {
         onSelectMovie(nextMovieIdInGroup(ids, selectedMovieId) ?? primaryId)
         return
