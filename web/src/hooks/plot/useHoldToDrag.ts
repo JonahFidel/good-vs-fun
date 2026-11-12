@@ -13,6 +13,7 @@ type PendingPointer = {
   drag: PlotDrag
   x: number
   y: number
+  pointerId: number
 }
 
 export function useHoldToDrag({
@@ -38,6 +39,7 @@ export function useHoldToDrag({
         drag,
         x: event.clientX,
         y: event.clientY,
+        pointerId: event.pointerId,
       })
     },
     [isExampleDeck, onSelectMovie],

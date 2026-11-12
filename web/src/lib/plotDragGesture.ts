@@ -6,7 +6,7 @@ export const DEFERRED_PAN_HOLD_MS = 120
 
 type PointerPoint = { x: number; y: number }
 
-type PointerLike = Event & { clientX: number; clientY: number }
+type PointerLike = Event & { clientX: number; clientY: number; pointerId: number }
 
 /**
  * Follows one pressed movie pointer until it becomes a drag, a click, or is
@@ -14,7 +14,7 @@ type PointerLike = Event & { clientX: number; clientY: number }
  */
 export function trackPendingMoviePointer(
   target: EventTarget,
-  start: PointerPoint,
+  start: PointerPoint & { pointerId: number },
   {
     onDragStart,
     onClick,
@@ -46,8 +46,12 @@ export function trackPendingMoviePointer(
     onClick()
   }
 
-  const handleSecondPointer = () => {
-    // A second finger means pinch-zoom, not a movie drag.
+  const handleSecondPointer = (event: Event) => {
+    // The press's own pointerdown can still reach window after this listener
+    // is added mid-dispatch; only a different pointer means pinch-zoom.
+    if ((event as PointerLike).pointerId === start.pointerId) {
+      return
+    }
     onCancel()
   }
 
