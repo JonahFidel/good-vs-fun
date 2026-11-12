@@ -134,11 +134,12 @@
 }
 
 .movie-label-line--selected .movie-label-title {
-  border-color: #3b82f6;
+  background: #030712;
   color: #eff6ff;
-  box-shadow:
-    0 0 0 2px rgba(59, 130, 246, 0.6),
-    0 0 16px 5px rgba(59, 130, 246, 0.45);
+  border: 2px solid #3b82f6;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
 }
 
 .movie-label-line--linked .movie-label-title {
@@ -199,15 +200,6 @@
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
-}
-
-.movie-label-line--selected .movie-label-title {
-  background: #030712;
-  color: #eff6ff;
-  border: 2px solid #3b82f6;
-  padding: 0.12rem 0.4rem;
-  border-radius: 999px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
 }
 
 /* Desktop keeps the floating hover pill; mobile folds this into the title. */
