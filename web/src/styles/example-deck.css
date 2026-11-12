@@ -101,12 +101,6 @@
     0 0 24px 10px rgba(59, 130, 246, 0.35);
 }
 
-.grid-wrapper--example .movie-label-line--selected .movie-label-title {
-  background: #1e40af;
-  border-color: #3b82f6;
-  color: #eff6ff;
-}
-
 .grid-wrapper--example .movie-label-line--linked .movie-label-title {
   background: #166534;
   border-color: #22c55e;

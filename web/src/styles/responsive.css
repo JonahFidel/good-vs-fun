@@ -1361,7 +1361,7 @@
     glow paints above the title (z-index 2 vs 1). At 2.2x the same halo
     covers neighboring truncated titles and the other listed line in a
     stacked pill - the names pinch-to-read and the chip-hide just
-    uncovered. Keep a 2px ring plus a solid selected/linked fill so the
+    uncovered. Keep a 2px ring plus a solid linked fill so the
     active stacked name still reads without the bloom.
   */
   .grid-zoom-slot--zoomed .movie-point.movie-point--highlighted::after {
@@ -1370,11 +1370,6 @@
 
   .grid-zoom-slot--zoomed .movie-point.movie-point--selected::after {
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.95);
-  }
-
-  .grid-zoom-slot--zoomed .movie-label-line--selected .movie-label-title {
-    background: #1e40af;
-    box-shadow: none;
   }
 
   .grid-zoom-slot--zoomed .movie-label-line--linked .movie-label-title {
