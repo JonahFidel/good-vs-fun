@@ -1,7 +1,7 @@
 /** Movement past this distance starts a movie drag instead of a click. */
 const MOVIE_DRAG_MOVE_PX = 12
 
-/** Delay before a coarse-pointer pen press on a movie can become a plot pan. */
+/** Window in which a coarse-pointer press on a movie that cannot drag it may still become a plot pan. */
 export const DEFERRED_PAN_HOLD_MS = 120
 
 type PointerPoint = { x: number; y: number }

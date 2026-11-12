@@ -245,7 +245,7 @@ export function usePlotDrag({
       if (target?.closest('button')) {
         return
       }
-      // Hold-to-drag preventDefault on pointerdown steals iPhone sidebar
+      // Movie drag preventDefault on pointerdown steals iPhone sidebar
       // scroll. List-to-grid drag is a mouse gesture; touch taps select
       // via click instead.
       if (event.pointerType !== 'mouse') {
