@@ -46,6 +46,9 @@
     0 5px 14px rgba(15, 23, 42, 0.35);
   cursor: default;
   z-index: 1;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* Keep titles inside the scoring region when the point is near x=0. */
@@ -193,6 +196,18 @@
 
 .movie-label-title {
   display: inline-block;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.movie-label-line--selected .movie-label-title {
+  background: #030712;
+  color: #eff6ff;
+  border: 2px solid #3b82f6;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
 }
 
 /* Desktop keeps the floating hover pill; mobile folds this into the title. */
