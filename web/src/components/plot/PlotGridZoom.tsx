@@ -5,7 +5,7 @@ import {
   useLayoutEffect,
   useRef,
 } from 'react'
-import { DRAG_HOLD_MS } from '../../hooks/plot/useHoldToDrag'
+import { DEFERRED_PAN_HOLD_MS } from '../../lib/plotDragGesture'
 import {
   MOVIE_HIT_RADIUS_PX,
   ghostPointAtMarker,
@@ -115,10 +115,12 @@ type Props = {
   children: React.ReactNode
   /** Fires after a confirmed empty-grid tap, not on the first finger of pinch/pan/double-tap. */
   onEmptyTap?: () => void
+  /** A mouse press on a primary movie starts its drag instead of panning. */
+  moviesDraggable: boolean
 }
 
 export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
-  function PlotGridZoom({ children, onEmptyTap }, forwardedRef) {
+  function PlotGridZoom({ children, onEmptyTap, moviesDraggable }, forwardedRef) {
     const slotRef = useRef<HTMLDivElement | null>(null)
     const canvasRef = useRef<HTMLDivElement | null>(null)
     const overlayRef = useRef<HTMLDivElement | null>(null)
@@ -135,6 +137,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const pinchUnconstrainedRef = useRef<ZoomState | null>(null)
     const gestureStartRef = useRef<GestureStart | null>(null)
     const gestureMovedRef = useRef(false)
+    const moviesDraggableRef = useRef(moviesDraggable)
+    const deferredPanRef = useRef(false)
     const pinchOccurredRef = useRef(false)
     const lastTapRef = useRef<{
       t: number
@@ -190,6 +194,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     useEffect(() => {
       onEmptyTapRef.current = onEmptyTap
     }, [onEmptyTap])
+
+    useEffect(() => {
+      moviesDraggableRef.current = moviesDraggable
+    }, [moviesDraggable])
 
     function applyTransform(opts?: { skipClamp?: boolean; rubberBand?: boolean }) {
       const canvas = canvasRef.current
@@ -347,9 +355,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // iPhone zoom, and a way back after pinch). Taps on movies select.
     // All of this is coarse-pointer only; a fine pointer never zooms or
     // pans. A mouse or pen on a coarse-pointer device (iPad) uses Pointer
-    // Events. A mousedown on a .movie-point defers pan so hold-to-drag can
-    // still start; if the pointer moves before that hold, pan wins so
-    // zoomed titles (and grown markers) are not dead zones in a cluster.
+    // Events. A mousedown on a primary .movie-point of an editable deck
+    // never pans: press-and-move drags that movie. Any other press on a
+    // .movie-point selects, then pans if it moves soon after, so zoomed
+    // titles (and grown markers) are not dead zones in a cluster.
     // Touch uses Touch Events because iOS Safari does not deliver
     // pointerdown for a second finger, so pointer-only pinch never starts
     // on iPhone. Skipping pointer capture for touch also keeps the first
@@ -755,8 +764,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         gestureMovedRef.current = false
       }
 
-      // Hold-to-drag owns a still-then-move on a marker or title. Early
-      // movement on that same pointer is a pan, so zoomed labels
+      // A press on a marker or title that cannot drag it only selects.
+      // Early movement on that same pointer is a pan, so zoomed labels
       // (and canvas-scaled markers) do not become dead zones.
       function maybeBeginDeferredPan(
         id: number,
@@ -766,7 +775,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         if (panRef.current) return
         const start = gestureStartRef.current
         if (!start) return
-        if (performance.now() - start.t >= DRAG_HOLD_MS) return
+        if (performance.now() - start.t >= DEFERRED_PAN_HOLD_MS) return
         if (Math.hypot(clientX - start.x, clientY - start.y) < PAN_SLOP_PX) {
           return
         }
@@ -1273,6 +1282,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
         pointersRef.current.set(e.pointerId, slotPoint(e.clientX, e.clientY))
         noteGestureStart(e.clientX, e.clientY)
+        deferredPanRef.current = false
 
         if (pointersRef.current.size >= 2) {
           e.preventDefault()
@@ -1281,11 +1291,17 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
 
-        // Defer pan on the marker and its title so a click still selects
-        // and a still-then-move still drags. Immediate pan would capture
-        // the pointer and fight hold-to-drag; skipping pan forever made
-        // zoomed titles dead zones in a cluster.
-        if (target?.closest('.movie-point')) return
+        // Defer pan on the marker and its title so a click still selects.
+        // A mouse press on a draggable movie belongs to its drag; any
+        // other press may still pan once it moves (see maybeBeginDeferredPan).
+        if (target?.closest('.movie-point')) {
+          deferredPanRef.current = !(
+            e.pointerType === 'mouse' &&
+            moviesDraggableRef.current &&
+            target.closest('.movie-point:not(.ghost-point)')
+          )
+          return
+        }
 
         capturePointer(e.pointerId)
         beginPan(e.pointerId, e.clientX, e.clientY)
@@ -1304,7 +1320,9 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
 
-        maybeBeginDeferredPan(e.pointerId, e.clientX, e.clientY)
+        if (deferredPanRef.current) {
+          maybeBeginDeferredPan(e.pointerId, e.clientX, e.clientY)
+        }
         movePan(e.pointerId, e.clientX, e.clientY)
       }
 
@@ -1502,7 +1520,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
       }
 
       // Pointer and Touch Events only drive zoom and pan on a coarse
-      // pointer. A mouse leaves them alone so clicks and hold-to-drag on
+      // pointer. A mouse leaves them alone so clicks and drags on
       // movies behave exactly as on the fitted, non-zooming desktop chart.
       function coarseOnly<E extends Event>(handler: (event: E) => void) {
         return (event: E) => {
