@@ -1198,7 +1198,7 @@
     transform: translate(calc(-100% - 9px), -50%);
     max-width: 7.25rem;
     max-width: min(7.25rem, calc(50cqw - 16px));
-    overflow: hidden;
+    overflow: visible;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.12s ease;
@@ -1215,6 +1215,13 @@
       The 44px marker still selects.
     */
     pointer-events: none;
+  }
+
+  /* Keep compact unselected names readable without letting them run outside their pill. */
+  .movie-label-line:not(.movie-label-line--selected) .movie-label-title {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /*
@@ -1245,24 +1252,12 @@
     Wrap in that same box so the default-zoom readout can be identified
     without bringing back 50cqw cover. Grow down at Fun 9-10 and up at
     Fun 0-1 so the taller pill stays in the scoring region instead of
-    clipping the 1-unit gutter. Light-pinch and double-tap one-cell
-    titles stay nowrap; this is fit-zoom only (:not --zoomed), not
-    "until names appear" (:not --labels).
+    clipping the 1-unit gutter. Selected titles use this wrap at fit
+    zoom and stay fully wrapped inside a one-cell pill while zoomed.
 
-    Last-N-lines only helps when a title overflows the box. In this
-    32cqw / 0.85rem cell on a ~370px square (~15-17 characters per
-    line), Pirates is three wraps and already fits. Alexander and
-    the Terrible, Horrible, No Good, Very Bad Day (~59) is four
-    wraps on portrait and five on a typical ~280-360px landscape
-    square (~11-13 characters per line). Four lines then hid the
-    identifying start (Alexander / Terrible) on that short plot
-    and showed only Horrible, No Good, / Very Bad Day. Five
-    line-heights (1.2) fit those. That same title still last-clips
-    on a 10rem-floor landscape square. Short names still
-    shrink-to-fit; the title must keep its content height so
-    flex-end can hide the start instead of shrinking to the
-    first lines. Fit-zoom stacks already hide inactive lines, so
-    this wrap is still one title.
+    Long selected titles keep their full height inside the bounded
+    pill, including on short landscape plots. Fit-zoom stacks already
+    hide inactive lines, so this wrap is still one title.
 
     A 5-line selected pill is ~81px. Unselected names are hidden, and
     Fun 9-10 already grows down / Fun 0-1 up, so the extra line stays
@@ -1294,16 +1289,12 @@
     min-width: 0;
     max-width: 100%;
     /*
-      Five line-heights (1.2 on .movie-label) so 5-wrap names like
-      Alexander on a short landscape plot fit in this cell. Height
-      stays auto so a one-line name does not sit in an empty
-      five-line box.
+      Keep the full wrapped title visible. Height stays auto so a
+      one-line name does not sit in an empty multi-line box.
     */
-    max-height: 6em;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 
   .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title {
@@ -1346,6 +1337,22 @@
     width: max-content;
     max-width: 3.75rem;
     white-space: nowrap;
+  }
+
+  /* Selected mobile titles wrap fully at every pinch level inside a one-cell pill. */
+  .grid-zoom-slot--zoomed .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    white-space: normal;
+    width: min(max-content, 3.75rem);
+    max-width: 3.75rem;
+    overflow: visible;
+  }
+
+  .grid-zoom-slot--zoomed .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-line,
+  .grid-zoom-slot--zoomed .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title {
+    white-space: normal;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    overflow: visible;
   }
 
   /*
