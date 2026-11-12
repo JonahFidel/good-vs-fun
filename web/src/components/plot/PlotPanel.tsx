@@ -139,7 +139,11 @@ export function PlotPanel({
         )}
         <div className="grid-axis grid-axis-y">Fun</div>
         <div className="grid-axis grid-axis-x">Good</div>
-        <PlotGridZoom ref={gridRef} onEmptyTap={onClearSelection}>
+        <PlotGridZoom
+          ref={gridRef}
+          onEmptyTap={onClearSelection}
+          moviesDraggable={!isExampleDeck}
+        >
           <GridAxes />
           {ghostDeckId && (
             <GhostPoints

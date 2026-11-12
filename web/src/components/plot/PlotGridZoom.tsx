@@ -115,10 +115,12 @@ type Props = {
   children: React.ReactNode
   /** Fires after a confirmed empty-grid tap, not on the first finger of pinch/pan/double-tap. */
   onEmptyTap?: () => void
+  /** A mouse press on a primary movie starts its drag instead of panning. */
+  moviesDraggable: boolean
 }
 
 export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
-  function PlotGridZoom({ children, onEmptyTap }, forwardedRef) {
+  function PlotGridZoom({ children, onEmptyTap, moviesDraggable }, forwardedRef) {
     const slotRef = useRef<HTMLDivElement | null>(null)
     const canvasRef = useRef<HTMLDivElement | null>(null)
     const overlayRef = useRef<HTMLDivElement | null>(null)
@@ -135,6 +137,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     const pinchUnconstrainedRef = useRef<ZoomState | null>(null)
     const gestureStartRef = useRef<GestureStart | null>(null)
     const gestureMovedRef = useRef(false)
+    const moviesDraggableRef = useRef(moviesDraggable)
+    const deferredPanRef = useRef(false)
     const pinchOccurredRef = useRef(false)
     const lastTapRef = useRef<{
       t: number
@@ -190,6 +194,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     useEffect(() => {
       onEmptyTapRef.current = onEmptyTap
     }, [onEmptyTap])
+
+    useEffect(() => {
+      moviesDraggableRef.current = moviesDraggable
+    }, [moviesDraggable])
 
     function applyTransform(opts?: { skipClamp?: boolean; rubberBand?: boolean }) {
       const canvas = canvasRef.current
@@ -347,10 +355,10 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
     // iPhone zoom, and a way back after pinch). Taps on movies select.
     // All of this is coarse-pointer only; a fine pointer never zooms or
     // pans. A mouse or pen on a coarse-pointer device (iPad) uses Pointer
-    // Events. A mousedown on a .movie-point never pans: press-and-move
-    // drags that movie. A pen on a .movie-point selects, then pans if it
-    // moves soon after, so zoomed titles (and grown markers) are not dead
-    // zones in a cluster.
+    // Events. A mousedown on a primary .movie-point of an editable deck
+    // never pans: press-and-move drags that movie. Any other press on a
+    // .movie-point selects, then pans if it moves soon after, so zoomed
+    // titles (and grown markers) are not dead zones in a cluster.
     // Touch uses Touch Events because iOS Safari does not deliver
     // pointerdown for a second finger, so pointer-only pinch never starts
     // on iPhone. Skipping pointer capture for touch also keeps the first
@@ -756,8 +764,8 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         gestureMovedRef.current = false
       }
 
-      // A pen on a marker or title selects instead of dragging. Early
-      // movement on that same pen is a pan, so zoomed labels
+      // A press on a marker or title that cannot drag it only selects.
+      // Early movement on that same pointer is a pan, so zoomed labels
       // (and canvas-scaled markers) do not become dead zones.
       function maybeBeginDeferredPan(
         id: number,
@@ -1274,6 +1282,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
 
         pointersRef.current.set(e.pointerId, slotPoint(e.clientX, e.clientY))
         noteGestureStart(e.clientX, e.clientY)
+        deferredPanRef.current = false
 
         if (pointersRef.current.size >= 2) {
           e.preventDefault()
@@ -1283,9 +1292,16 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
         }
 
         // Defer pan on the marker and its title so a click still selects.
-        // A mouse press there belongs to the movie drag; a pen press may
-        // still pan once it moves (see maybeBeginDeferredPan).
-        if (target?.closest('.movie-point')) return
+        // A mouse press on a draggable movie belongs to its drag; any
+        // other press may still pan once it moves (see maybeBeginDeferredPan).
+        if (target?.closest('.movie-point')) {
+          deferredPanRef.current = !(
+            e.pointerType === 'mouse' &&
+            moviesDraggableRef.current &&
+            target.closest('.movie-point:not(.ghost-point)')
+          )
+          return
+        }
 
         capturePointer(e.pointerId)
         beginPan(e.pointerId, e.clientX, e.clientY)
@@ -1304,7 +1320,7 @@ export const PlotGridZoom = forwardRef<HTMLDivElement, Props>(
           return
         }
 
-        if (e.pointerType === 'pen') {
+        if (deferredPanRef.current) {
           maybeBeginDeferredPan(e.pointerId, e.clientX, e.clientY)
         }
         movePan(e.pointerId, e.clientX, e.clientY)
