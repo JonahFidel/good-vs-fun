@@ -1125,29 +1125,6 @@
   }
 
   /*
-    0-10 along a ~160-280px axis collides in the gutter. Keep 0/2/4/5/6/8/10
-    at fit zoom; restore 1/3/7/9 after pinch past 1.4x so a zoomed corner
-    still has unit precision. Titles wait until 2.2x.
-  */
-  .grid-tick[data-tick='1'],
-  .grid-tick[data-tick='3'],
-  .grid-tick[data-tick='7'],
-  .grid-tick[data-tick='9'] {
-    display: none;
-  }
-
-  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='1'],
-  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='3'],
-  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='7'],
-  .grid-zoom-slot--zoomed .grid-tick-x:not(.grid-tick-x-top)[data-tick='9'],
-  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='1'],
-  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='3'],
-  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='7'],
-  .grid-zoom-slot--zoomed .grid-tick-y:not(.grid-tick-y-right)[data-tick='9'] {
-    display: block;
-  }
-
-  /*
     #e5e7eb lines on white are decoration on desktop and the whole scale
     on a phone. Example decks also faded the overlay to 0.55. Darken both.
     Coarse pointers actually paint those lines on the overlay; this query
@@ -1172,52 +1149,6 @@
 
   .deck-page-layout .grid-wrapper--example .grid-axis {
     color: #111827;
-  }
-
-  /*
-    Example decks mute the whole plot (wrapper 0.9, gray #94a3b8 dots) as a
-    desktop read-only cue. On a ~370px fitted square those dots ARE the
-    grid, and 0.9 also faded the darker ticks/axes already restored above.
-    Keep cursor: not-allowed; the Example badge is the read-only signal.
-  */
-  .deck-page-layout .grid-wrapper--example {
-    opacity: 1;
-  }
-
-  /* Ghosts are .movie-point too. Restoring them here would paint compare
-     overlays as primary red/dark pills and hide purple vs teal. */
-  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point)::after {
-    background: #dc2626;
-    box-shadow:
-      0 0 0 2px rgba(220, 38, 38, 0.5),
-      0 2px 8px rgba(15, 23, 42, 0.45);
-  }
-
-  /* Same specificity as the unselected restore above; keep tap feedback. */
-  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point).movie-point--highlighted::after {
-    background: #16a34a;
-    box-shadow:
-      0 0 0 2px rgba(34, 197, 94, 0.95),
-      0 0 10px 3px rgba(34, 197, 94, 0.65),
-      0 0 22px 8px rgba(34, 197, 94, 0.4);
-  }
-
-  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point).movie-point--selected::after {
-    background: #2563eb;
-    box-shadow:
-      0 0 0 2px rgba(59, 130, 246, 0.95),
-      0 0 12px 4px rgba(59, 130, 246, 0.65),
-      0 0 24px 10px rgba(59, 130, 246, 0.4);
-  }
-
-  .deck-page-layout .grid-wrapper--example .movie-point:not(.ghost-point) > .movie-label {
-    background: #0f172a;
-    border-color: #334155;
-    color: #f8fafc;
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.06) inset,
-      0 2px 6px rgba(15, 23, 42, 0.45),
-      0 5px 14px rgba(15, 23, 42, 0.35);
   }
 
   .movie-point {
@@ -1425,25 +1356,18 @@
     glow paints above the title (z-index 2 vs 1). At 2.2x the same halo
     covers neighboring truncated titles and the other listed line in a
     stacked pill - the names pinch-to-read and the chip-hide just
-    uncovered. Keep a 2px ring plus a solid selected/linked fill so the
+    uncovered. Keep a 2px ring plus a solid linked fill so the
     active stacked name still reads without the bloom.
   */
-  .grid-zoom-slot--zoomed .movie-point.movie-point--highlighted::after,
-  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point:not(.ghost-point).movie-point--highlighted::after {
+  .grid-zoom-slot--zoomed .movie-point.movie-point--highlighted::after {
     box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.95);
   }
 
-  .grid-zoom-slot--zoomed .movie-point.movie-point--selected::after,
-  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point:not(.ghost-point).movie-point--selected::after {
+  .grid-zoom-slot--zoomed .movie-point.movie-point--selected::after {
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.95);
   }
 
-  .grid-zoom-slot--zoomed .movie-label-line--selected .movie-label-title {
-    background: #1e40af;
-    box-shadow: none;
-  }
-
-  .grid-zoom-slot--zoomed .movie-label-line--linked .movie-label-title {
+  .grid-zoom-slot--zoomed .movie-label-line--linked:not(.movie-label-line--selected) .movie-label-title {
     background: #166534;
     box-shadow: none;
   }
@@ -1454,11 +1378,9 @@
     covers neighboring compact titles - and at 2.2x it covers the
     truncated names pinch-to-read just uncovered, the same leak as
     the title-line glow above. Keep a tight inset plus 2px edge so
-    the dark pill still separates from the grid. Beat the example-
-    deck label restore, which reapplied the 14px shadow.
+    the dark pill still separates from the grid.
   */
-  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) > .movie-label,
-  .deck-page-layout .grid-wrapper--example .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) > .movie-label {
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point) > .movie-label {
     box-shadow:
       0 1px 0 rgba(255, 255, 255, 0.06) inset,
       0 1px 2px rgba(15, 23, 42, 0.35);
