@@ -1617,34 +1617,14 @@
     into a four-line pill over the cluster pinch-to-read just
     uncovered, and last-two-lines would hide those numbers.
 
-    Line-clamp would paint the first wrapped lines. Clip to
-    the last instead so a longer wrap still reaches the
-    distinctive ending. Last-N-lines only helps when a
-    title overflows the box. Two lines only covered ~10-18
-    character names in this ~9-character cell. 19-27
-    character names are three wraps and already fit. 28-35
-    character names are four wraps and already fit. 36-43
-    character names are five wraps: "Austin Powers:
-    International Man of Mystery", "The Unbearable Weight
-    of Massive Talent". Five line-heights then hid the
-    identifying start of 44-50 character names ("Pirates
-    of the Carribean: Curse of the Black Pearl"), and
-    unselected primaries have no Selected bar to recover
-    it. Six line-heights then hid the identifying start of
-    51-59 character names ("Alexander and the Terrible,
-    Horrible, No Good, Very Bad Day"), and unselected
-    primaries have no Selected bar to recover it. Seven
-    line-heights (1.2) fit those once double-tap cells
-    are ~88px. Short names still shrink-to-fit.
-
-    Compact zoomed titles are 0.62rem, not the 0.8rem
-    fit-hidden size. A 7-line pill (8.4em plus 0.08rem
-    padding and 1px border) is ~88px. Double-tap now
-    raises the cell to ~88px (TARGET_LABEL_UNIT_PX) so
-    that extra line fits at --labels instead of waiting
-    for a deeper pinch. Alexander is the longest
-    example-deck title, so eight-line wrap has no
-    remaining name at this cell size.
+    The line has no height cap, so the whole name shows. A
+    last-N-lines clip hid the identifying start of the longest
+    names (Dr. Strangelove, 60+ character titles), and unselected
+    primaries have no Selected bar to recover it. Most names fit
+    in seven 1.2 line-heights, which a ~88px double-tap cell
+    (TARGET_LABEL_UNIT_PX) holds. Longer names grow past it
+    rather than lose their first words. Short names still
+    shrink-to-fit.
   */
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked) > .movie-label {
     white-space: normal;
@@ -1657,16 +1637,7 @@
     overflow-wrap: break-word;
     min-width: 0;
     max-width: 100%;
-    /*
-      Seven line-heights (1.2 on .movie-label) so 7-wrap
-      names fit in this cell. Height stays auto so a
-      one-line name does not sit in an empty seven-line box.
-    */
-    max-height: 8.4em;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    overflow: visible;
     direction: ltr;
     text-overflow: unset;
   }
@@ -1679,7 +1650,6 @@
     max-width: 100%;
     overflow: visible;
     text-overflow: unset;
-    flex: none;
     direction: ltr;
     unicode-bidi: normal;
   }
