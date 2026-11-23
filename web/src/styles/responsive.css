@@ -1760,12 +1760,17 @@
     selected wrap stays on that interior side because the 1-unit
     gutter is only ~31px. Double-tap cells are ~88px, so grow into
     the Good 10 / Good 0 gutter instead (the inverse of the Good < 5
-    flip). Combine with the Fun 9-10 / Fun 0-1 flip so the namesake
+    flip). Anchor left/right like label-end: a transform-only flip
+    keeps the other side's anchor and lands a whole pill past the
+    marker, clipping Pirates (Good 9.83) at the canvas edge.
+    Combine with the Fun 9-10 / Fun 0-1 flip so the namesake
     corner sits in both gutters. Overlay names get the same Good
     gutter at ghost-label zoom. Stacked stay one-line and do not
     need this.
   */
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10 > .movie-label {
+    left: auto;
+    right: 0;
     transform: translate(calc(100% + 9px), -50%);
   }
 
@@ -1778,6 +1783,8 @@
   }
 
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0 > .movie-label {
+    left: 0;
+    right: auto;
     transform: translate(calc(-100% - 9px), -50%);
   }
 
@@ -2147,6 +2154,8 @@
     overlays stay one-line and do not need this.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10 > .movie-label {
+    left: auto;
+    right: 0;
     transform: translate(calc(100% + 9px), -50%);
   }
 
@@ -2161,6 +2170,8 @@
   }
 
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0 > .movie-label {
+    left: 0;
+    right: auto;
     transform: translate(calc(-100% - 9px), -50%);
   }
 
