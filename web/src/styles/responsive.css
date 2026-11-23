@@ -1198,7 +1198,7 @@
     transform: translate(calc(-100% - 9px), -50%);
     max-width: 7.25rem;
     max-width: min(7.25rem, calc(50cqw - 16px));
-    overflow: hidden;
+    overflow: visible;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.12s ease;
@@ -1245,34 +1245,30 @@
     Wrap in that same box so the default-zoom readout can be identified
     without bringing back 50cqw cover. Grow down at Fun 9-10 and up at
     Fun 0-1 so the taller pill stays in the scoring region instead of
-    clipping the 1-unit gutter. Light-pinch and double-tap one-cell
-    titles stay nowrap; this is fit-zoom only (:not --zoomed), not
-    "until names appear" (:not --labels).
+    clipping the 1-unit gutter. Light pinch keeps that growth because
+    its ~43px gutter still cannot hold a wrapped pill. Zoomed selected
+    titles wrap in a wider box instead (after the --labels rules below).
 
-    Last-N-lines only helps when a title overflows the box. In this
-    32cqw / 0.85rem cell on a ~370px square (~15-17 characters per
-    line), Pirates is three wraps and already fits. Alexander and
-    the Terrible, Horrible, No Good, Very Bad Day (~59) is four
-    wraps on portrait and five on a typical ~280-360px landscape
-    square (~11-13 characters per line). Four lines then hid the
-    identifying start (Alexander / Terrible) on that short plot
-    and showed only Horrible, No Good, / Very Bad Day. Five
-    line-heights (1.2) fit those. That same title still last-clips
-    on a 10rem-floor landscape square. Short names still
-    shrink-to-fit; the title must keep its content height so
-    flex-end can hide the start instead of shrinking to the
-    first lines. Fit-zoom stacks already hide inactive lines, so
-    this wrap is still one title.
+    Long selected titles keep their full height, with no line cap,
+    so the whole pill and the identifying start stay visible even on
+    a short landscape plot. Fit-zoom stacks already hide inactive
+    lines, so this wrap is still one title.
 
-    A 5-line selected pill is ~81px. Unselected names are hidden, and
-    Fun 9-10 already grows down / Fun 0-1 up, so the extra line stays
-    in the scoring region even on a 10rem landscape square. Overlay
+    Unselected names are hidden, and Fun 9-10 already grows down /
+    Fun 0-1 up, so the taller pill stays in the scoring region.
+    Wrapped pills use a 0.75rem radius: 999px on a tall block curves
+    the fill inside the first and last lines. A one-line pill is
+    shorter than two radii, so it still renders fully rounded. Overlay
     3.2x wrap is seven lines (~88px). Ghost-label zoom reaches a
     TARGET_LABEL_UNIT_PX 88 unit from about an 11rem square up.
     Below that MAX_SCALE 6 caps the unit (~80px on a 10rem
     landscape square), so a seven-line overlay can overflow its
     Fun cell there.
   */
+  .movie-point .movie-label-line--selected .movie-label-title {
+    border-radius: 0.75rem;
+  }
+
   .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     white-space: normal;
     /*
@@ -1294,16 +1290,12 @@
     min-width: 0;
     max-width: 100%;
     /*
-      Five line-heights (1.2 on .movie-label) so 5-wrap names like
-      Alexander on a short landscape plot fit in this cell. Height
-      stays auto so a one-line name does not sit in an empty
-      five-line box.
+      Keep the full wrapped title visible. Height stays auto so a
+      one-line name does not sit in an empty multi-line box.
     */
-    max-height: 6em;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 
   .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point:is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title {
@@ -1317,19 +1309,19 @@
     flex: none;
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-south:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-south.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-south.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-north:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot:not(.grid-zoom-slot--zoomed) .movie-point--label-north.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+  .grid-zoom-slot:not(.grid-zoom-slot--labels) .movie-point--label-north.movie-point--label-end:is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
     transform: translate(calc(100% + 9px), -100%);
   }
 
@@ -1625,34 +1617,14 @@
     into a four-line pill over the cluster pinch-to-read just
     uncovered, and last-two-lines would hide those numbers.
 
-    Line-clamp would paint the first wrapped lines. Clip to
-    the last instead so a longer wrap still reaches the
-    distinctive ending. Last-N-lines only helps when a
-    title overflows the box. Two lines only covered ~10-18
-    character names in this ~9-character cell. 19-27
-    character names are three wraps and already fit. 28-35
-    character names are four wraps and already fit. 36-43
-    character names are five wraps: "Austin Powers:
-    International Man of Mystery", "The Unbearable Weight
-    of Massive Talent". Five line-heights then hid the
-    identifying start of 44-50 character names ("Pirates
-    of the Carribean: Curse of the Black Pearl"), and
-    unselected primaries have no Selected bar to recover
-    it. Six line-heights then hid the identifying start of
-    51-59 character names ("Alexander and the Terrible,
-    Horrible, No Good, Very Bad Day"), and unselected
-    primaries have no Selected bar to recover it. Seven
-    line-heights (1.2) fit those once double-tap cells
-    are ~88px. Short names still shrink-to-fit.
-
-    Compact zoomed titles are 0.62rem, not the 0.8rem
-    fit-hidden size. A 7-line pill (8.4em plus 0.08rem
-    padding and 1px border) is ~88px. Double-tap now
-    raises the cell to ~88px (TARGET_LABEL_UNIT_PX) so
-    that extra line fits at --labels instead of waiting
-    for a deeper pinch. Alexander is the longest
-    example-deck title, so eight-line wrap has no
-    remaining name at this cell size.
+    The line has no height cap, so the whole name shows. A
+    last-N-lines clip hid the identifying start of the longest
+    names (Dr. Strangelove, 60+ character titles), and unselected
+    primaries have no Selected bar to recover it. Most names fit
+    in seven 1.2 line-heights, which a ~88px double-tap cell
+    (TARGET_LABEL_UNIT_PX) holds. Longer names grow past it
+    rather than lose their first words. Short names still
+    shrink-to-fit.
   */
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked) > .movie-label {
     white-space: normal;
@@ -1665,21 +1637,64 @@
     overflow-wrap: break-word;
     min-width: 0;
     max-width: 100%;
-    /*
-      Seven line-heights (1.2 on .movie-label) so 7-wrap
-      names fit in this cell. Height stays auto so a
-      one-line name does not sit in an empty seven-line box.
-    */
-    max-height: 8.4em;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    overflow: visible;
     direction: ltr;
     text-overflow: unset;
   }
 
   .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked) .movie-label-title {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: unset;
+    direction: ltr;
+    unicode-bidi: normal;
+  }
+
+  /*
+    The selected pill (2px border plus padding) is taller than any
+    clipped line box, so a start-clip or last-seven-lines cap cuts
+    its top edge and first words into a U-shaped half pill. Selected
+    titles have no line cap at any pinch level, so the full pill
+    shows. A one-cell box left ~5 characters per line and split
+    words mid-way into a 12-line pill over three cells. Widen the
+    selected box to 10rem so long names wrap at word boundaries into
+    a few lines. The pill flips side at Good 5, so it always has at
+    least half the zoomed canvas (70cqw at 1.4x) to grow into; cap
+    it there so a short landscape square does not clip its far edge.
+    The --labels Good-gutter and Good-stagger flips below skip the
+    selected pill so it keeps that interior-facing side.
+    Stacked lines other than the selected one keep their one-line
+    start-clip.
+  */
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point):is(.movie-point--selected, .dragging, .movie-point--highlighted) > .movie-label {
+    white-space: normal;
+    width: max-content;
+    max-width: 10rem;
+    max-width: min(10rem, calc(70cqw - 16px));
+    min-width: 0;
+  }
+
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point):not(.movie-point--stacked):is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-line,
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point):is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-line--selected {
+    white-space: normal;
+    overflow-wrap: break-word;
+    min-width: 0;
+    max-width: 100%;
+    max-height: none;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    direction: ltr;
+    text-overflow: unset;
+  }
+
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point):not(.movie-point--stacked):is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-title,
+  .grid-zoom-slot--zoomed .movie-point:not(.ghost-point):is(.movie-point--selected, .dragging, .movie-point--highlighted) .movie-label-line--selected .movie-label-title {
     display: block;
     white-space: normal;
     overflow-wrap: break-word;
@@ -1745,32 +1760,39 @@
     selected wrap stays on that interior side because the 1-unit
     gutter is only ~31px. Double-tap cells are ~88px, so grow into
     the Good 10 / Good 0 gutter instead (the inverse of the Good < 5
-    flip). Combine with the Fun 9-10 / Fun 0-1 flip so the namesake
+    flip). Anchor left/right like label-end: a transform-only flip
+    keeps the other side's anchor and lands a whole pill past the
+    marker, clipping Pirates (Good 9.83) at the canvas edge.
+    Combine with the Fun 9-10 / Fun 0-1 flip so the namesake
     corner sits in both gutters. Overlay names get the same Good
     gutter at ghost-label zoom. Stacked stay one-line and do not
     need this.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10 > .movie-label {
+    left: auto;
+    right: 0;
     transform: translate(calc(100% + 9px), -50%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-south > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--label-south > .movie-label {
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-north > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--label-north > .movie-label {
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0 > .movie-label {
+    left: 0;
+    right: auto;
     transform: translate(calc(-100% - 9px), -50%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-south > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--label-south > .movie-label {
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-north > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--label-north > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 
@@ -1789,19 +1811,19 @@
     ghost-label zoom. Fit-zoom selected wrap is unchanged
     because both classes are labels-visible only.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--stagger-fun-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--stagger-fun-10 > .movie-label {
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--stagger-fun-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--stagger-fun-0 > .movie-label {
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--stagger-fun-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--stagger-fun-10 > .movie-label {
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--stagger-fun-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--stagger-fun-0 > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 
@@ -1816,19 +1838,19 @@
     unchanged because both classes are labels-visible
     only.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-north.movie-point--stagger-fun-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--label-north.movie-point--stagger-fun-10 > .movie-label {
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-north.movie-point--stagger-fun-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--label-north.movie-point--stagger-fun-10 > .movie-label {
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-10.movie-point--label-south.movie-point--stagger-fun-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-10.movie-point--label-south.movie-point--stagger-fun-0 > .movie-label {
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--gutter-good-0.movie-point--label-south.movie-point--stagger-fun-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--gutter-good-0.movie-point--label-south.movie-point--stagger-fun-0 > .movie-label {
     transform: translate(calc(-100% - 9px), 0);
   }
 
@@ -1868,13 +1890,13 @@
     The combo rules below keep both offsets so
     Good-side transform does not re-center them.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-good-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-good-10 > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), -50%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-good-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-good-0 > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), -50%);
@@ -1919,25 +1941,25 @@
     Fit-zoom selected wrap is unchanged
     because both classes are labels-visible only.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), 0);
@@ -1975,29 +1997,29 @@
     selected wrap is unchanged because both
     classes are labels-visible only.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-10 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-10 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-0 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-0 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), 0);
@@ -2020,29 +2042,29 @@
     unchanged because both classes are labels-visible
     only.
   */
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-north.movie-point--stagger-fun-10.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), -100%);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-0.movie-point--label-end > .movie-label {
     left: 0;
     right: auto;
     transform: translate(calc(-100% - 9px), 0);
   }
 
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label,
-  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10 > .movie-label,
+  .grid-zoom-slot--labels .movie-point:not(.ghost-point):not(.movie-point--stacked):not(:where(.movie-point--selected, .dragging, .movie-point--highlighted)).movie-point--label-south.movie-point--stagger-fun-0.movie-point--stagger-good-10.movie-point--label-end > .movie-label {
     left: auto;
     right: 0;
     transform: translate(calc(100% + 9px), 0);
@@ -2132,6 +2154,8 @@
     overlays stay one-line and do not need this.
   */
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-10 > .movie-label {
+    left: auto;
+    right: 0;
     transform: translate(calc(100% + 9px), -50%);
   }
 
@@ -2146,6 +2170,8 @@
   }
 
   .grid-zoom-slot--ghost-labels .ghost-point:not(.ghost-point--stacked).ghost-point--gutter-good-0 > .movie-label {
+    left: 0;
+    right: auto;
     transform: translate(calc(-100% - 9px), -50%);
   }
 
