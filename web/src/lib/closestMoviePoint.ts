@@ -2,7 +2,7 @@
  * Screen-space radius of the iPhone movie hit ring: an 11px marker plus the
  * 16px ::before inset. Used for nearest-movie tap selection and to keep
  * those taps from counting as double-tap zoom. Mouse pan does not use this
- * radius; desktop markers are 7px and hold-to-drag already starts from
+ * radius; desktop markers are 7px and movie drag already starts from
  * .movie-point.
  */
 export const MOVIE_HIT_RADIUS_PX = 22
